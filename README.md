@@ -14,6 +14,7 @@ Each project may include its own source code, documentation, and instructions fo
 ## Technologies
 - [C#](https://dotnet.microsoft.com/en-us/languages/csharp) is an open-source and cross-platform programming language.
 - [MonoGame](https://monogame.net/) is an open-source modern reimplementation of the XNA framework.
+- [Monogame-Extended](https://github.com/MonoGame-Extended/Monogame-Extended) is a set of utilities (in the form of libraries/tools) that extends MonoGame with new functionality.
 
 ## License
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the LICENSE file for details.

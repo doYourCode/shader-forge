@@ -1,5 +1,5 @@
 # Classic Games
-A collection of classic video game implementations and game development studies, exploring the mechanics, algorithms, and programming techniques behind timeless games.
+A collection of classic video game reimplementations built with modern C# techniques and the MonoGame framework, exploring the design and mechanics of timeless games through contemporary development practices.
 
 ## Goals
 - Recreate classic video games from scratch.
@@ -12,7 +12,8 @@ This repository will grow as new games and experiments are developed.
 Each project may include its own source code, documentation, and instructions for building and running it.
 
 ## Technologies
-Primarily focused on implementations using the MonoGame library and C#, with additional technologies and libraries introduced as needed for individual projects.
+- [C#](https://dotnet.microsoft.com/en-us/languages/csharp) is an open-source and cross-platform programming language.
+- [MonoGame](https://monogame.net/) is an open-source modern reimplementation of the XNA framework.
 
 ## License
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the LICENSE file for details.

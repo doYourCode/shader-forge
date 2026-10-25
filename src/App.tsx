@@ -58,9 +58,13 @@ function App() {
     <main className="app is-flex is-flex-direction-column is-dark">
       <header className="navbar app-toolbar" role="banner">
         <div className="navbar-brand is-align-items-center px-4">
-          <span className="brand-icon">{'{ }'}</span>
+          <img
+            src={`${import.meta.env.BASE_URL}favicon.ico`}
+            alt=""
+            className="brand-icon"
+          />
           <span className="has-text-weight-semibold ml-3">
-            ShaderForge
+            shaderForge
           </span>
         </div>
 

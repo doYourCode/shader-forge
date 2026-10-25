@@ -69,15 +69,9 @@
 }
 
 .brand-icon {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 8px;
-  background: #30334d;
-  color: #a9adff;
-  font-family: monospace;
-  font-weight: 700;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 
 .project-name {

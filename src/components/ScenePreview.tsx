@@ -110,7 +110,7 @@ renderer.debug.onShaderError = (
     // Three.js can report compilation errors through its debug callback.
     renderer.debug.onShaderError = (
       gl,
-      program,
+      _program,
       vertexShaderObject,
       fragmentShaderObject,
     ) => {

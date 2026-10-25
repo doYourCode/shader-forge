@@ -1,55 +1,82 @@
-<<<<<<< HEAD
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+# ShaderForge
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
-=======
-# Classic Games
-A collection of classic video game reimplementations built with modern C# techniques and the MonoGame framework, exploring the design and mechanics of timeless games through contemporary development practices.
+An open-source browser-based GLSL shader editor built with React, TypeScript, and Three.js, designed to explore shader programming through an interactive development environment with real-time 3D previews.
 
 ## Goals
-- Recreate classic video games from scratch.
-- Study game mechanics, collision detection, rendering, and input handling.
-- Practice programming fundamentals and software design.
-- Explore game development techniques through increasingly complex projects.
 
-## Projects
-This repository will grow as new games and experiments are developed.
-Each project may include its own source code, documentation, and instructions for building and running it.
+- Provide a lightweight, accessible environment for writing and experimenting with GLSL shaders.
+- Visualize fragment shaders on 3D objects directly in the browser.
+- Simplify shader development with syntax highlighting, shader execution, and compilation error reporting.
+- Explore real-time rendering, GPU programming, and WebGL through a practical application.
+- Develop an extensible foundation for future features, including shader parameters, customizable scenes, and additional rendering options.
+
+## Features
+
+- **GLSL Editor:** Write and edit fragment shader code using CodeMirror.
+- **3D Preview:** Visualize shaders on a rotating sphere rendered with Three.js.
+- **Shader Execution:** Apply edited shaders to the preview through an interactive control.
+- **Error Reporting:** Display shader compilation errors to help identify and fix issues.
+- **Browser-Based:** Run the application locally or deploy it as a static website without requiring a backend.
 
 ## Technologies
-- [C#](https://dotnet.microsoft.com/en-us/languages/csharp) is an open-source and cross-platform programming language.
-- [MonoGame](https://monogame.net/) is an open-source modern reimplementation of the XNA framework.
-- [Monogame-Extended](https://github.com/MonoGame-Extended/Monogame-Extended) is a set of utilities (in the form of libraries/tools) that extends MonoGame with new functionality.
+
+- [TypeScript](https://www.typescriptlang.org/) is a strongly typed programming language that builds on JavaScript.
+- [React](https://react.dev/) is a library for building interactive user interfaces.
+- [Three.js](https://threejs.org/) is a JavaScript 3D library for creating and rendering 3D graphics in the browser.
+- [GLSL](https://www.khronos.org/opengl/wiki/Core_Language_(GLSL)) is a shading language used to program graphics processing units.
+- [CodeMirror](https://codemirror.net/) is an extensible code editor component for the browser.
+- [Vite](https://vite.dev/) is a frontend build tool and development server.
+- [Bulma](https://bulma.io/) is a CSS framework used to build the user interface.
+
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (LTS recommended)
+- npm
+
+### Installation
+
+Clone the repository and navigate to the project directory:
+
+```bash
+git clone https://github.com/doYourCode/shader-forge.git
+cd shader-forge
+```
+
+Install the dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Open the local URL printed in the terminal to access ShaderForge.
+
+### Build
+
+To create a production build, run:
+
+```bash
+npm run build
+```
+
+To preview the production build locally:
+
+```bash
+npm run preview
+```
+
+## Project Status
+
+ShaderForge is an early-stage open-source project under active development. Its current focus is establishing the core editing and rendering workflow, with further improvements planned as the project evolves.
 
 ## License
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the LICENSE file for details.
->>>>>>> origin/main
+
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the `LICENSE` file for details.

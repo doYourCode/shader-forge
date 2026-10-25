@@ -1,10 +1,11 @@
 
 import { useEffect, useRef } from 'react'
 import { basicSetup } from 'codemirror'
-import { EditorView } from '@codemirror/view'
+import { EditorView, keymap } from '@codemirror/view'
 import { glsl } from 'codemirror-lang-glsl'
 import { StateField, StateEffect } from '@codemirror/state'
 import { Decoration, type DecorationSet } from '@codemirror/view'
+import {indentWithTab} from "@codemirror/commands"
 
 interface ShaderEditorProps {
   value: string
@@ -123,6 +124,7 @@ export default function ShaderEditor({
       parent,
       extensions: [
         basicSetup,
+        keymap.of([indentWithTab]),
         glsl(),
         shaderTheme,
         errorLineField,

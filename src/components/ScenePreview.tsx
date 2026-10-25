@@ -4,9 +4,10 @@ import * as THREE from 'three'
 import type { ShaderDiagnostic, ShaderStage } from '../types/shader'
 
 interface ScenePreviewProps {
-  vertexShader: string
-  fragmentShader: string
-  onShaderError: (diagnostics: ShaderDiagnostic[]) => void
+  vertexShader: string;
+  fragmentShader: string;
+  onShaderError: (diagnostics: ShaderDiagnostic[]) => void;
+  shaderColor: string;
 }
 
 function findSourceStartLine(
@@ -72,6 +73,7 @@ export default function ScenePreview({
   vertexShader,
   fragmentShader,
   onShaderError,
+  shaderColor,
 }: ScenePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const materialRef = useRef<THREE.ShaderMaterial | null>(null)
@@ -110,6 +112,9 @@ export default function ScenePreview({
     const material = new THREE.ShaderMaterial({
       vertexShader: vertexShaderRef.current,
       fragmentShader: fragmentShaderRef.current,
+      uniforms: {
+        color: { value: new THREE.Color(shaderColor) },
+      },
     })
 
     materialRef.current = material
@@ -215,6 +220,16 @@ export default function ScenePreview({
 
     onShaderErrorRef.current([])
   }, [vertexShader, fragmentShader])
+
+  useEffect(() => {
+    const material = materialRef.current;
+    if (!material) return;
+
+    const colorUniform = material.uniforms.color;
+    if (!colorUniform) return;
+
+    colorUniform.value.set(shaderColor);
+  }, [shaderColor]);
 
   return <div ref={containerRef} className="scene-preview" />
 }

@@ -6,46 +6,30 @@ import ScenePreview from './components/ScenePreview'
 
 import type { ShaderDiagnostic } from './types/shader'
 
-const DEFAULT_VERTEX_SHADER = `
-varying vec3 vPosition;
-
-void main() {
-  vPosition = position;
-
-  gl_Position = projectionMatrix
-              * modelViewMatrix
-              * vec4(position, 1.0);
-}
-`
-
-const DEFAULT_FRAGMENT_SHADER = `
-varying vec3 vPosition;
-
-void main() {
-  vec3 color = vec3(1.0, 0.3, 0.2);
-  gl_FragColor = vec4(color, 1.0);
-}
-`
+import defaultVertexShader from './shaders/default.vert.glsl?raw';
+import defaultFragmentShader from './shaders/default.frag.glsl?raw';
 
 function App() {
   const [vertexShaderSource, setVertexShaderSource] =
-    useState(DEFAULT_VERTEX_SHADER)
+    useState(defaultVertexShader)
   const [fragmentShaderSource, setFragmentShaderSource] =
-    useState(DEFAULT_FRAGMENT_SHADER)
+    useState(defaultFragmentShader)
 
   const [appliedVertexShader, setAppliedVertexShader] =
-    useState(DEFAULT_VERTEX_SHADER)
+    useState(defaultVertexShader)
   const [appliedFragmentShader, setAppliedFragmentShader] =
-    useState(DEFAULT_FRAGMENT_SHADER)
+    useState(defaultFragmentShader)
 
   const [shaderDiagnostics, setShaderDiagnostics] = useState<ShaderDiagnostic[]>([])
 
   const [activeShaderTab, setActiveShaderTab] =
   useState<'vertex' | 'fragment'>('fragment')
 
+  const [shaderColor, setShaderColor] = useState('#6699ff');
+
   function resetShader() {
-    setVertexShaderSource(DEFAULT_VERTEX_SHADER)
-    setFragmentShaderSource(DEFAULT_FRAGMENT_SHADER)
+    setVertexShaderSource(defaultVertexShader)
+    setFragmentShaderSource(defaultFragmentShader)
   }
 
   function runShader() {
@@ -122,6 +106,17 @@ function App() {
               </button>
             </div>
 
+            <div className="shader-controls">
+              <label>
+                Color
+                <input
+                  type="color"
+                  value={shaderColor}
+                  onChange={(event) => setShaderColor(event.target.value)}
+                />
+              </label>
+            </div>
+
             <span className="tag is-dark is-small">GLSL</span>
           </header>
 
@@ -180,6 +175,7 @@ function App() {
               vertexShader={appliedVertexShader}
               fragmentShader={appliedFragmentShader}
               onShaderError={setShaderDiagnostics}
+              shaderColor={shaderColor}
             />
 
             {shaderDiagnostics.length > 0 && (

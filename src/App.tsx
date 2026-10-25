@@ -1,121 +1,127 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
 import './App.css'
+import ShaderEditor from './components/ShaderEditor'
+import ScenePreview from './components/ScenePreview'
+
+const DEFAULT_SHADER = `
+varying vec3 vPosition;
+
+void main() {
+  vec3 color = vec3(1.0, 0.3, 0.2);
+
+  gl_FragColor = vec4(color, 1.0);
+}
+`
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [shaderSource, setShaderSource] = useState(DEFAULT_SHADER)
+  const [appliedShader, setAppliedShader] = useState(DEFAULT_SHADER)
+  const [shaderError, setShaderError] = useState<string | null>(null)
+
+  function resetShader() {
+    setShaderSource(DEFAULT_SHADER)
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <main className="app is-flex is-flex-direction-column is-dark">
+      <header className="navbar app-toolbar" role="banner">
+        <div className="navbar-brand is-align-items-center px-4">
+          <span className="brand-icon">{'{ }'}</span>
+          <span className="has-text-weight-semibold ml-3">
+            ShaderForge
+          </span>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+
+        <div className="navbar-end is-flex is-align-items-center px-4">
+          <span className="project-name mr-4">
+            Untitled shader
+          </span>
+
+          <div className="buttons are-small mb-0">
+            <button
+              className="button is-dark is-outlined"
+              type="button"
+              onClick={resetShader}
+            >
+              Reset
+            </button>
+            <button
+              className="button is-primary"
+              type="button"
+              onClick={() => setAppliedShader(shaderSource)}
+            >
+              Run shader
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+      </header>
+
+      <section className="workspace is-flex">
+        <section className="panel editor-panel is-flex is-flex-direction-column">
+          <header className="panel-heading is-flex is-justify-content-space-between is-align-items-center">
+            <span>FRAGMENT SHADER</span>
+            <span className="tag is-dark is-small">GLSL</span>
+          </header>
+
+          <div className="editor-content">
+            <ShaderEditor
+              value={shaderSource}
+              onChange={setShaderSource}
+            />
+          </div>
+
+          <footer className="panel-footer is-flex is-justify-content-space-between">
+            <span>Fragment shader</span>
+            <span>GLSL</span>
+          </footer>
+        </section>
+
+        <div
+          className="panel-divider"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Editor and scene divider"
+        />
+
+        <section className="panel scene-panel is-flex is-flex-direction-column">
+          <header className="panel-heading is-flex is-justify-content-space-between is-align-items-center">
+            <span>SCENE VIEW</span>
+            <span className="tag is-dark is-small">3D PREVIEW</span>
+          </header>
+
+          <div className="scene-content">
+            <ScenePreview
+              fragmentShader={appliedShader}
+              onShaderError={setShaderError}
+            />
+
+            {shaderError && (
+              <pre className="shader-error" role="alert">
+                {shaderError}
+              </pre>
+            )}
+
+            <div className="scene-overlay tag is-dark">
+              <span className="status-dot mr-2" />
+              WebGL preview
+            </div>
+          </div>
+
+          <footer className="panel-footer is-flex is-justify-content-space-between">
+            <span>Perspective camera</span>
+            <span>Preview only</span>
+          </footer>
+        </section>
       </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <footer className="statusbar is-flex is-justify-content-space-between is-align-items-center px-3">
+        <span className="is-flex is-align-items-center">
+          <span className="status-dot mr-2" />
+          Ready
+        </span>
+        <span>ShaderLab · Browser edition</span>
+      </footer>
+    </main>
   )
 }
 

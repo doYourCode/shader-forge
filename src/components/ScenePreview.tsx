@@ -3,30 +3,25 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
 interface ScenePreviewProps {
+  vertexShader: string
   fragmentShader: string
   onShaderError: (error: string | null) => void
 }
 
-const vertexShader = `
-  varying vec3 vPosition;
-
-  void main() {
-    vPosition = position;
-
-    gl_Position = projectionMatrix
-                * modelViewMatrix
-                * vec4(position, 1.0);
-  }
-`
-
 export default function ScenePreview({
+  vertexShader,
   fragmentShader,
   onShaderError,
 }: ScenePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const materialRef = useRef<THREE.ShaderMaterial | null>(null)
+  const vertexShaderRef = useRef(vertexShader)
   const fragmentShaderRef = useRef(fragmentShader)
   const onShaderErrorRef = useRef(onShaderError)
+
+  useEffect(() => {
+    vertexShaderRef.current = vertexShader
+  }, [vertexShader])
 
   useEffect(() => {
     fragmentShaderRef.current = fragmentShader
@@ -43,12 +38,7 @@ export default function ScenePreview({
     const scene = new THREE.Scene()
     scene.background = new THREE.Color('#15171d')
 
-    const camera = new THREE.PerspectiveCamera(
-      50,
-      1,
-      0.1,
-      100,
-    )
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100)
     camera.position.z = 3
 
     const renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -58,7 +48,7 @@ export default function ScenePreview({
     const geometry = new THREE.SphereGeometry(1, 48, 32)
 
     const material = new THREE.ShaderMaterial({
-      vertexShader,
+      vertexShader: vertexShaderRef.current,
       fragmentShader: fragmentShaderRef.current,
     })
 
@@ -66,6 +56,37 @@ export default function ScenePreview({
 
     const sphere = new THREE.Mesh(geometry, material)
     scene.add(sphere)
+
+    renderer.debug.onShaderError = (
+      gl,
+      program,
+      vertexShaderObject,
+      fragmentShaderObject,
+    ) => {
+      const vertexLog = gl.getShaderInfoLog(vertexShaderObject)?.trim()
+      const fragmentLog = gl.getShaderInfoLog(fragmentShaderObject)?.trim()
+      const programLog = gl.getProgramInfoLog(program)?.trim()
+
+      const errors: string[] = []
+
+      if (vertexLog) {
+        errors.push(`Vertex shader:\n${vertexLog}`)
+      }
+
+      if (fragmentLog) {
+        errors.push(`Fragment shader:\n${fragmentLog}`)
+      }
+
+      if (programLog) {
+        errors.push(`Shader program:\n${programLog}`)
+      }
+
+      onShaderErrorRef.current(
+        errors.length
+          ? errors.join('\n\n')
+          : 'Shader compilation or linking failed. Check both shader stages.',
+      )
+    }
 
     const resizeObserver = new ResizeObserver(() => {
       const width = container.clientWidth
@@ -91,38 +112,6 @@ export default function ScenePreview({
 
     animate()
 
-    // Report shader compilation errors after rendering.
-renderer.debug.onShaderError = (
-      gl,
-      _program,
-      vertexShaderObject,
-      fragmentShaderObject,
-    ) => {
-      const vertexLog = gl.getShaderInfoLog(vertexShaderObject)
-      const fragmentLog = gl.getShaderInfoLog(fragmentShaderObject)
-      const logs = [vertexLog, fragmentLog].filter(Boolean)
-
-      onShaderErrorRef.current(
-        logs.length ? logs.join('\n') : 'Shader compilation failed.',
-      )
-    }
-
-    // Three.js can report compilation errors through its debug callback.
-    renderer.debug.onShaderError = (
-      gl,
-      _program,
-      vertexShaderObject,
-      fragmentShaderObject,
-    ) => {
-      const vertexLog = gl.getShaderInfoLog(vertexShaderObject)
-      const fragmentLog = gl.getShaderInfoLog(fragmentShaderObject)
-      const logs = [vertexLog, fragmentLog].filter(Boolean)
-
-      onShaderErrorRef.current(
-        logs.length ? logs.join('\n') : 'Shader compilation failed.',
-      )
-    }
-
     return () => {
       cancelAnimationFrame(animationId)
       resizeObserver.disconnect()
@@ -134,15 +123,16 @@ renderer.debug.onShaderError = (
     }
   }, [])
 
-  // Apply new shader source without restarting the animation loop.
   useEffect(() => {
     const material = materialRef.current
     if (!material) return
 
+    material.vertexShader = vertexShader
     material.fragmentShader = fragmentShader
     material.needsUpdate = true
+
     onShaderErrorRef.current(null)
-  }, [fragmentShader])
+  }, [vertexShader, fragmentShader])
 
   return <div ref={containerRef} className="scene-preview" />
 }

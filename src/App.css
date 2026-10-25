@@ -13,6 +13,54 @@
   color: #e6e9ef;
 }
 
+
+.shader-tab-list {
+  display: flex;
+  align-self: stretch;
+  gap: 4px;
+}
+
+.app .shader-tabs {
+  padding: 0 0.875rem;
+}
+
+.app .shader-tab {
+  position: relative;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted-text);
+  font: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.app .shader-tab:hover {
+  color: #e6e9ef;
+}
+
+.app .shader-tab.is-active {
+  color: #a9adff;
+}
+
+.app .shader-tab.is-active::after {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0;
+  left: 0.5rem;
+  height: 2px;
+  background: #7c83ff;
+  content: '';
+}
+
+.app .shader-tab:focus-visible {
+  outline: 2px solid #a9adff;
+  outline-offset: -2px;
+}
+
+
 .app-toolbar {
   flex-shrink: 0;
   min-height: 58px;
@@ -99,6 +147,21 @@
   outline: none;
 }
 
+
+.editor-panel {
+  flex: 1 1 50%;
+}
+
+.shader-stage {
+  flex: 1 1 50%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shader-stage + .shader-stage {
+  border-top: 2px solid var(--app-border);
+}
 
 .editor-content {
   display: flex;
@@ -238,6 +301,14 @@
 @media (max-width: 700px) {
   .workspace {
     flex-direction: column;
+  }
+
+  .editor-panel {
+  flex: 1 1 60%;
+  }
+
+  .scene-panel {
+    flex: 1 1 40%;
   }
 
   .app .panel {

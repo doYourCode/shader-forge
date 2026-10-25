@@ -1,12 +1,72 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import type { ShaderDiagnostic, ShaderStage } from '../types/shader'
 
 interface ScenePreviewProps {
   vertexShader: string
   fragmentShader: string
-  onShaderError: (error: string | null) => void
+  onShaderError: (diagnostics: ShaderDiagnostic[]) => void
 }
+
+function findSourceStartLine(
+  compiledSource: string,
+  editorSource: string,
+): number | null {
+  const compiledLines = compiledSource.split('\n')
+  const editorLines = editorSource.split('\n')
+
+  const firstEditorLine = editorLines.findIndex(
+    (line) => line.trim().length > 0,
+  )
+
+  if (firstEditorLine === -1) return null
+
+  const firstSourceLine = editorLines[firstEditorLine].trim()
+
+  const compiledIndex = compiledLines.findIndex(
+    (line) => line.trim() === firstSourceLine,
+  )
+
+  if (compiledIndex === -1) return null
+
+  // Return the compiled line corresponding to editor line 1.
+  return compiledIndex - firstEditorLine + 1
+}
+
+function parseShaderLog(
+  log: string,
+  stage: ShaderStage,
+  sourceStartLine: number | null,
+): ShaderDiagnostic[] {
+  if (!log.trim()) return []
+
+  return log
+    .split('\n')
+    .map((message) => message.trim())
+    .filter(Boolean)
+    .map((message) => {
+      // Common WebGL log formats:
+      // ERROR: 0:12: ...
+      // 0:12(3): error ...
+      // 0(12) : error ...
+      const match =
+        message.match(/(?:ERROR:\s*)?\d+:(\d+)(?:\(\d+\))?:/) ??
+        message.match(/\d+\((\d+)\)/)
+
+const compilerLine = match ? Number(match[1]) : null
+
+return {
+  stage,
+  line:
+    compilerLine !== null && sourceStartLine !== null
+      ? compilerLine - sourceStartLine + 1
+      : null,
+  message,
+}
+    })
+}
+
 
 export default function ScenePreview({
   vertexShader,
@@ -57,36 +117,58 @@ export default function ScenePreview({
     const sphere = new THREE.Mesh(geometry, material)
     scene.add(sphere)
 
+
     renderer.debug.onShaderError = (
       gl,
       program,
       vertexShaderObject,
       fragmentShaderObject,
     ) => {
-      const vertexLog = gl.getShaderInfoLog(vertexShaderObject)?.trim()
-      const fragmentLog = gl.getShaderInfoLog(fragmentShaderObject)?.trim()
-      const programLog = gl.getProgramInfoLog(program)?.trim()
+      const vertexLog = gl.getShaderInfoLog(vertexShaderObject) ?? ''
+      const fragmentLog = gl.getShaderInfoLog(fragmentShaderObject) ?? ''
+      const programLog = gl.getProgramInfoLog(program) ?? ''
 
-      const errors: string[] = []
+      const compiledVertexSource =
+      gl.getShaderSource(vertexShaderObject) ?? ''
 
-      if (vertexLog) {
-        errors.push(`Vertex shader:\n${vertexLog}`)
+    const compiledFragmentSource =
+      gl.getShaderSource(fragmentShaderObject) ?? ''
+
+    const vertexSourceStartLine = findSourceStartLine(
+      compiledVertexSource,
+      vertexShaderRef.current,
+    )
+
+    const fragmentSourceStartLine = findSourceStartLine(
+      compiledFragmentSource,
+      fragmentShaderRef.current,
+    )
+
+    const diagnostics: ShaderDiagnostic[] = [
+      ...parseShaderLog(
+        vertexLog,
+        'vertex',
+        vertexSourceStartLine,
+      ),
+      ...parseShaderLog(
+        fragmentLog,
+        'fragment',
+        fragmentSourceStartLine,
+      ),
+      ...parseShaderLog(programLog, 'program', null),
+    ]
+
+      if (diagnostics.length === 0) {
+        diagnostics.push({
+          stage: 'program',
+          line: null,
+          message: 'Shader compilation or linking failed. No detailed log was provided.',
+        })
       }
 
-      if (fragmentLog) {
-        errors.push(`Fragment shader:\n${fragmentLog}`)
-      }
-
-      if (programLog) {
-        errors.push(`Shader program:\n${programLog}`)
-      }
-
-      onShaderErrorRef.current(
-        errors.length
-          ? errors.join('\n\n')
-          : 'Shader compilation or linking failed. Check both shader stages.',
-      )
+      onShaderErrorRef.current(diagnostics)
     }
+
 
     const resizeObserver = new ResizeObserver(() => {
       const width = container.clientWidth
@@ -131,7 +213,7 @@ export default function ScenePreview({
     material.fragmentShader = fragmentShader
     material.needsUpdate = true
 
-    onShaderErrorRef.current(null)
+    onShaderErrorRef.current([])
   }, [vertexShader, fragmentShader])
 
   return <div ref={containerRef} className="scene-preview" />

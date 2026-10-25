@@ -4,6 +4,8 @@ import './App.css'
 import ShaderEditor from './components/ShaderEditor'
 import ScenePreview from './components/ScenePreview'
 
+import type { ShaderDiagnostic } from './types/shader'
+
 const DEFAULT_VERTEX_SHADER = `
 varying vec3 vPosition;
 
@@ -36,7 +38,7 @@ function App() {
   const [appliedFragmentShader, setAppliedFragmentShader] =
     useState(DEFAULT_FRAGMENT_SHADER)
 
-  const [shaderError, setShaderError] = useState<string | null>(null)
+  const [shaderDiagnostics, setShaderDiagnostics] = useState<ShaderDiagnostic[]>([])
 
   const [activeShaderTab, setActiveShaderTab] =
   useState<'vertex' | 'fragment'>('fragment')
@@ -49,7 +51,7 @@ function App() {
   function runShader() {
     setAppliedVertexShader(vertexShaderSource)
     setAppliedFragmentShader(fragmentShaderSource)
-    setShaderError(null)
+    setShaderDiagnostics([])
   }
 
   return (
@@ -124,11 +126,25 @@ function App() {
               <ShaderEditor
                 value={vertexShaderSource}
                 onChange={setVertexShaderSource}
+                errorLines={shaderDiagnostics
+                  .filter(
+                    (diagnostic) =>
+                      diagnostic.stage === 'vertex' &&
+                      diagnostic.line !== null,
+                  )
+                  .map((diagnostic) => diagnostic.line!)}
               />
             ) : (
               <ShaderEditor
                 value={fragmentShaderSource}
                 onChange={setFragmentShaderSource}
+                errorLines={shaderDiagnostics
+                  .filter(
+                    (diagnostic) =>
+                      diagnostic.stage === 'fragment' &&
+                      diagnostic.line !== null,
+                  )
+                  .map((diagnostic) => diagnostic.line!)}
               />
             )}
           </div>
@@ -159,12 +175,23 @@ function App() {
             <ScenePreview
               vertexShader={appliedVertexShader}
               fragmentShader={appliedFragmentShader}
-              onShaderError={setShaderError}
+              onShaderError={setShaderDiagnostics}
             />
 
-            {shaderError && (
+            {shaderDiagnostics.length > 0 && (
               <pre className="shader-error" role="alert">
-                {shaderError}
+                {shaderDiagnostics.map((diagnostic, index) => (
+                  <div key={`${diagnostic.stage}-${diagnostic.line}-${index}`}>
+                    <strong>
+                      {diagnostic.stage === 'program'
+                        ? 'Program'
+                        : `${diagnostic.stage === 'vertex' ? 'Vertex' : 'Fragment'} shader`}
+                      {diagnostic.line !== null ? ` — line ${diagnostic.line}` : ''}
+                    </strong>
+                    {'\n'}
+                    {diagnostic.message}
+                  </div>
+                ))}
               </pre>
             )}
 

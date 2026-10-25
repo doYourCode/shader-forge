@@ -3,11 +3,51 @@ import { useEffect, useRef } from 'react'
 import { basicSetup } from 'codemirror'
 import { EditorView } from '@codemirror/view'
 import { glsl } from 'codemirror-lang-glsl'
+import { StateField, StateEffect } from '@codemirror/state'
+import { Decoration, type DecorationSet } from '@codemirror/view'
 
 interface ShaderEditorProps {
   value: string
   onChange: (value: string) => void
+  errorLines: number[]
 }
+
+const setErrorLines = StateEffect.define<number[]>()
+
+const errorLineField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+
+update(decorations, transaction) {
+  decorations = decorations.map(transaction.changes)
+
+  for (const effect of transaction.effects) {
+    if (effect.is(setErrorLines)) {
+      const lines = [...new Set(effect.value)]
+        .filter(
+          (line) =>
+            Number.isInteger(line) &&
+            line >= 1 &&
+            line <= transaction.state.doc.lines,
+        )
+        .sort((a, b) => a - b)
+
+      decorations = Decoration.set(
+        lines.map((line) =>
+          Decoration.line({
+            class: 'cm-shader-error-line',
+          }).range(transaction.state.doc.line(line).from),
+        ),
+        true,
+      )
+    }
+  }
+
+  return decorations
+},
+
+  provide: (field) =>
+    EditorView.decorations.from(field),
+})
 
 const shaderTheme = EditorView.theme(
   {
@@ -34,6 +74,10 @@ const shaderTheme = EditorView.theme(
       color: '#626b7a',
       border: 'none',
     },
+        '.cm-shader-error-line': {
+      backgroundColor: '#ff333322',
+      borderLeft: '3px solid #ff5c5c',
+    },
     '.cm-activeLine': {
       backgroundColor: '#ffffff08',
     },
@@ -57,6 +101,7 @@ const shaderTheme = EditorView.theme(
 export default function ShaderEditor({
   value,
   onChange,
+  errorLines,
 }: ShaderEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -80,6 +125,7 @@ export default function ShaderEditor({
         basicSetup,
         glsl(),
         shaderTheme,
+        errorLineField,
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
@@ -117,6 +163,16 @@ export default function ShaderEditor({
       })
     }
   }, [value])
+
+  useEffect(() => {
+  const view = viewRef.current
+
+  if (!view) return
+
+  view.dispatch({
+    effects: setErrorLines.of(errorLines),
+  })
+}, [errorLines])
 
   return (
     <div

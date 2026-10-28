@@ -1,3 +1,14 @@
+import defaultVertex from '@/assets/internal-shaders/default.vert.glsl?raw';
+import defaultFragment from '@/assets/internal-shaders/default.frag.glsl?raw';
+
+/**
+ * Default shaders shown in the editor on first load.
+ * Sourced directly from the .glsl asset files so the editor defaults
+ * can never drift from the shaders Babylon validates against.
+ */
+export const defaultVertexShader = defaultVertex;
+export const defaultFragmentShader = defaultFragment;
+
 export const defaultUniformsDoc = `
 // Read-only reference for Babylon ShaderMaterial uniforms.
 

@@ -21,17 +21,35 @@ const cardsWithState = computed(() =>
     enabled: cardEnabled(card.requiresWebGpu),
   })),
 );
+
+// Separate cards by layout intent.
+// Tall cards occupy the left/middle columns and span every row.
+// Stacked cards each occupy one row of the right column.
+const tallCards = computed(() => cardsWithState.value.slice(0, 2));
+const stackedCards = computed(() => cardsWithState.value.slice(2));
 </script>
 
 <template>
   <section class="landing">
     <div class="landing__grid">
+      <!-- Left & Middle Columns: Tall Cards -->
       <FeatureCard
-        v-for="{ card, enabled } in cardsWithState"
+        v-for="{ card, enabled } in tallCards"
         :key="card.id"
         :card="card"
         :enabled="enabled"
         :disabled-reason="webGpuReason"
+        class="feature-card--tall"
+      />
+
+      <!-- Right Column: Stacked Cards -->
+      <FeatureCard
+        v-for="{ card, enabled } in stackedCards"
+        :key="card.id"
+        :card="card"
+        :enabled="enabled"
+        :disabled-reason="webGpuReason"
+        class="feature-card--stacked"
       />
     </div>
   </section>
@@ -44,44 +62,55 @@ const cardsWithState = computed(() =>
   padding: 2rem;
 }
 
-/* 3-column grid matching the sketch:
-   Left column: GLSL Editor (tall)
-   Middle column: WGSL Editor (tall)
-   Right column: two stacked cards (Reference & Docs, Base of Knowledge) */
+/*
+  Explicit layout:
+  - 3 columns
+  - The number of rows equals the number of stacked cards on the right.
+  - The two tall cards span every row (grid-row: 1 / -1).
+  - Each stacked card occupies one row.
+*/
 .landing__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: auto auto;
+  /* Three rows for the three stacked cards. Change this if you add more. */
+  grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 1.25rem;
   max-width: 1100px;
   margin: 0 auto;
+  min-height: 600px;
 }
 
-/* Card 1 (GLSL) spans both rows */
-.landing__grid > :nth-child(1) {
-  grid-row: 1 / span 2;
+/* Tall cards: left column, middle column; span all rows. */
+.feature-card--tall:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1 / -1;
 }
 
-/* Card 2 (WGSL) spans both rows */
-.landing__grid > :nth-child(2) {
-  grid-row: 1 / span 2;
+.feature-card--tall:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1 / -1;
 }
 
-/* Cards 3 (Docs) and 4 (Knowledge) stack in the right column,
-   auto-flowing into rows 1 and 2 of column 3. */
+/* Stacked cards: right column, one row each (auto-placed into rows 1, 2, 3). */
+.feature-card--stacked {
+  grid-column: 3;
+  min-height: 0;
+}
 
-/* Responsive: collapse to single column on narrow screens */
+/* Responsive: single column stack on narrow screens. */
 @media (max-width: 900px) {
   .landing__grid {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    min-height: auto;
   }
-  .landing__grid > :nth-child(1),
-  .landing__grid > :nth-child(2) {
+
+  .feature-card--tall:nth-child(1),
+  .feature-card--tall:nth-child(2),
+  .feature-card--stacked {
+    grid-column: auto;
     grid-row: auto;
+    min-height: 18rem;
   }
-}
-.landing__grid > :nth-child(3),
-.landing__grid > :nth-child(4) {
-  min-height: 8.5rem; /* half of the tall card */
 }
 </style>

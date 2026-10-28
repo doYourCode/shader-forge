@@ -43,10 +43,7 @@ const noteText = computed(() => {
       <p class="feature-card__description">{{ card.description }}</p>
     </div>
 
-    <p
-      v-if="noteText"
-      class="feature-card__note"
-    >
+    <p v-if="noteText" class="feature-card__note">
       {{ noteText }}
     </p>
   </component>
@@ -57,7 +54,10 @@ const noteText = computed(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 18rem;
+
+  /* Height driven by the parent grid. */
+  height: 100%;
+
   border: 2px solid var(--border);
   background: var(--bg-elevated);
   color: var(--fg);

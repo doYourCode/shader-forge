@@ -14,6 +14,7 @@ import {
 import type { ShaderError, ShaderErrorStage } from '@/core/models/shaderError';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import { getStateObject } from '@babylonjs/core/Engines/thinEngine.functions';
+import { internalShaders } from './internalShaders';
 
 export interface ShaderSource {
   vertex: string;
@@ -38,47 +39,6 @@ const SHADER_ATTRIBUTES = ['position', 'normal'];
 const SHADER_UNIFORMS = ['worldViewProjection', 'normalMatrix'];
 const COMPILE_TIMEOUT_MS = 15_000;
 const ERROR_PREWARM_FRAMES = 120;
-
-const ERROR_VERTEX_SHADER = `
-precision highp float;
-
-attribute vec3 position;
-
-uniform mat4 worldViewProjection;
-
-void main(void) {
-  gl_Position = worldViewProjection * vec4(position, 1.0);
-}
-`.trim();
-
-const ERROR_FRAGMENT_SHADER = `
-precision highp float;
-
-void main(void) {
-  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-}
-`.trim();
-
-/**
- * A known-good vertex shader used to validate the fragment stage on its own
- * when the real vertex shader fails to compile.
- */
-const VALIDATION_VERTEX_SHADER = `
-precision highp float;
-
-attribute vec3 position;
-attribute vec3 normal;
-
-uniform mat4 worldViewProjection;
-uniform mat4 normalMatrix;
-
-varying vec3 vNormal;
-
-void main(void) {
-  gl_Position = worldViewProjection * vec4(position, 1.0);
-  vNormal = normalize((normalMatrix * vec4(normal, 0.0)).xyz);
-}
-`.trim();
 
 export class SceneManager {
   private engine: Engine | null = null;
@@ -164,8 +124,6 @@ export class SceneManager {
         attributes: [...SHADER_ATTRIBUTES],
         uniforms: [...SHADER_UNIFORMS],
       },
-      // Keep the effect on the material so disposing a rejected compile also
-      // releases the effect instead of leaving it in Babylon's shader cache.
       false,
     );
 
@@ -173,10 +131,6 @@ export class SceneManager {
     return material;
   }
 
-  /**
-   * Creates and compiles the error material ahead of time so showing it after a
-   * failed compile is instantaneous.
-   */
   private prepareErrorMaterial(): void {
     const material = this.ensureErrorMaterial();
     if (!material || !this.mesh || this.errorPrewarmFrame !== null) return;
@@ -203,8 +157,8 @@ export class SceneManager {
         'previewErrorShader',
         this.scene,
         {
-          vertexSource: ERROR_VERTEX_SHADER,
-          fragmentSource: ERROR_FRAGMENT_SHADER,
+          vertexSource: internalShaders.error.vertex,
+          fragmentSource: internalShaders.error.fragment,
         },
         {
           attributes: ['position'],
@@ -276,11 +230,9 @@ export class SceneManager {
         ? 'Shader compilation failed'
         : 'Shader program failed to link';
 
-    // Babylon stops at the first failing stage. If the vertex shader failed,
-    // compile the fragment shader on its own so both stages can be reported.
     if (attempt.stage === 'vertex') {
       const fragmentAttempt = await this.tryCompile({
-        vertex: VALIDATION_VERTEX_SHADER,
+        vertex: internalShaders.validation.vertex,
         fragment: source.fragment,
       });
       releaseAttempt(fragmentAttempt, !fragmentAttempt.ok);
@@ -440,8 +392,6 @@ export class SceneManager {
         timer = window.setTimeout(poll, 32);
       };
 
-      // The callbacks normally settle the promise. The poll is a safety net for
-      // drivers that report compilation status without invoking them.
       timer = window.setTimeout(poll, 32);
 
       try {
@@ -516,12 +466,6 @@ export class SceneManager {
   }
 }
 
-/**
- * Babylon prepends `#version`/`#define WEBGL2` and the effect defines when it
- * hands the source to the driver, but `effect.*SourceCode` excludes them.
- * Driver-reported line numbers include those lines, so account for them when
- * mapping back to the editor document.
- */
 function getDriverLineOffset(effect: Effect): number {
   const versionLines =
     effect.getEngine().shaderPlatformName === 'WEBGL2' ? 2 : 0;
@@ -530,11 +474,6 @@ function getDriverLineOffset(effect: Effect): number {
   return versionLines + defineLines;
 }
 
-/**
- * Releases a compile attempt that will not be applied to the mesh. Babylon's
- * shader cache can otherwise keep a failed program around, and a later attempt
- * with the same source would reuse it instead of recompiling.
- */
 function releaseAttempt(
   attempt: CompileAttempt,
   failed: boolean,
@@ -552,13 +491,6 @@ function releaseAttempt(
   }
 }
 
-/**
- * When WebGL compiles a program synchronously, Babylon caches the pipeline
- * before it knows compilation failed. The error path never assigns that
- * pipeline to the effect, so `Effect.dispose()` cannot evict it and a later
- * compile of the same broken source would be treated as already ready.
- * Remove the failed pipeline from the engine cache explicitly.
- */
 function clearCachedPipeline(effect: Effect | null): void {
   if (!effect) return;
 

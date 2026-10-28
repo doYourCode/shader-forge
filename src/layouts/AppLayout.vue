@@ -13,7 +13,7 @@ const fillViewport = computed(() => route.meta.id === 'editor');
     <!-- HEADER -->
     <header class="app-header">
       <RouterLink to="/" class="app-header__brand" aria-label="Go to home">
-        <img src="@/assets/favicon.ico" alt="" class="app-header__logo" />
+        <img src="@/assets/images/favicon.ico" alt="" class="app-header__logo" />
         <span class="app-header__name">{{ APP_NAME }}</span>
       </RouterLink>
 

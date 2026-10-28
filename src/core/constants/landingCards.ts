@@ -6,6 +6,7 @@ export const landingCards: ILandingCard[] = [
     title: 'GLSL Editor',
     description: 'GLES 3.0 · Write and compile shaders live in the browser.',
     to: '/editor',
+    requiresWebGpu: false,
   },
   {
     id: 'wgsl-editor',
@@ -20,11 +21,20 @@ export const landingCards: ILandingCard[] = [
     title: 'Reference & Docs',
     description: 'API reference, guides, and built-in function cheatsheets.',
     to: '/docs',
+    requiresWebGpu: false,
   },
   {
     id: 'base-of-knowledge',
     title: 'Base of Knowledge',
     description: 'Curated articles on graphics techniques and shader theory.',
     to: '/knowledge',
+    requiresWebGpu: false,
+  },
+  {
+    id: 'fragment-sandbox',
+    title: 'Fragment Sandbox',
+    description: 'Experiment with fragment shaders in an isolated playground.',
+    to: '/editor',
+    requiresWebGpu: false,
   },
 ];

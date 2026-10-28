@@ -79,27 +79,30 @@ function onClick(node: ITreeNode): void {
   display: block;
   font-weight: 700;
   padding: 0.25rem 0.4rem;
-  color: #444;
+  color: var(--fg-muted);
 }
 
 .tree__leaf {
   appearance: none;
   background: transparent;
   border: none;
+  border-radius: 3px;
   text-align: left;
   width: 100%;
   padding: 0.25rem 0.4rem;
   font: inherit;
   cursor: pointer;
-  color: inherit;
+  color: var(--fg);
 }
 
 .tree__leaf:hover {
-  background: #eee;
+  background: var(--bg-raised);
+  color: var(--fg-strong);
 }
 
 .tree__leaf--selected {
-  background: #000;
-  color: #fff;
+  background: var(--bg-selected);
+  color: var(--fg-strong);
+  box-shadow: inset 2px 0 0 var(--accent-blue);
 }
 </style>

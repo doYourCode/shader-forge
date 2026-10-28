@@ -29,22 +29,37 @@ withDefaults(
   font-family: var(--font-mono);
   font-size: 0.9rem;
   line-height: 1.55;
+  color: var(--fg);
 }
 
 .content-pane__body :deep(h1),
 .content-pane__body :deep(h2),
 .content-pane__body :deep(h3) {
   margin-top: 1.2em;
+  color: var(--fg-strong);
+}
+
+.content-pane__body :deep(a) {
+  color: var(--accent-blue);
 }
 
 .content-pane__body :deep(code) {
-  background: #f2f2f2;
+  background: var(--bg-raised);
+  color: var(--accent-orange);
   padding: 0 0.25em;
   border-radius: 3px;
 }
 
+.content-pane__body :deep(pre) {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.75rem;
+  overflow: auto;
+}
+
 .content-pane__empty {
-  color: #777;
+  color: var(--fg-subtle);
   font-style: italic;
 }
 </style>

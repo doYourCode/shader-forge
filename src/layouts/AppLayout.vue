@@ -37,6 +37,8 @@ const fillViewport = computed(() => route.meta.id === 'editor');
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  color: var(--fg);
+  background: var(--bg);
 }
 
 /* The editor is a full-bleed workspace: size the shell to the viewport so the
@@ -59,8 +61,8 @@ const fillViewport = computed(() => route.meta.id === 'editor');
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1.5rem;
-  border-bottom: 2px solid #000;
-  background: #fff;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
 }
 
 .app-header__brand {
@@ -68,7 +70,11 @@ const fillViewport = computed(() => route.meta.id === 'editor');
   align-items: center;
   gap: 0.6rem;
   text-decoration: none;
-  color: inherit;
+  color: var(--fg);
+}
+
+.app-header__brand:hover {
+  color: var(--fg);
 }
 
 .app-header__logo {
@@ -80,11 +86,17 @@ const fillViewport = computed(() => route.meta.id === 'editor');
 .app-header__name {
   font-weight: 700;
   font-size: 1.25rem;
+  color: var(--fg-strong);
+}
+
+.app-header__brand:hover .app-header__name {
+  color: var(--accent-blue);
 }
 
 .app-header__title {
   font-weight: 600;
   font-size: 1rem;
+  color: var(--fg-muted);
 }
 
 /* ---------- Body ---------- */
@@ -94,6 +106,7 @@ const fillViewport = computed(() => route.meta.id === 'editor');
   flex-direction: column;
   min-height: 0;      /* critical: allow shrink */
   overflow: hidden;   /* panes manage their own scroll */
+  background: var(--bg);
 }
 
 .app-body--fill {
@@ -113,9 +126,9 @@ const fillViewport = computed(() => route.meta.id === 'editor');
 
 /* ---------- Footer ---------- */
 .app-footer {
-  border-top: 2px solid #000;
-  background: #000;
-  color: #fff;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   font-size: 0.8rem;
   padding: 1rem 1.5rem;

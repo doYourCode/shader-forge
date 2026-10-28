@@ -8,6 +8,7 @@ import {
   Mesh,
   MeshBuilder,
   ShaderMaterial,
+  Color4,
   type Effect,
 } from '@babylonjs/core';
 import type { ShaderError, ShaderErrorStage } from '@/core/models/shaderError';
@@ -101,6 +102,7 @@ export class SceneManager {
     });
 
     this.scene = new Scene(this.engine);
+    this.scene.clearColor = Color4.FromHexString('#282c34ff');
 
     const camera = new ArcRotateCamera(
       'camera',

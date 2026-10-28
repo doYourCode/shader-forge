@@ -149,7 +149,7 @@ function togglePause() {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--border-subtle);
 }
 
 .shader-editor__editor-host {
@@ -197,18 +197,18 @@ function togglePause() {
   overflow: auto;
   z-index: 2;
   padding: 10px 12px;
-  background: rgba(24, 0, 0, 0.93);
-  border: 1px solid #ff3b3b;
+  background: rgba(33, 37, 43, 0.96);
+  border: 1px solid var(--accent-red);
   border-radius: 4px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  color: #ffd9d9;
+  box-shadow: 0 8px 24px var(--shadow);
+  color: var(--fg);
   font-family: var(--font-mono);
   font-size: 12px;
 }
 
 .shader-editor__errors-title {
   margin-bottom: 8px;
-  color: #ff5252;
+  color: var(--accent-red);
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -240,17 +240,18 @@ function togglePause() {
 
 .shader-editor__error:hover,
 .shader-editor__error:focus-visible {
-  background: rgba(255, 59, 59, 0.16);
-  border-color: rgba(255, 59, 59, 0.5);
+  background: rgba(224, 108, 117, 0.14);
+  border-color: rgba(224, 108, 117, 0.5);
   outline: none;
 }
 
 .shader-editor__error-stage {
-  color: #ff7373;
+  color: var(--accent-red);
   font-weight: 700;
 }
 
 .shader-editor__error-message {
+  color: var(--fg-strong);
   white-space: pre-wrap;
   word-break: break-word;
 }

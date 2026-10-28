@@ -44,8 +44,8 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
 }
 
 .viewer-toolbar__group {
@@ -55,16 +55,26 @@ const emit = defineEmits<{
 
 .viewer-toolbar__btn {
   padding: 5px 10px;
-  background: transparent;
+  background: var(--bg-raised);
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 4px;
   font-family: var(--font-mono);
   font-size: 12px;
   cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.viewer-toolbar__btn:hover {
+  background: #3a404d;
+  border-color: #4b5263;
+  color: var(--fg-strong);
 }
 
 .viewer-toolbar__btn--active {
-  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  background: #404754;
+  border-color: var(--accent-blue);
+  color: var(--fg-strong);
 }
 </style>

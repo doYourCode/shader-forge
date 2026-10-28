@@ -59,54 +59,64 @@ const noteText = computed(() => {
   justify-content: space-between;
   min-height: 18rem;
   border: 2px solid var(--border);
-  background: #fff;
-  color: inherit;
+  background: var(--bg-elevated);
+  color: var(--fg);
   text-decoration: none;
   padding: 1rem;
   font-family: var(--font-mono);
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    border-color 0.12s ease, color 0.12s ease;
 }
 
 .feature-card:not(.feature-card--static):not(.feature-card--disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 4px 4px 0 #000;
+  border-color: var(--accent-blue);
+  box-shadow: 4px 4px 0 var(--border-subtle);
+  color: var(--fg);
+}
+
+.feature-card:not(.feature-card--static):not(.feature-card--disabled):hover
+  .feature-card__title {
+  color: var(--accent-blue);
 }
 
 .feature-card__title {
   margin: 0 0 0.5rem;
   font-size: 1rem;
+  color: var(--fg-strong);
   border-bottom: 2px solid var(--border);
   padding-bottom: 0.5rem;
+  transition: color 0.12s ease;
 }
 
 .feature-card__description {
   margin: 0;
   font-size: 0.85rem;
   line-height: 1.4;
-  color: #333;
+  color: var(--fg);
 }
 
 .feature-card__note {
   margin: 1rem 0 0;
   font-size: 0.75rem;
   font-style: italic;
-  color: #c0392b;
+  color: var(--accent-orange);
 }
 
 .feature-card--disabled {
-  background: #000;
-  color: #aaa;
-  border-color: #333;
+  background: var(--bg-input);
+  color: var(--fg-subtle);
+  border-color: var(--border-subtle);
   cursor: not-allowed;
 }
 
 .feature-card--disabled .feature-card__title {
-  color: #f00;
-  border-bottom-color: #f00;
+  color: var(--accent-red);
+  border-bottom-color: var(--accent-red);
 }
 
 .feature-card--disabled .feature-card__description {
-  color: #888;
+  color: var(--fg-subtle);
 }
 
 .feature-card--checking {

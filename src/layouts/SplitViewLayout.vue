@@ -51,6 +51,7 @@ withDefaults(
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
+  background: var(--bg);
 }
 
 .split-view__pane {
@@ -61,7 +62,12 @@ withDefaults(
 }
 
 .split-view__pane--left {
-  border-right: 2px solid var(--border);
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.split-view__pane--right {
+  background: var(--bg);
 }
 
 .split-view__pane-label {
@@ -69,7 +75,9 @@ withDefaults(
   font-family: var(--font-mono);
   font-size: 0.9rem;
   padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
   flex: 0 0 auto;
 }
 

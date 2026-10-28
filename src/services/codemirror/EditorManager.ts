@@ -55,8 +55,8 @@ const errorLinesField = StateField.define<DecorationSet>({
 
 const errorHighlightTheme = EditorView.theme({
   '.cm-line.cm-shader-error-line': {
-    backgroundColor: 'rgba(255, 38, 38, 0.28)',
-    boxShadow: 'inset 3px 0 0 #ff2b2b',
+    backgroundColor: 'rgba(224, 108, 117, 0.22)',
+    boxShadow: 'inset 3px 0 0 #e06c75',
   },
 });
 

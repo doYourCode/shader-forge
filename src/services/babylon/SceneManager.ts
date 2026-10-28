@@ -5,9 +5,15 @@ import {
   Vector3,
   HemisphericLight,
   DirectionalLight,
+  Mesh,
   MeshBuilder,
   ShaderMaterial,
 } from '@babylonjs/core';
+
+export interface ShaderSource {
+  vertex: string;
+  fragment: string;
+}
 
 export interface CompileResult {
   ok: boolean;
@@ -18,10 +24,14 @@ export class SceneManager {
   private engine: Engine | null = null;
   private scene: Scene | null = null;
   private material: ShaderMaterial | null = null;
+  private mesh: Mesh | null = null;
+  private wireframe = false;
 
   onError: (msg: string) => void = () => {};
 
-  init(canvas: HTMLCanvasElement, source: { vertex: string; fragment: string }): void {
+  init(canvas: HTMLCanvasElement, source: ShaderSource): void {
+    this.dispose();
+
     this.engine = new Engine(canvas, true, {
       preserveDrawingBuffer: true,
       stencil: true,
@@ -49,11 +59,24 @@ export class SceneManager {
     );
     dir.intensity = 0.7;
 
-    const sphere = MeshBuilder.CreateSphere(
+    this.mesh = MeshBuilder.CreateSphere(
       'preview',
       { diameter: 2, segments: 32 },
       this.scene,
     );
+
+    this.createMaterial(source);
+
+    this.engine.runRenderLoop(() => {
+      this.scene?.render();
+    });
+  }
+
+  private createMaterial(source: ShaderSource): void {
+    if (!this.scene || !this.mesh) return;
+
+    // Dispose the previous material (if any) so we don't leak GPU resources
+    this.material?.dispose();
 
     this.material = new ShaderMaterial(
       'previewShader',
@@ -68,33 +91,26 @@ export class SceneManager {
       },
     );
 
+    this.material.wireframe = this.wireframe;
+
     this.material.onError = (_effect, errors) => {
       this.onError(errors);
     };
 
-    sphere.material = this.material;
-
-    this.scene.onBeforeRenderObservable.add(() => {
-      // reserved for future animation
-    });
-
-    this.engine.runRenderLoop(() => {
-      this.scene?.render();
-    });
+    this.mesh.material = this.material;
   }
 
   resize(): void {
     this.engine?.resize();
   }
 
-  compile(source: { vertex: string; fragment: string }): CompileResult {
-    if (!this.scene || !this.material) {
+  compile(source: ShaderSource): CompileResult {
+    if (!this.scene || !this.mesh) {
       return { ok: false, message: 'Scene not initialized' };
     }
 
     try {
-      this.material.setVertexShaderCode(source.vertex);
-      this.material.setFragmentShaderCode(source.fragment);
+      this.createMaterial(source);
       return { ok: true, message: 'Compiled successfully' };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -104,6 +120,7 @@ export class SceneManager {
   }
 
   setWireframe(on: boolean): void {
+    this.wireframe = on;
     if (!this.material) return;
     this.material.wireframe = on;
   }
@@ -121,10 +138,13 @@ export class SceneManager {
 
   dispose(): void {
     this.engine?.stopRenderLoop();
+    this.material?.dispose();
     this.scene?.dispose();
     this.engine?.dispose();
     this.scene = null;
     this.engine = null;
     this.material = null;
+    this.mesh = null;
+    this.wireframe = false;
   }
 }

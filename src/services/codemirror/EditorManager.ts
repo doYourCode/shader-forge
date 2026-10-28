@@ -1,5 +1,5 @@
 import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { cpp } from '@codemirror/lang-cpp';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -13,6 +13,7 @@ export type ChangeHandler = (pos: CursorPos) => void;
 
 export class EditorManager {
   private view: EditorView | null = null;
+  private readonlyCompartment = new Compartment();
 
   mount(
     parent: HTMLElement,
@@ -20,6 +21,8 @@ export class EditorManager {
     onChange: ChangeHandler,
     readOnly: boolean,
   ): void {
+    this.dispose();
+
     const extensions = [
       lineNumbers(),
       highlightActiveLine(),
@@ -27,6 +30,10 @@ export class EditorManager {
       keymap.of([...defaultKeymap, ...historyKeymap]),
       cpp(),
       oneDark,
+      this.readonlyCompartment.of([
+        EditorState.readOnly.of(readOnly),
+        EditorView.editable.of(!readOnly),
+      ]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged || update.selectionSet) {
           const head = update.state.selection.main.head;
@@ -37,7 +44,6 @@ export class EditorManager {
           });
         }
       }),
-      EditorView.editable.of(!readOnly),
     ];
 
     this.view = new EditorView({
@@ -67,7 +73,10 @@ export class EditorManager {
   setReadOnly(readOnly: boolean): void {
     if (!this.view) return;
     this.view.dispatch({
-      effects: EditorState.readOnly.of(readOnly),
+      effects: this.readonlyCompartment.reconfigure([
+        EditorState.readOnly.of(readOnly),
+        EditorView.editable.of(!readOnly),
+      ]),
     });
   }
 

@@ -13,7 +13,7 @@ export const landingCards: ILandingCard[] = [
     title: 'WGSL (WebGPU)',
     description: 'Write WGSL shaders powered by the WebGPU backend.',
     note: 'Requires WebGPU.',
-    to: '/editor',
+    to: '',
     requiresWebGpu: true,
   },
   {
@@ -34,7 +34,7 @@ export const landingCards: ILandingCard[] = [
     id: 'fragment-sandbox',
     title: 'Fragment Sandbox',
     description: 'Experiment with fragment shaders in an isolated playground.',
-    to: '/editor',
+    to: '',
     requiresWebGpu: false,
   },
 ];

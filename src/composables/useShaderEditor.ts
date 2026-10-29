@@ -1,5 +1,8 @@
 import { ref, onBeforeUnmount } from 'vue';
-import { EditorManager } from '@/services/codemirror/EditorManager';
+import {
+  EditorManager,
+  type EditorDiagnostic,
+} from '@/services/codemirror/EditorManager';
 import {
   SceneManager,
   type CompileResult,
@@ -40,9 +43,11 @@ export function useShaderEditor() {
 
   let compileInFlight = false;
 
-  sceneManager.onError = (msg) => {
+  sceneManager.onError = (shaderErrors) => {
+    errors.value = shaderErrors;
     status.value = 'error';
-    statusMessage.value = msg;
+    statusMessage.value = formatErrorStatus(shaderErrors);
+    editorManager.setDiagnostics(diagnosticsFor(activeTab.value));
   };
 
   function isEditableTab(tab: EditorTabId): tab is EditableTabId {
@@ -55,12 +60,21 @@ export function useShaderEditor() {
     }
   }
 
-  function errorLinesFor(tab: EditorTabId): number[] {
+  function diagnosticsFor(tab: EditorTabId): EditorDiagnostic[] {
     if (!isEditableTab(tab)) return [];
 
     return errors.value
-      .filter((error) => error.stage === tab && error.line !== null)
-      .map((error) => error.line as number);
+      .filter(
+        (error): error is ShaderError & { line: number } =>
+          error.stage === tab && error.line !== null,
+      )
+      .map((error) => ({
+        line: error.line,
+        column: error.column,
+        message: [error.title, error.message, error.advice]
+          .filter((part): part is string => Boolean(part))
+          .join('\n'),
+      }));
   }
 
   function applyTab(tab: EditorTabId) {
@@ -69,7 +83,7 @@ export function useShaderEditor() {
     const readOnly = !isEditableTab(tab);
     editorManager.setValue(tabDocs[tab]);
     editorManager.setReadOnly(readOnly);
-    editorManager.setErrorLines(errorLinesFor(tab));
+    editorManager.setDiagnostics(diagnosticsFor(tab));
 
     if (!readOnly) {
       source.value = tabDocs[tab];
@@ -134,7 +148,10 @@ export function useShaderEditor() {
             stage: 'program',
             line: null,
             column: null,
+            kind: 'internal',
+            title: 'Shader compilation failed',
             message,
+            advice: null,
           },
         ],
       };
@@ -147,16 +164,14 @@ export function useShaderEditor() {
     if (result.ok) {
       status.value = 'ready';
       statusMessage.value = 'Compiled successfully';
-      editorManager.setErrorLines(errorLinesFor(activeTab.value));
+      editorManager.setDiagnostics(diagnosticsFor(activeTab.value));
       return;
     }
 
     status.value = 'error';
     statusMessage.value =
       result.errors.length > 0
-        ? `${result.errors.length} shader ${
-            result.errors.length === 1 ? 'error' : 'errors'
-          }`
+        ? formatErrorStatus(result.errors)
         : result.message;
 
     const firstLocated = result.errors.find(
@@ -171,7 +186,7 @@ export function useShaderEditor() {
     );
 
     if (!firstLocated) {
-      editorManager.setErrorLines(errorLinesFor(activeTab.value));
+      editorManager.setDiagnostics(diagnosticsFor(activeTab.value));
       return;
     }
 
@@ -182,10 +197,10 @@ export function useShaderEditor() {
     if (firstLocated.stage !== activeTab.value) {
       applyTab(firstLocated.stage);
     } else {
-      editorManager.setErrorLines(errorLinesFor(activeTab.value));
+      editorManager.setDiagnostics(diagnosticsFor(activeTab.value));
     }
 
-    editorManager.revealLine(firstLocated.line);
+    editorManager.revealPosition(firstLocated.line, firstLocated.column);
   }
 
   function revealError(error: ShaderError) {
@@ -198,8 +213,16 @@ export function useShaderEditor() {
     }
 
     if (error.line !== null) {
-      editorManager.revealLine(error.line);
+      editorManager.revealPosition(error.line, error.column);
     }
+  }
+
+  function formatErrorStatus(shaderErrors: readonly ShaderError[]): string {
+    const first = shaderErrors.find((error) => error.line !== null);
+    const suffix = first?.line != null ? ` · line ${first.line}` : '';
+    return `${shaderErrors.length} shader ${
+      shaderErrors.length === 1 ? 'error' : 'errors'
+    }${suffix}`;
   }
 
   function resize() {

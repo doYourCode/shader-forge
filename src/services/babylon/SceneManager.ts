@@ -14,6 +14,10 @@ import {
 import type { ShaderError, ShaderErrorStage } from '@/core/models/shaderError';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import { getStateObject } from '@babylonjs/core/Engines/thinEngine.functions';
+import {
+  ShaderLogRecorder,
+  type WebGlInfoLogContext,
+} from '@/services/webgl/ShaderLogRecorder';
 import { internalShaders } from './internalShaders';
 
 export interface ShaderSource {
@@ -49,8 +53,9 @@ export class SceneManager {
   private wireframe = false;
   private disposed = false;
   private errorPrewarmFrame: number | null = null;
+  private logRecorder: ShaderLogRecorder | null = null;
 
-  onError: (msg: string) => void = () => {};
+  onError: (errors: ShaderError[]) => void = () => {};
 
   init(canvas: HTMLCanvasElement, source: ShaderSource): void {
     this.dispose();
@@ -60,6 +65,7 @@ export class SceneManager {
       preserveDrawingBuffer: true,
       stencil: true,
     });
+    this.logRecorder = createLogRecorder(this.engine);
 
     this.scene = new Scene(this.engine);
     this.scene.clearColor = Color4.FromHexString('#282c34ff');
@@ -93,9 +99,8 @@ export class SceneManager {
     this.prepareErrorMaterial();
 
     const material = this.buildMaterial(source);
-    material.onError = (_effect, errors) => {
-      this.showErrorMaterial();
-      this.onError(errors);
+    material.onError = (_effect, rawErrors) => {
+      this.reportCompileFailure(source, rawErrors);
     };
     this.material = material;
     this.mesh.material = material;
@@ -182,7 +187,7 @@ export class SceneManager {
     this.mesh.material = material;
   }
 
-  private applyMaterial(material: ShaderMaterial): void {
+  private applyMaterial(material: ShaderMaterial, source: ShaderSource): void {
     if (!this.mesh) {
       material.dispose();
       return;
@@ -191,14 +196,27 @@ export class SceneManager {
     const previous = this.material;
 
     material.wireframe = this.wireframe;
-    material.onError = (_effect, errors) => {
-      this.showErrorMaterial();
-      this.onError(errors);
+    material.onError = (_effect, rawErrors) => {
+      this.reportCompileFailure(source, rawErrors);
     };
 
     this.material = material;
     this.mesh.material = material;
     previous?.dispose();
+  }
+
+  private reportCompileFailure(
+    source: ShaderSource,
+    fallbackLog: string,
+  ): void {
+    this.showErrorMaterial();
+    this.onError(
+      parseShaderCompileErrors(
+        this.logRecorder?.drain() ?? [],
+        source,
+        fallbackLog,
+      ),
+    );
   }
 
   resize(): void {
@@ -218,7 +236,7 @@ export class SceneManager {
     }
 
     if (attempt.ok && attempt.material) {
-      this.applyMaterial(attempt.material);
+      this.applyMaterial(attempt.material, source);
       return { ok: true, message: 'Compiled successfully', errors: [] };
     }
 
@@ -260,14 +278,7 @@ export class SceneManager {
       if (!this.scene || !this.mesh || this.disposed) {
         resolve({
           ok: false,
-          errors: [
-            {
-              stage: 'program',
-              line: null,
-              column: null,
-              message: 'Scene not initialized',
-            },
-          ],
+          errors: [internalError('Scene not initialized')],
           stage: 'program',
           material: null,
           effect: null,
@@ -277,17 +288,15 @@ export class SceneManager {
 
       let material: ShaderMaterial;
       try {
+        this.logRecorder?.begin();
         material = this.buildMaterial(source, name);
       } catch (error) {
         resolve({
           ok: false,
           errors: [
-            {
-              stage: 'program',
-              line: null,
-              column: null,
-              message: error instanceof Error ? error.message : String(error),
-            },
+            internalError(
+              error instanceof Error ? error.message : String(error),
+            ),
           ],
           stage: 'program',
           material: null,
@@ -313,23 +322,16 @@ export class SceneManager {
         finish({ ok: true, errors: [], stage: null, material, effect });
       };
 
-      material.onError = (effect, rawErrors) => {
-        const errors = parseShaderCompileErrors(
-          rawErrors,
-          source,
-          {
-            vertex: effect.vertexSourceCode,
-            fragment: effect.fragmentSourceCode,
-          },
-          getDriverLineOffset(effect),
-        );
+      material.onError = (failedEffect, rawErrors) => {
+        const records = this.logRecorder?.drain() ?? [];
+        const errors = parseShaderCompileErrors(records, source, rawErrors);
 
         finish({
           ok: false,
           errors,
           stage: errors[0]?.stage ?? null,
           material,
-          effect,
+          effect: failedEffect,
         });
       };
 
@@ -341,14 +343,7 @@ export class SceneManager {
         if (performance.now() - started > COMPILE_TIMEOUT_MS) {
           finish({
             ok: false,
-            errors: [
-              {
-                stage: 'program',
-                line: null,
-                column: null,
-                message: 'Shader compilation timed out',
-              },
-            ],
+            errors: [timeoutError()],
             stage: 'program',
             material,
             effect: material.getEffect(),
@@ -363,13 +358,9 @@ export class SceneManager {
           finish({
             ok: false,
             errors: [
-              {
-                stage: 'program',
-                line: null,
-                column: null,
-                message:
-                  error instanceof Error ? error.message : String(error),
-              },
+              internalError(
+                error instanceof Error ? error.message : String(error),
+              ),
             ],
             stage: 'program',
             material,
@@ -408,12 +399,9 @@ export class SceneManager {
         finish({
           ok: false,
           errors: [
-            {
-              stage: 'program',
-              line: null,
-              column: null,
-              message: error instanceof Error ? error.message : String(error),
-            },
+            internalError(
+              error instanceof Error ? error.message : String(error),
+            ),
           ],
           stage: 'program',
           material,
@@ -453,6 +441,7 @@ export class SceneManager {
     }
 
     this.engine?.stopRenderLoop();
+    this.logRecorder?.dispose();
     this.material?.dispose();
     this.errorMaterial?.dispose();
     this.scene?.dispose();
@@ -463,15 +452,47 @@ export class SceneManager {
     this.errorMaterial = null;
     this.mesh = null;
     this.wireframe = false;
+    this.logRecorder = null;
   }
 }
 
-function getDriverLineOffset(effect: Effect): number {
-  const versionLines =
-    effect.getEngine().shaderPlatformName === 'WEBGL2' ? 2 : 0;
-  const defineLines = effect.defines ? effect.defines.split('\n').length : 0;
+function createLogRecorder(engine: Engine): ShaderLogRecorder | null {
+  const context = (engine as unknown as { _gl?: WebGlInfoLogContext })._gl;
+  if (!context) return null;
 
-  return versionLines + defineLines;
+  try {
+    return new ShaderLogRecorder(context);
+  } catch {
+    // Error reporting still works through Babylon's fallback message.
+    return null;
+  }
+}
+
+function internalError(message: string): ShaderError {
+  return {
+    stage: 'program',
+    line: null,
+    column: null,
+    kind: 'internal',
+    title: 'Shader compilation failed',
+    message,
+    advice: null,
+  };
+}
+
+function timeoutError(): ShaderError {
+  return {
+    stage: 'program',
+    line: null,
+    column: null,
+    kind: 'timeout',
+    title: 'Compilation timed out',
+    message: `The shader compiler did not finish within ${
+      COMPILE_TIMEOUT_MS / 1000
+    } seconds.`,
+    advice:
+      'The shader may be too complex for this GPU. Simplify loops or reduce function calls, then compile again.',
+  };
 }
 
 function releaseAttempt(

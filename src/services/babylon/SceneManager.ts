@@ -44,6 +44,42 @@ const SHADER_UNIFORMS = ['worldViewProjection', 'normalMatrix'];
 const COMPILE_TIMEOUT_MS = 15_000;
 const ERROR_PREWARM_FRAMES = 120;
 
+/** The only engine state the WebGL 2 guard needs, which keeps it testable. */
+export interface WebGl2EngineLike {
+  readonly webGLVersion: number;
+}
+
+export type WebGl2GuardResult =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly error: ShaderError };
+
+/**
+ * WebGL 2 is a hard requirement: the internal shaders are GLSL ES 3.00 and
+ * Babylon only leaves those sources alone when it created a WebGL 2 context.
+ * There is deliberately no WebGL 1 fallback.
+ */
+export function assertWebGl2(engine: WebGl2EngineLike): WebGl2GuardResult {
+  if (engine.webGLVersion >= 2) {
+    return { ok: true };
+  }
+
+  return { ok: false, error: webGl2RequiredError() };
+}
+
+function webGl2RequiredError(): ShaderError {
+  return {
+    stage: 'program',
+    line: null,
+    column: null,
+    kind: 'internal',
+    title: 'WebGL 2 is required',
+    message:
+      'WebGL 2 is required to render the shader preview, but the browser created a WebGL 1 context.',
+    advice:
+      'Use a browser or device with WebGL 2 support, and make sure hardware acceleration is enabled.',
+  };
+}
+
 export class SceneManager {
   private engine: Engine | null = null;
   private scene: Scene | null = null;
@@ -65,6 +101,16 @@ export class SceneManager {
       preserveDrawingBuffer: true,
       stencil: true,
     });
+
+    const webGl2 = assertWebGl2(this.engine);
+    if (!webGl2.ok) {
+      this.engine.dispose();
+      this.engine = null;
+      this.disposed = true;
+      this.onError([webGl2.error]);
+      return;
+    }
+
     this.logRecorder = createLogRecorder(this.engine);
 
     this.scene = new Scene(this.engine);

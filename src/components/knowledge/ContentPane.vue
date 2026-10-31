@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { renderMarkdown } from '@/core/content/markdown';
+import { useMermaid } from '@/composables/useMermaid';
 
 const props = withDefaults(
   defineProps<{
@@ -17,11 +18,17 @@ const props = withDefaults(
 const html = computed(() =>
   props.content ? renderMarkdown(props.content) : '',
 );
+
+const body = ref<HTMLElement | null>(null);
+
+// Markdown emits inert Mermaid placeholders; this hydrates them to SVG after
+// every content change (including locale switches).
+useMermaid(body, () => props.content);
 </script>
 
 <template>
   <article class="content-pane">
-    <div v-if="html" class="content-pane__body" v-html="html" />
+    <div v-if="html" ref="body" class="content-pane__body" v-html="html" />
     <p v-else class="content-pane__empty">{{ emptyText }}</p>
   </article>
 </template>
@@ -110,5 +117,37 @@ const html = computed(() =>
 .content-pane__body :deep(img) {
   max-width: 100%;
   height: auto;
+}
+
+/* Mermaid placeholders become SVG diagrams; the pseudo-element covers the
+   short gap while the lazily loaded renderer turns a placeholder into SVG. */
+.content-pane__body :deep(.mermaid-diagram) {
+  margin: 1em 0;
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.content-pane__body :deep(.mermaid-diagram:empty)::before {
+  content: 'Rendering diagram…';
+  color: var(--fg-subtle);
+  font-style: italic;
+}
+
+.content-pane__body :deep(.mermaid-diagram svg) {
+  max-width: 100%;
+  height: auto;
+}
+
+.content-pane__body :deep(.mermaid-diagram__error-title) {
+  margin: 0 0 0.5em;
+  color: var(--accent-red);
+}
+
+.content-pane__body :deep(.mermaid-diagram__error pre) {
+  text-align: left;
 }
 </style>

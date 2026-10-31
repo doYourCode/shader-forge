@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 
@@ -7,6 +7,12 @@ import ContentBrowser from './ContentBrowser.vue';
 import { router as appRouter } from '@/router';
 import { i18n } from '@/i18n';
 import type { ContentKind } from '@/lib/ContentResolver';
+
+// Mermaid needs a real SVG engine. Its placeholder contract is covered by
+// markdown.test.ts and its rendering by MermaidService.test.ts.
+vi.mock('@/services/mermaid/MermaidService', () => ({
+  mermaidService: { renderAll: vi.fn(async () => {}) },
+}));
 
 let wrapper: VueWrapper | undefined;
 

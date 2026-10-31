@@ -1,11 +1,15 @@
 import MarkdownIt from 'markdown-it';
 
+import { mermaidFencePlugin } from './mermaid';
+
 const md = new MarkdownIt({
   html: false,
   linkify: true,
   breaks: false,
   typographer: false,
 });
+
+md.use(mermaidFencePlugin);
 
 /**
  * Prefix root-relative URLs with Vite's base so images and links work on

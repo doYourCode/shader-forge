@@ -10,7 +10,7 @@ media:
   - name: content-images
     label: Content images
     input: public/images/content
-    output: /images/content
+    output: /content/images
     rename: safe
     extensions: [png, jpg, jpeg, webp, avif, gif, svg]
 

@@ -51,11 +51,11 @@ Think of a car factory with an assembly line:
 
 Each station does **one specific job**, receives the output of the previous station, and passes its result to the next. While car #1 is still being welded, car #2 is already being painted, and so on. Everything works **in parallel**, and that is the secret of throughput.
 
-The rendering pipeline works exactly like that, except that the "cars" are **vertices**, **triangles** and **pixels**.
+The rendering pipeline works in much the same way, except that its "raw materials" are 3D data, such as **vertices** and **triangles**, and its final product is the **pixels** displayed on the screen.
 
 ```text
-  Raw material                                                      Finished product
- (3D triangles)  ───►  [Station 1] ──► [Station 2] ──► [Station 3] ───►  (an image)
+  Raw material                                              Finished product
+    (3D data)  ───►  [Stage 1] ──► [ ... ] ──► [Stage N] ───►  (an image)
 ```
 
 > **Key idea:** a rendering pipeline is a *sequence of stages*. Each stage takes data in, transforms it, and hands it to the next stage.
@@ -67,66 +67,91 @@ The rendering pipeline works exactly like that, except that the "cars" are **ver
 Here is the whole pipeline at a glance. Don't worry about the unfamiliar words yet; we will visit every box.
 
 ```mermaid
-flowchart TD
-    A["<b>Application (CPU)</b><br/>Scene, meshes, textures,<br/>camera, draw calls"]
-    B["<b>Input Assembly</b><br/>Reads vertices and indices,<br/>builds triangles"]
-    C["<b>Vertex Shader</b> 🟢<br/>Transforms each vertex<br/>to clip space"]
-    D["<b>Tessellation / Geometry</b> 🟢<br/>(optional)<br/>Adds or modifies geometry"]
-    E["<b>Clipping and Culling</b> 🔵<br/>Discards what the camera<br/>cannot see"]
-    F["<b>Perspective Divide +<br/>Viewport Transform</b> 🔵<br/>Maps to screen coordinates"]
-    G["<b>Rasterization</b> 🔵<br/>Triangles → fragments"]
-    H["<b>Fragment Shader</b> 🟢<br/>Computes the color<br/>of each fragment"]
-    I["<b>Output Merger</b> 🔵<br/>Depth test, blending,<br/>stencil"]
-    J[("<b>Framebuffer</b><br/>The final image")]
-    K["<b>Display</b>"]
+---
+config:
+  layout: fixed
+  block:
+    padding: 24
+---
+block-beta
+  columns 3
 
-    A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K
+  X["Stage 0"]
+  A["<b>Application Setup</b><br/> Scene, meshes, textures,<br/>camera, draw calls"]
+   space
+   Y["Stage 1"]
+  B["<b>Input Assembly</b><br/>Reads vertices and indices,<br/>builds triangles"]
+  C["<b>Vertex Shader</b><br/>Transforms each vertex<br/>to clip space"]
+  space
+  E["<b>Clipping and Culling</b><br/>Discards what the camera<br/>cannot see"]
+  D["<b>Tessellation / Geometry</b><br/>(optional)<br/>Adds or modifies geometry"]
+  space
+  F["<b>Perspective Divide +<br/>Viewport Transform</b><br/>Maps to screen coordinates"]
+  space
+  Z["Stage 2"]
+  G["<b>Rasterization</b><br/>Triangles → fragments"]
+  space
+  Z1["Stage 3"]
+  H["<b>Fragment Shader</b><br/>Computes the color<br/>of each fragment"]
+  space
+  Z2["Stage 4"]
+  I["<b>Output Merger</b><br/>Depth test, blending,<br/>stencil"]
+  space
+  K["<b>Final<br>Display</b>"]
+  J["<b>Framebuffer</b><br/>Constructs the image"]
+  space
 
-    classDef prog fill:#d4f5d4,stroke:#2e7d32,color:#000;
-    classDef fixed fill:#d6e6ff,stroke:#1565c0,color:#000;
-    classDef cpu fill:#fff3cd,stroke:#b58900,color:#000;
-    class A cpu;
-    class C,D,H prog;
-    class B,E,F,G,I fixed;
+  A ---> B
+  B ---> C
+  C ---> D
+  D ---> E
+  E ---> F
+  F ---> G
+  G ---> H
+  H ---> I
+  I ---> J
+  J ---> K
+
+  classDef programable fill:#d4f5d4,stroke:#2e7d32,color:#000
+  classDef fixed fill:#d6e6ff,stroke:#1565c0,color:#000
+  classDef cpu fill:#fff3cd,stroke:#b58900,color:#000
+
+  class A cpu
+  class B,E,F,G,I fixed
+  class C,D,H programable
 ```
-
-**Legend:** 🟡 CPU-side · 🟢 programmable by you (shaders) · 🔵 fixed-function (configurable, but not programmable)
-
-We can group the stages into three big phases:
-
-
-| Phase | Works on... | Main question it answers |
-| ----------------------- | ---------------------- | ------------------------------------------------ |
-| **Geometry processing** | Vertices and triangles | *Where on the screen does each triangle end up?* |
-| **Rasterization** | Triangles → fragments | *Which pixels does each triangle cover?* |
-| **Pixel processing** | Fragments | *What color should each pixel be?* |
-
-
+>**Legend:**
+>- 🟨 **CPU-side**;
+>- 🟩 **Programmable** — by you (shaders);
+>- 🟦 **Fixed-function** — (configurable, but not programmable).
 ---
 
-## 3. Stage 0: The application (CPU side)
+## 3. Stage 0: The application Setup
 
-Before the GPU does anything, **your program** (running on the CPU) prepares the work:
+Before the GPU does anything, **your program** (running on the **CPU**) prepares the work:
 
 1. **Loads the data**: meshes (vertex positions, normals, UV coordinates), textures, shaders.
-2. **Updates the scene**: moves the player, plays animations, runs physics.
-3. **Decides what to draw**: for example, skipping objects that are obviously behind the camera (*frustum culling* at object level).
+2. **Updates the scene**: moves 3d objects, plays animations, runs physics.
+3. **Decides what to draw**: for example, skipping objects that are obviously behind the camera (e.g. *frustum culling* at object level).
 4. **Sends commands to the GPU**: these are called **draw calls**.
 
 A draw call is basically the sentence: *"Draw this mesh, with this shader, these textures, and these settings."*
 
-```text
-   CPU (your code)                         GPU
- ┌────────────────────┐   draw calls   ┌───────────────────┐
- │ Game logic         │ ─────────────► │ Rendering pipeline│
- │ Scene management   │   (via API:    │ (thousands of     │
- │ Culling            │  OpenGL,       │  cores working in │
- │ Resource upload    │  Vulkan,       │  parallel)        │
- └────────────────────┘  DirectX,      └───────────────────┘
-                         Metal, WebGPU)
-```
+```mermaid
+block-beta
+  columns 3
+  Z["CPU-side"] space X["GPU"]
+  A["App logic<br>3d Scene management<br>Occlusion Culling<br>Resource upload "]
+  space
+  B["Rendering Pipeline"]
 
-> **Why it matters:** too many draw calls can make the CPU the bottleneck: the GPU sits idle waiting for instructions. This is one of the first performance problems you will meet.
+    A -- "Draw Calls¹" --> B
+
+    classDef label fill:transparent,stroke:none,color:#fff
+
+    class Z,X label
+```
+> **¹ Draw Calls** are functions called via API (OpenGL, Vulkan, DirectX, Metal, WebGPU), too many draw calls can make the CPU the bottleneck because the GPU may sit idle waiting for instructions. This is one of the first performance problems you will meet.
 
 ### What does a mesh look like?
 

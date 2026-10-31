@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
-
+import markdownItAnchor from 'markdown-it-anchor';
+import GithubSlugger from 'github-slugger';
 import { mermaidFencePlugin } from './mermaid';
 
 const md = new MarkdownIt({
@@ -9,7 +10,12 @@ const md = new MarkdownIt({
   typographer: false,
 });
 
+const slugger = new GithubSlugger();
+
 md.use(mermaidFencePlugin);
+md.use(markdownItAnchor, {
+  slugify: slugger.slug.bind(slugger),
+});
 
 /**
  * Prefix root-relative URLs with Vite's base so images and links work on

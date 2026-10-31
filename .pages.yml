@@ -1,5 +1,10 @@
 # Pages CMS configuration
 # https://pagescms.org/docs/configuration/
+#
+# Content is organised as parallel per-locale trees (see docs/i18n-content.md).
+# Pages CMS does not resolve translations, so each locale gets its own
+# collection and editors always see the tree for the locale they are editing.
+# The runtime resolves/falls back in src/lib/ContentResolver.ts.
 
 media:
   - name: content-images
@@ -20,10 +25,10 @@ settings:
       delete: "content(delete): {path}"
 
 content:
-  - name: docs
-    label: Documentation
+  - name: docs_en
+    label: Docs (English)
     type: collection
-    path: content/docs
+    path: content/en/docs
     format: yaml-frontmatter
     filename: "{primary}.md"
     subfolders: false
@@ -69,10 +74,110 @@ content:
           media: content-images
           switcher: true
 
-  - name: knowledge
-    label: Knowledge
+  - name: docs_pt_br
+    label: Docs (Português)
     type: collection
-    path: content/knowledge
+    path: content/pt-BR/docs
+    format: yaml-frontmatter
+    filename: "{primary}.md"
+    subfolders: false
+    view:
+      fields: [title, section, order, draft]
+      primary: title
+      sort: [order, title]
+      default:
+        sort: order
+        order: asc
+    fields:
+      - name: title
+        label: Title
+        type: string
+        required: true
+      - name: description
+        label: Summary
+        type: text
+        description: One or two sentences for lists and future SEO.
+      - name: section
+        label: Section
+        type: select
+        required: true
+        options:
+          values:
+            - name: api
+              label: API Reference
+            - name: guides
+              label: Guides
+      - name: order
+        label: Order in section
+        type: number
+        options:
+          min: 0
+      - name: draft
+        label: Draft
+        type: boolean
+      - name: body
+        label: Content
+        type: rich-text
+        options:
+          format: markdown
+          media: content-images
+          switcher: true
+
+  - name: knowledge_en
+    label: Knowledge (English)
+    type: collection
+    path: content/en/knowledge
+    format: yaml-frontmatter
+    filename: "{primary}.md"
+    subfolders: false
+    view:
+      fields: [title, section, order, draft]
+      primary: title
+      sort: [order, title]
+      default:
+        sort: order
+        order: asc
+    fields:
+      - name: title
+        label: Title
+        type: string
+        required: true
+      - name: description
+        label: Summary
+        type: text
+        description: One or two sentences for lists and future SEO.
+      - name: section
+        label: Section
+        type: select
+        required: true
+        options:
+          values:
+            - name: basics
+              label: Shader Basics
+            - name: glsl
+              label: GLSL
+            - name: webgl
+              label: "WebGL & WebGPU"
+      - name: order
+        label: Order in section
+        type: number
+        options:
+          min: 0
+      - name: draft
+        label: Draft
+        type: boolean
+      - name: body
+        label: Content
+        type: rich-text
+        options:
+          format: markdown
+          media: content-images
+          switcher: true
+
+  - name: knowledge_pt_br
+    label: Knowledge (Português)
+    type: collection
+    path: content/pt-BR/knowledge
     format: yaml-frontmatter
     filename: "{primary}.md"
     subfolders: false

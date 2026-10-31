@@ -49,7 +49,7 @@ Think of a car factory with an assembly line:
 - Station 3 installs the interior.
 - Station 4 does the final inspection.
 
-<img src="/images/content/carfactoryanalogy.png"
+<img src="/public/images/content/carfactoryanalogy.png"
      alt="Car factory analogy"
      width="70%">
 

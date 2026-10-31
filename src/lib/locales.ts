@@ -10,6 +10,12 @@ export const LOCALES = ['en', 'pt-BR'] as const;
 /** Locale served when no translation exists or the requested code is unknown. */
 export const DEFAULT_LOCALE = 'en';
 
+/**
+ * Named alias for pt-BR. Use it instead of a bare `'pt-BR'` string when a
+ * locale code has to appear in code (e.g. fixed Portuguese notice copy).
+ */
+export const PT_BR_LOCALE = 'pt-BR';
+
 export type Locale = (typeof LOCALES)[number];
 
 /** Human-readable locale names, used by the content language switcher. */

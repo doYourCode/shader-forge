@@ -1,6 +1,6 @@
 import type { ITreeNode } from '@/core/models/treeNode';
 import type { ContentKind, ContentResolver } from './ContentResolver';
-import type { Locale } from './locales';
+import { DEFAULT_LOCALE, PT_BR_LOCALE, type Locale } from './locales';
 
 type SectionMeta = {
   id: string;
@@ -16,25 +16,25 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
   docs: [
     {
       id: 'api',
-      labels: { en: 'API Reference', 'pt-BR': 'Referência da API' },
+      labels: { [DEFAULT_LOCALE]: 'API Reference', [PT_BR_LOCALE]: 'Referência da API' },
     },
     {
       id: 'guides',
-      labels: { en: 'Guides', 'pt-BR': 'Guias' },
+      labels: { [DEFAULT_LOCALE]: 'Guides', [PT_BR_LOCALE]: 'Guias' },
     },
   ],
   knowledge: [
     {
       id: 'basics',
-      labels: { en: 'Shader Basics', 'pt-BR': 'Fundamentos de Shader' },
+      labels: { [DEFAULT_LOCALE]: 'Shader Basics', [PT_BR_LOCALE]: 'Fundamentos de Shader' },
     },
     {
       id: 'glsl',
-      labels: { en: 'GLSL', 'pt-BR': 'GLSL' },
+      labels: { [DEFAULT_LOCALE]: 'GLSL', [PT_BR_LOCALE]: 'GLSL' },
     },
     {
       id: 'webgl',
-      labels: { en: 'WebGL & WebGPU', 'pt-BR': 'WebGL e WebGPU' },
+      labels: { [DEFAULT_LOCALE]: 'WebGL & WebGPU', [PT_BR_LOCALE]: 'WebGL e WebGPU' },
     },
   ],
 };

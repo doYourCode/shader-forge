@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+import { PT_BR_LOCALE } from '@/lib/locales';
+
 const props = withDefaults(
   defineProps<{
     /** Whether the page is currently showing a fallback (untranslated) body. */
@@ -19,7 +21,7 @@ const dismissed = ref(false);
     v-if="props.visible && !dismissed"
     class="fallback-notice"
     role="status"
-    lang="pt-BR"
+    :lang="PT_BR_LOCALE"
   >
     <p class="fallback-notice__text">
       Este conteúdo ainda não foi traduzido. Exibindo o original em inglês.

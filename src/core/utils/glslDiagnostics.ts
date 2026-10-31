@@ -1,5 +1,11 @@
 import type { ShaderErrorKind } from '@/core/models/shaderError';
 
+export type GlslVersion = '100' | '300 es';
+
+export interface GlslDiagnosticContext {
+  glslVersion: GlslVersion;
+}
+
 export interface GlslIssueDescription {
   kind: ShaderErrorKind;
   /** Short plain-English title shown above the raw driver message. */
@@ -8,27 +14,94 @@ export interface GlslIssueDescription {
   advice: string | null;
 }
 
-type Describer = (message: string) => GlslIssueDescription;
+type Describer = (
+  message: string,
+  version: GlslVersion,
+) => GlslIssueDescription;
 
 interface DiagnosticRule {
   readonly pattern: RegExp;
   readonly describe: Describer;
+  /** Restricts the rule to one source language version. */
+  readonly glslVersion?: GlslVersion;
 }
 
-const GENERIC_ADVICE =
-  'Compare this line with the GLSL ES 1.00 syntax reference. Common causes are typos, missing semicolons, or mismatched types.';
+function genericAdvice(version: GlslVersion): string {
+  if (version === '300 es') {
+    return 'Compare this line with the GLSL ES 3.00 syntax reference. Use in/out instead of attribute/varying, texture() instead of texture2D(), and declare the fragment output as layout(location = 0) out vec4 fragColor;. Common causes are typos, missing semicolons, or mismatched types.';
+  }
 
-const DEFAULT_DESCRIPTION: Describer = () => ({
+  return 'Compare this line with the GLSL ES 1.00 syntax reference. Common causes are typos, missing semicolons, or mismatched types.';
+}
+
+const DEFAULT_DESCRIPTION: Describer = (_message, version) => ({
   kind: 'program',
   title: 'Shader compiler error',
-  advice: GENERIC_ADVICE,
+  advice: genericAdvice(version),
 });
 
 /**
  * Ordered rules that translate cryptic driver messages into plain English.
  * The first matching rule wins, so put the most specific patterns first.
+ * Rules marked with `glslVersion` only apply when the user's source declares
+ * that version; the others keep their original behaviour.
  */
 const RULES: readonly DiagnosticRule[] = [
+  {
+    pattern:
+      /#version[^\n]*(?:\bfirst\b|\bbeginning\b|\bbefore\b|\bpreced(?:e|ing)\b|\bmust\b)/i,
+    describe: () => ({
+      kind: 'syntax',
+      title: '#version must be on the first line',
+      advice:
+        'Move the #version directive to the very first line of the shader, before any comments, precision statements, or declarations.',
+    }),
+  },
+  {
+    pattern: /gl_FragColor|gl_FragData/i,
+    glslVersion: '300 es',
+    describe: (message) => {
+      const token = /gl_FragData/i.test(message)
+        ? 'gl_FragData'
+        : 'gl_FragColor';
+
+      return {
+        kind: 'syntax',
+        title: `${token} is not available in GLSL ES 3.00`,
+        advice: `Declare a fragment output with layout(location = 0) out vec4 fragColor; and assign the final colour to it instead of ${token}.`,
+      };
+    },
+  },
+  {
+    pattern:
+      /['"`]\s*(?:attribute|varying)\s*['"`]|\b(?:attribute|varying)\b[^\n]*(?:syntax error|reserved|not (?:available|supported)|undeclared)/i,
+    glslVersion: '300 es',
+    describe: (message) => {
+      const keyword = /\battribute\b/i.test(message)
+        ? 'attribute'
+        : 'varying';
+
+      return {
+        kind: 'syntax',
+        title: `'${keyword}' is not available in GLSL ES 3.00`,
+        advice:
+          keyword === 'attribute'
+            ? 'Replace attribute with in for vertex inputs. Vertex outputs and fragment inputs both use in/out declarations.'
+            : 'Replace varying with out in the vertex shader and in in the fragment shader.',
+      };
+    },
+  },
+  {
+    pattern:
+      /(?:fragment|frag)\b[^\n]*\b(?:no|missing|not|without|must|requires?|does\s+not|doesn't)\b[^\n]*(?:output|write|declar)|(?:missing|no)\s+(?:fragment\s+)?output|output[^\n]*\b(?:not|missing|never)\b[^\n]*declar/i,
+    glslVersion: '300 es',
+    describe: () => ({
+      kind: 'syntax',
+      title: 'Missing fragment output',
+      advice:
+        'Declare the fragment colour output with layout(location = 0) out vec4 fragColor; and write to it inside main().',
+    }),
+  },
   {
     pattern: /unexpected (?:token|character|identifier|'\S+'|"\S+")/i,
     describe: (message) => {
@@ -71,7 +144,8 @@ const RULES: readonly DiagnosticRule[] = [
     }),
   },
   {
-    pattern: /undeclared|not declared|unknown identifier|invalid identifier|undefined identifier/i,
+    pattern:
+      /undeclared|not declared|unknown identifier|invalid identifier|undefined identifier/i,
     describe: (message) => {
       const name = quotedName(message);
       return {
@@ -98,18 +172,21 @@ const RULES: readonly DiagnosticRule[] = [
   },
   {
     pattern: /no matching (?:overloaded )?function|no matching overload|overload resolution/i,
-    describe: (message) => {
+    describe: (message, version) => {
       const name = quotedName(message);
       return {
         kind: 'logic',
         title: name ? `No matching function for '${name}'` : 'No matching function',
         advice:
-          'This function exists, but not with these argument types. Check the number and types of the arguments. GLSL ES 1.00 uses texture2D(sampler, vec2), not texture().',
+          version === '300 es'
+            ? 'This function exists, but not with these argument types. Check the number and types of the arguments. GLSL ES 3.00 uses texture(sampler, vec2) instead of texture2D(), and in/out instead of attribute/varying.'
+            : 'This function exists, but not with these argument types. Check the number and types of the arguments. GLSL ES 1.00 uses texture2D(sampler, vec2), not texture().',
       };
     },
   },
   {
-    pattern: /cannot convert|type mismatch|incompatible type|wrong operand types?|cannot assign|no implicit conversion/i,
+    pattern:
+      /cannot convert|type mismatch|incompatible type|wrong operand types?|cannot assign|no implicit conversion/i,
     describe: () => ({
       kind: 'type',
       title: 'Type mismatch',
@@ -119,11 +196,13 @@ const RULES: readonly DiagnosticRule[] = [
   },
   {
     pattern: /precision/i,
-    describe: () => ({
+    describe: (_message, version) => ({
       kind: 'syntax',
       title: 'Missing precision qualifier',
       advice:
-        'Add a default precision at the top of the shader, for example: precision highp float;',
+        version === '300 es'
+          ? 'Add a default precision after the #version 300 es line, for example: precision highp float;'
+          : 'Add a default precision at the top of the shader, for example: precision highp float;',
     }),
   },
   {
@@ -146,11 +225,13 @@ const RULES: readonly DiagnosticRule[] = [
   },
   {
     pattern: /unsupported|not supported|version|extension/i,
-    describe: () => ({
+    describe: (_message, version) => ({
       kind: 'program',
       title: 'Unsupported GLSL feature',
       advice:
-        'That feature is not available in the GLSL version used by this renderer. Enable the matching #extension or rewrite the statement using GLSL ES 1.00 features.',
+        version === '300 es'
+          ? 'That feature is not available in the GLSL version used by this renderer. Enable the matching #extension or rewrite the statement using GLSL ES 3.00 features such as in/out, texture(), and layout(location = 0) out.'
+          : 'That feature is not available in the GLSL version used by this renderer. Enable the matching #extension or rewrite the statement using GLSL ES 1.00 features.',
     }),
   },
   {
@@ -179,15 +260,24 @@ const RULES: readonly DiagnosticRule[] = [
  * Maps a raw driver message to a friendly title, category, and suggestion.
  * The raw message is always preserved separately so advanced users can still
  * see exactly what the driver reported.
+ *
+ * `context` defaults to GLSL ES 1.00 so callers that do not know the source
+ * version keep the original advice.
  */
-export function describeGlslIssue(message: string): GlslIssueDescription {
+export function describeGlslIssue(
+  message: string,
+  context?: GlslDiagnosticContext,
+): GlslIssueDescription {
+  const version = context?.glslVersion ?? '100';
+
   for (const rule of RULES) {
+    if (rule.glslVersion && rule.glslVersion !== version) continue;
     if (rule.pattern.test(message)) {
-      return rule.describe(message);
+      return rule.describe(message, version);
     }
   }
 
-  return DEFAULT_DESCRIPTION(message);
+  return DEFAULT_DESCRIPTION(message, version);
 }
 
 function quotedName(message: string): string | null {

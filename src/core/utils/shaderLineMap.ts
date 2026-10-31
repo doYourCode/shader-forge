@@ -114,12 +114,16 @@ function linesMatch(userLine: string, driverLine: string): boolean {
 /**
  * GLSL ES 1.00 is rewritten to GLSL ES 3.00 on WebGL2. Normalising the tokens
  * that Babylon rewrites lets the diff line up user lines with driver lines.
- * Injected fragment output declarations are also stripped so the `void main`
- * line still matches the editor.
+ * Only the fragment output declarations Babylon injects are stripped: a
+ * `layout(...) out` line written by the user must stay visible so errors on it
+ * still map back to the editor.
  */
 function normalizeShaderLine(line: string): string {
   return line
-    .replace(/^\s*layout\s*\([^)]*\)\s*out\s+vec4\s+\w+\s*;\s*/gi, '')
+    .replace(
+      /^\s*layout\s*\([^)]*\)\s*out\s+vec4\s+(?:glFragColor\d*|glFragData)\s*;\s*/gi,
+      '',
+    )
     .replace(/\/\/.*$/, '')
     .replace(/\b(attribute|varying|in|out)\b/g, '@io')
     .replace(/\b(gl_FragColor|glFragColor)\b/g, '@fragColor')

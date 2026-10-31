@@ -18,12 +18,6 @@ export const PT_BR_LOCALE = 'pt-BR';
 
 export type Locale = (typeof LOCALES)[number];
 
-/** Human-readable locale names, used by the content language switcher. */
-export const LOCALE_LABELS: Record<Locale, string> = {
-  en: 'English',
-  'pt-BR': 'Português',
-};
-
 export function isLocale(value: unknown): value is Locale {
   return (
     typeof value === 'string' && (LOCALES as readonly string[]).includes(value)

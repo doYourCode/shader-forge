@@ -6,7 +6,6 @@ import { useI18n } from 'vue-i18n';
 import SplitViewLayout from '@/layouts/SplitViewLayout.vue';
 import TreeView from '@/components/knowledge/TreeView.vue';
 import ContentPane from '@/components/knowledge/ContentPane.vue';
-import ContentLanguageSwitcher from './ContentLanguageSwitcher.vue';
 import FallbackNotice from './FallbackNotice.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
 
@@ -30,14 +29,12 @@ const router = useRouter();
 const { locale: uiLocale } = useI18n();
 
 /**
- * Content locale: an explicit URL prefix wins (`/pt-BR/docs/...`); otherwise
- * the unprefixed URL follows the UI locale.
- *
- * UI-string locale and content locale stay separate concerns: the header
- * selector owns UI strings, the content switcher owns the document language.
+ * The header language selector (vue-i18n `locale`) is the single source of
+ * truth for both UI strings and content. Switching it re-resolves the current
+ * document; URLs stay locale-neutral and therefore stable across languages.
  */
-const routeLocale = computed<Locale>(
-  () => route.meta.locale ?? resolveLocale(uiLocale.value),
+const contentLocale = computed<Locale>(() =>
+  resolveLocale(uiLocale.value),
 );
 
 const slug = computed<string | null>(() => {
@@ -51,7 +48,7 @@ const tree = shallowRef<ITreeNode[]>([]);
 let treeToken = 0;
 
 watch(
-  [() => props.kind, routeLocale],
+  [() => props.kind, contentLocale],
   async ([kind, locale]) => {
     const token = ++treeToken;
     const next = await buildContentTree(contentResolver, kind, locale);
@@ -67,7 +64,7 @@ const resolving = shallowRef(false);
 let documentToken = 0;
 
 watch(
-  [slug, routeLocale],
+  [slug, contentLocale],
   async ([nextSlug, locale]) => {
     if (!nextSlug) {
       result.value = noContentResult();
@@ -97,9 +94,7 @@ watch(
     if (currentSlug || nodes.length === 0) return;
     const first = findFirstLeaf(nodes);
     if (first) {
-      void router.replace(
-        contentPath(routeLocale.value, props.kind, first.id),
-      );
+      void router.replace(contentPath(props.kind, first.id));
     }
   },
   { immediate: true },
@@ -112,13 +107,13 @@ const notFound = computed(
 const fallbackVisible = computed(() => showsFallbackNotice(result.value));
 
 function select(node: ITreeNode): void {
-  void router.push(contentPath(routeLocale.value, props.kind, node.id));
+  void router.push(contentPath(props.kind, node.id));
 }
 
 /* ------------------------------ <html lang> ------------------------------- */
 
 watch(
-  () => result.value.locale ?? routeLocale.value,
+  () => result.value.locale ?? contentLocale.value,
   (effectiveLocale) => {
     document.documentElement.lang = effectiveLocale;
   },
@@ -140,18 +135,11 @@ onUnmounted(() => {
 
     <template #right>
       <div class="content-browser">
-        <ContentLanguageSwitcher
-          v-if="slug"
-          :kind="kind"
-          :slug="slug"
-          :current-locale="routeLocale"
-        />
-
         <p v-if="resolving" class="content-browser__status">Loading…</p>
 
         <template v-else-if="result.content">
           <FallbackNotice
-            :key="`${slug ?? ''}:${routeLocale}`"
+            :key="`${slug ?? ''}:${contentLocale}`"
             :visible="fallbackVisible"
           />
           <ContentPane :content="result.content.body" />

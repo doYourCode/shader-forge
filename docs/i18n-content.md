@@ -77,9 +77,8 @@ const result = await contentResolver.resolve('docs/shader-editor.md', 'pt-BR');
 - If both are missing, return `{ content: null, locale: null, isFallback: false }`.
 - **Unknown locale codes are treated as the default locale** (`en`) rather than
   rejected — a stale URL still renders the English original.
-- `hasTranslation(relativePath, locale)` checks the *exact* locale only. It is
-  what the language switcher uses; it never counts the fallback as a
-  translation.
+- `hasTranslation(relativePath, locale)` checks the *exact* locale only and
+  never counts the fallback as a translation.
 - Drafts in a non-default locale are treated as missing, so they fall back.
 
 The resolver is constructed once in `src/lib/content.ts` from Vite's native
@@ -91,28 +90,30 @@ so it shows exactly what the content pane will show.
 
 ## Routes and UI behaviour
 
-| URL                     | Content locale                        |
-| ----------------------- | ------------------------------------- |
-| `/docs`, `/knowledge`   | UI locale (from the header selector)  |
-| `/docs/:slug`           | UI locale                             |
-| `/pt-BR/docs/:slug`     | `pt-BR` (URL pins it)                 |
+Content URLs are locale-neutral. The header language selector in `AppLayout`
+(backed by vue-i18n) is the single source of truth for both UI strings and
+document language; there is no second selector.
 
+| URL                       | Content locale                      |
+| ------------------------- | ----------------------------------- |
+| `/docs`, `/docs/:slug`    | Selected language (header selector) |
+| `/knowledge`, `.../:slug` | Selected language (header selector) |
+
+- Switching the selector re-resolves the current document in place. The URL
+  does not change, so links stay stable across languages.
 - `/docs` without a slug redirects to the first readable entry, so every
   document has a shareable URL.
 - A missing document renders the in-app 404 view. This is a client-side SPA on
   static hosting, so the HTTP response is still `200`; the 404 is visual and
   `role="alert"` rather than a server status code.
 - `<html lang>` is set to the **effective** content locale (the body actually
-  shown), so a pt-BR request that falls back renders `<html lang="en">`.
+  shown), so a pt-BR selection that falls back renders `<html lang="en">`.
 - When `isFallback` is true, `FallbackNotice.vue` renders the dismissible
   message “Este conteúdo ainda não foi traduzido. Exibindo o original em
   inglês.”
-- `ContentLanguageSwitcher.vue` asks `hasTranslation` before rendering a link.
-  Targets without a translation are rendered disabled with a
-  “Not yet translated” tooltip; it never emits a link that would 404.
-- UI-string locale and content locale are separate. The header selector
-  controls UI strings; the content switcher and URL prefixes control document
-  language.
+- The selector itself is never disabled per document: it also controls UI
+  strings, and an untranslated body falls back with a notice instead of a
+  broken link.
 
 ## Pages CMS
 
@@ -125,9 +126,8 @@ mechanism.
 
 ## Adding a future locale
 
-1. Add the code to `LOCALES` in `src/lib/locales.ts` and a label to
-   `LOCALE_LABELS`. This is the single source of truth; do not hard-code locale
-   strings elsewhere.
+1. Add the code to `LOCALES` in `src/lib/locales.ts`. This is the single source
+   of truth; do not hard-code locale strings elsewhere.
 2. Add translated section labels in `src/lib/contentTrees.ts`. The
    `Record<Locale, string>` type will fail to compile until every locale has
    them.
@@ -135,8 +135,6 @@ mechanism.
    with the same relative paths.
 4. Add two collections (e.g. `docs_xx`, `knowledge_xx`) to `.pages.yml` with
    the same field schema as the existing ones.
-5. Add the UI-string messages under `src/i18n/locales/` (separate system) and
-   the option in the header selector in `src/layouts/AppLayout.vue`.
-6. Do **not** add routes by hand: `src/router/index.ts` generates a prefixed
-   route for every non-default locale in `LOCALES`.
-7. Run `npm test` and `npm run build`.
+5. Add the UI-string messages under `src/i18n/locales/` and the option in the
+   header selector in `src/layouts/AppLayout.vue`.
+6. Run `npm test` and `npm run build`.

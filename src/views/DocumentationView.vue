@@ -2,7 +2,7 @@
 import SplitViewLayout from '@/layouts/SplitViewLayout.vue';
 import TreeView from '@/components/knowledge/TreeView.vue';
 import ContentPane from '@/components/knowledge/ContentPane.vue';
-import { docsTree } from '@/core/constants/docsTree';
+import { docsTree } from '@/core/content/trees';
 import { useTreeContent } from '@/composables/useTreeContent';
 
 const { selectedId, content, select } = useTreeContent(docsTree);

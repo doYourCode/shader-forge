@@ -1,5 +1,8 @@
 <script setup lang="ts">
-withDefaults(
+import { computed } from 'vue';
+import { renderMarkdown } from '@/core/content/markdown';
+
+const props = withDefaults(
   defineProps<{
     content?: string | null;
     /** Empty-state text when content is null/empty */
@@ -10,15 +13,15 @@ withDefaults(
     emptyText: 'Select an entry from the tree on the left.',
   },
 );
+
+const html = computed(() =>
+  props.content ? renderMarkdown(props.content) : '',
+);
 </script>
 
 <template>
   <article class="content-pane">
-    <template v-if="content">
-      <!-- v-html is safe here ONLY because content is authored by us. 
-           Swap for a markdown renderer or a sanitizer if content ever becomes user-provided. -->
-      <div class="content-pane__body" v-html="content" />
-    </template>
+    <div v-if="html" class="content-pane__body" v-html="html" />
     <p v-else class="content-pane__empty">{{ emptyText }}</p>
   </article>
 </template>
@@ -61,5 +64,48 @@ withDefaults(
 .content-pane__empty {
   color: var(--fg-subtle);
   font-style: italic;
+}
+
+.content-pane__body :deep(p),
+.content-pane__body :deep(ul),
+.content-pane__body :deep(ol),
+.content-pane__body :deep(blockquote),
+.content-pane__body :deep(pre),
+.content-pane__body :deep(table) {
+  margin: 0.8em 0;
+}
+
+.content-pane__body :deep(ul),
+.content-pane__body :deep(ol) {
+  padding-left: 1.4em;
+}
+
+.content-pane__body :deep(pre code) {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.content-pane__body :deep(blockquote) {
+  padding: 0.2em 0.9em;
+  border-left: 2px solid var(--accent-blue);
+  color: var(--fg-muted);
+}
+
+.content-pane__body :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.content-pane__body :deep(th),
+.content-pane__body :deep(td) {
+  border: 1px solid var(--border);
+  padding: 0.3em 0.5em;
+  text-align: left;
+}
+
+.content-pane__body :deep(img) {
+  max-width: 100%;
+  height: auto;
 }
 </style>

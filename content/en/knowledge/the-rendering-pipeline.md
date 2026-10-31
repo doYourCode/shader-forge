@@ -5,7 +5,6 @@ section: basics
 order: 1
 draft: false
 ---
-
 # The Rendering Pipeline: From 3D Data to Pixels on Your Screen
 
 > **Audience:** first-year students in computer graphics.
@@ -49,6 +48,10 @@ Think of a car factory with an assembly line:
 - Station 2 paints it.
 - Station 3 installs the interior.
 - Station 4 does the final inspection.
+
+<img src="/images/content/carfactoryanalogy.png"
+     alt="Car factory analogy"
+     width="70%">
 
 Each station does **one specific job**, receives the output of the previous station, and passes its result to the next. While car #1 is being painted, car #2 is already being welded. Everything works **in parallel**, and that is the secret of throughput.
 
@@ -95,11 +98,13 @@ flowchart TD
 
 We can group the stages into three big phases:
 
+
 | Phase | Works on... | Main question it answers |
-|---|---|---|
+| ----------------------- | ---------------------- | ------------------------------------------------ |
 | **Geometry processing** | Vertices and triangles | *Where on the screen does each triangle end up?* |
 | **Rasterization** | Triangles → fragments | *Which pixels does each triangle cover?* |
 | **Pixel processing** | Fragments | *What color should each pixel be?* |
+
 
 ---
 
@@ -247,14 +252,16 @@ flowchart LR
     E -- "Viewport transform" --> F
 ```
 
+
 | Space | What changes? | Analogy |
-|---|---|---|
+| ---------- | --------------------------------------------------------------------- | ------------------------------------------- |
 | **Local** | The artist modeled a chair with its origin at the center of its seat. | A blueprint of a chair. |
 | **World** | Where the chair sits in the room (position, rotation, scale). | Placing the chair in the room. |
 | **View** | Everything is re-expressed relative to the camera. | Describing the room from the camera's eyes. |
 | **Clip** | Perspective is applied (a 3D box becomes a *frustum*). | How a lens bends the view. |
 | **NDC** | Divide by `w`; everything visible fits in a standard cube. | A standardized "photo frame". |
 | **Screen** | Scale to the window's pixel resolution. | Printing the photo at a given size. |
+
 
 ### Why matrices?
 
@@ -454,8 +461,9 @@ While the monitor displays the front buffer, the GPU draws the next frame in the
 
 Early GPUs (1990s) had a **fixed-function pipeline**: you could only toggle options (lighting on/off, fog on/off). Modern GPUs have **programmable stages** driven by small programs called **shaders**.
 
+
 | Stage | Type | Who controls it? |
-|---|---|---|
+| ---------------------------- | ----------------------- | ---------------------------------- |
 | Input assembly | Fixed | Configured by API state |
 | **Vertex shader** | **Programmable** | **You** (shader code) |
 | Tessellation / Geometry | Programmable (optional) | You |
@@ -464,6 +472,7 @@ Early GPUs (1990s) had a **fixed-function pipeline**: you could only toggle opti
 | Rasterization | Fixed | Configured (fill mode, MSAA) |
 | **Fragment shader** | **Programmable** | **You** |
 | Depth/stencil/blend | Fixed (configurable) | Configured (operations, functions) |
+
 
 A rule of thumb for beginners: **you write the vertex shader and the fragment shader; the hardware does the rest.**
 
@@ -569,9 +578,11 @@ Three vertices (red, green, blue) go in, and a triangle with a smooth rainbow gr
 Once the basic pipeline is clear, you will meet these important variations:
 
 ### Forward rendering
+
 What we described: each object goes through the whole pipeline and gets lit in the fragment shader. Simple and fast with few lights, but costly with *many* lights.
 
 ### Deferred rendering
+
 The pipeline is split in two passes:
 
 ```mermaid
@@ -582,6 +593,7 @@ flowchart LR
 Lighting is computed **once per visible pixel** instead of once per fragment (even hidden ones). Great for hundreds of lights, but harder with transparency and anti-aliasing.
 
 ### Ray tracing
+
 A different approach: instead of "for each triangle, find the pixels" (*object-order*), it asks "for each pixel, shoot a ray and find the triangle it hits" (*image-order*).
 
 ```text
@@ -596,14 +608,16 @@ A different approach: instead of "for each triangle, find the pixels" (*object-o
 Modern GPUs have dedicated hardware for ray tracing, and many engines use **hybrid rendering**: rasterize the main image and use ray tracing for reflections, shadows or global illumination.
 
 ### Compute shaders
+
 Modern pipelines also include **compute shaders**: general-purpose programs on the GPU used for particle systems, post-processing, culling, and more, running outside of the graphics pipeline proper.
 
 ---
 
 ## 13. Common beginner mistakes
 
+
 | Symptom | Likely cause |
-|---|---|
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Nothing appears on screen** | The object is outside the frustum, behind the camera, or has a wrong MVP matrix; the shader failed to compile; the triangle winding is reversed and it was culled. |
 | **The object looks "inside out"** | Winding order is wrong (clockwise vs. counter-clockwise) so front faces are being culled. |
 | **Far objects overlap near ones** | Depth testing is disabled, or the depth buffer wasn't cleared at the start of the frame. |
@@ -612,12 +626,14 @@ Modern pipelines also include **compute shaders**: general-purpose programs on t
 | **Transform does the opposite of what you expect** | Matrix multiplication order is wrong (matrices are *not* commutative). |
 | **Low FPS** | Too many draw calls (CPU bound), or heavy fragment shaders / overdraw (GPU bound). |
 
+
 ---
 
 ## 14. Glossary
 
+
 | Term | Meaning |
-|---|---|
+| --------------------------- | ------------------------------------------------------------------------- |
 | **Vertex** | A point in space with attributes (position, normal, UV, color...). |
 | **Primitive** | The basic shape the GPU draws: point, line or triangle. |
 | **Mesh** | A collection of vertices and indices forming an object. |
@@ -635,6 +651,7 @@ Modern pipelines also include **compute shaders**: general-purpose programs on t
 | **Overdraw** | Shading the same pixel multiple times because of overlapping geometry. |
 | **API** | Programming interface to the GPU: OpenGL, Vulkan, DirectX, Metal, WebGPU. |
 
+
 ---
 
 ## 15. Exercises
@@ -646,15 +663,14 @@ Modern pipelines also include **compute shaders**: general-purpose programs on t
 5. **Interpolation.** A triangle has vertex colors red `(1,0,0)`, green `(0,1,0)` and blue `(0,0,1)`. What's the color at the exact center of the triangle (barycentric weights `1/3, 1/3, 1/3`)?
 6. **Hands on.** Using any API (WebGL, OpenGL, WebGPU), render a single triangle with a color per vertex. Then change the vertex shader so the triangle rotates over time.
 
-<details>
-<summary>Answers (click to expand)</summary>
+Answers (click to expand)
 
 2. Local space → `(0.5, 0.5, 0.5)`; world space → `(5.5, 0.5, 0.5)`.
 3. The vertex shader runs 3 times (once per vertex). The fragment shader runs about 1,000 times (one per covered pixel, more if other geometry overlaps).
 4. After the first: `0.7`; after the second: `0.2`; the third (`0.5`) fails the test, so the buffer stays at `0.2`. The color of the **second** fragment wins.
 5. `(1/3, 1/3, 1/3)`, a medium gray.
 
-</details>
+
 
 ---
 

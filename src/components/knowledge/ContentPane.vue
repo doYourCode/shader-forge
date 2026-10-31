@@ -28,7 +28,10 @@ const html = computed(() =>
 
 <style scoped>
 .content-pane {
-  max-width: 70ch;
+  max-width: 100%;
+  padding-left: 1rem;  /* Evita que o texto cole na esquerda */
+  padding-right: 1rem; /* Evita que o texto cole na direita */
+  box-sizing: border-box;
   font-family: var(--font-mono);
   font-size: 0.9rem;
   line-height: 1.55;

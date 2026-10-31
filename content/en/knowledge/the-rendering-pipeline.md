@@ -43,17 +43,13 @@ A computer screen is just a grid of colored dots called **pixels**. A 3D game or
 ### The factory analogy
 
 Think of a car factory with an assembly line:
-
 - Station 1 welds the chassis.
 - Station 2 paints it.
 - Station 3 installs the interior.
 - Station 4 does the final inspection.
+![Car factory analogy](/images/content/carfactoryanalogy.png)
 
-<img src="/public/images/content/carfactoryanalogy.png"
-     alt="Car factory analogy"
-     width="70%">
-
-Each station does **one specific job**, receives the output of the previous station, and passes its result to the next. While car #1 is being painted, car #2 is already being welded. Everything works **in parallel**, and that is the secret of throughput.
+Each station does **one specific job**, receives the output of the previous station, and passes its result to the next. While car #1 is still being welded, car #2 is already being painted, and so on. Everything works **in parallel**, and that is the secret of throughput.
 
 The rendering pipeline works exactly like that, except that the "cars" are **vertices**, **triangles** and **pixels**.
 

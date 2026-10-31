@@ -1,12 +1,13 @@
+#version 300 es
 precision highp float;
 
-attribute vec3 position;
-attribute vec3 normal;
+in vec3 position;
+in vec3 normal;
 
 uniform mat4 worldViewProjection;
 uniform mat4 normalMatrix;
 
-varying vec3 vNormal;
+out vec3 vNormal;
 
 void main(void) {
   gl_Position = worldViewProjection * vec4(position, 1.0);

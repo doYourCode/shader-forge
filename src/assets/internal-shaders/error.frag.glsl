@@ -1,4 +1,7 @@
+#version 300 es
 precision highp float;
+
+layout(location = 0) out vec4 fragColor;
 
 void main()
 {
@@ -15,5 +18,5 @@ void main()
 
     vec3 baseColor = mix(red, yellow, stripe);
 
-    gl_FragColor = vec4(baseColor, 1.0);
+    fragColor = vec4(baseColor, 1.0);
 }

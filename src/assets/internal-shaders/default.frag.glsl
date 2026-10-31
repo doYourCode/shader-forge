@@ -1,6 +1,9 @@
+#version 300 es
 precision highp float;
 
-varying vec3 vNormal;
+in vec3 vNormal;
+
+layout(location = 0) out vec4 fragColor;
 
 void main(void) {
   vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));
@@ -10,5 +13,5 @@ void main(void) {
   vec3 ambient = vec3(0.12, 0.14, 0.18);
   vec3 color = ambient + base * (0.25 + 0.75 * ndl);
 
-  gl_FragColor = vec4(color, 1.0);
+  fragColor = vec4(color, 1.0);
 }

@@ -6,12 +6,14 @@ in vec3 vNormal;
 layout(location = 0) out vec4 fragColor;
 
 void main(void) {
-  vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));
-  float ndl = max(dot(normalize(vNormal), lightDir), 0.0);
+  vec3 N = normalize(vNormal);
+  vec3 L = normalize(vec3(0.5, 1.0, 0.3));
 
-  vec3 base = vec3(0.35, 0.55, 0.95);
-  vec3 ambient = vec3(0.12, 0.14, 0.18);
-  vec3 color = ambient + base * (0.25 + 0.75 * ndl);
+  float ndl = max(dot(N, L), 0.0);
+
+  vec3 albedo  = vec3(0.35, 0.55, 0.95);
+  vec3 ambient = vec3(0.08, 0.08, 0.10);
+  vec3 color   = ambient + albedo * ndl;
 
   fragColor = vec4(color, 1.0);
 }

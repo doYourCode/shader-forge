@@ -1,24 +1,62 @@
+
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { APP_NAME, FOOTER_TEXT } from '@/core/constants/app';
+import { useI18n } from 'vue-i18n';
+
+import { APP_NAME } from '@/core/constants/app';
 
 const route = useRoute();
-const headerTitle = computed(() => route.meta.headerTitle ?? '');
+const { locale, t } = useI18n();
+
+const headerTitle = computed(() => {
+  const key = route.meta.headerTitleKey;
+  return key ? t(key) : '';
+});
+
+const footerText = computed(() => t('app.footer'));
+
+import { setLocale, type AppLocale } from '@/i18n/setLocale';
+
 const fillViewport = computed(() => route.meta.id === 'editor');
+
+const selectedLocale = computed<AppLocale>({
+  get: () => locale.value as AppLocale,
+  set: setLocale,
+});
 </script>
+
 
 <template>
   <div class="app-shell" :class="{ 'app-shell--fill': fillViewport }">
     <!-- HEADER -->
-    <header class="app-header">
-      <RouterLink to="/" class="app-header__brand" aria-label="Go to home">
-        <img src="@/assets/images/favicon.ico" alt="" class="app-header__logo" />
-        <span class="app-header__name">{{ APP_NAME }}</span>
-      </RouterLink>
 
-      <span v-if="headerTitle" class="app-header__title">{{ headerTitle }}</span>
-    </header>
+  <header class="app-header">
+    <RouterLink to="/" class="app-header__brand" :aria-label="t('app.home')">
+      <img
+        src="@/assets/images/favicon.ico"
+        alt=""
+        class="app-header__logo"
+      />
+      <span class="app-header__name">{{ APP_NAME }}</span>
+    </RouterLink>
+
+    <div class="app-header__actions">
+      <span v-if="headerTitle" class="app-header__title">
+        {{ headerTitle }}
+      </span>
+
+      <select
+        v-model="selectedLocale"
+        class="app-header__language"
+        :aria-label="t('app.language')"
+      >
+        <option value="en">English</option>
+        <option value="pt-BR">Português</option>
+      </select>
+    </div>
+  </header>
+
 
     <!-- BODY (routed view lives here) -->
     <main class="app-body" :class="{ 'app-body--fill': fillViewport }">
@@ -27,7 +65,7 @@ const fillViewport = computed(() => route.meta.id === 'editor');
 
     <!-- FOOTER -->
     <footer class="app-footer">
-      <p>{{ FOOTER_TEXT }}</p>
+      <p>{{ footerText }}</p>
     </footer>
   </div>
 </template>
@@ -63,6 +101,28 @@ const fillViewport = computed(() => route.meta.id === 'editor');
   padding: 0.75rem 1.5rem;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
+}
+
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-header__language {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-input);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.app-header__language:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
 }
 
 .app-header__brand {

@@ -1,0 +1,45 @@
+
+{
+  "app": {
+    "title": "ShaderForge",
+    "tagline": "Base de conhecimento sobre shaders",
+    "run": "Executar Shader",
+    "documentation": "Documentação",
+    "home": "Ir para a página inicial",
+    "language": "Selecionar idioma",
+    "footer": "Informações do projeto, contato, mapa do site, redes sociais e GitHub."
+  },
+  "navigation": {
+    "documentation": "Referência e documentação"
+  },
+  "landing": {
+    "status": {
+      "checking": "Verificando disponibilidade...",
+      "unavailable": "Indisponível."
+    },
+    "cards": {
+      "glsl": {
+        "title": "Editor GLSL",
+        "description": "Escreva, edite e experimente shaders GLSL.",
+        "note": "Crie e visualize shaders."
+      },
+      "wgsl": {
+        "title": "WGSL (WebGPU)",
+        "description": "Escreva shaders WGSL utilizando o backend WebGPU.",
+        "note": "Requer suporte a WebGPU."
+      },
+      "docs": {
+        "title": "Referência e Documentação",
+        "description": "Referência da API, guias e listas de funções integradas."
+      },
+      "knowledge": {
+        "title": "Base de Conhecimento",
+        "description": "Artigos selecionados sobre técnicas gráficas e teoria de shaders."
+      },
+      "sandbox": {
+        "title": "Sandbox de Fragment Shader",
+        "description": "Experimente shaders de fragmento em um ambiente isolado."
+      }
+    }
+  }
+}

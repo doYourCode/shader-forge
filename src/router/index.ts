@@ -1,11 +1,9 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
-import { APP_TAGLINE } from '@/core/constants/app';
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** Title shown in the header right-side */
-    headerTitle?: string;
-    /** Optional id for future use (analytics, theming) */
+    /** Translation key for the header title */
+    headerTitleKey?: string;
     id?: string;
   }
 }
@@ -15,28 +13,30 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'landing',
     component: () => import('@/views/LandingView.vue'),
-    meta: { headerTitle: APP_TAGLINE, id: 'landing' },
+    meta: { headerTitleKey: 'app.tagline', id: 'landing' },
   },
   {
     path: '/knowledge',
     name: 'knowledge',
     component: () => import('@/views/KnowledgeView.vue'),
-    meta: { headerTitle: APP_TAGLINE, id: 'knowledge' },
+    meta: { headerTitleKey: 'app.tagline', id: 'knowledge' },
   },
   {
     path: '/docs',
     name: 'documentation',
     component: () => import('@/views/DocumentationView.vue'),
-    meta: { headerTitle: 'Reference & Documentation', id: 'documentation' },
+    meta: { headerTitleKey: 'navigation.documentation', id: 'documentation' },
   },
   {
     path: '/editor',
     name: 'editor',
     component: () => import('@/views/ShaderEditorView.vue'),
-    meta: { headerTitle: '', id: 'editor' }, // editor has no right-side title in sketch
+    meta: { headerTitleKey: '', id: 'editor' },
   },
-  // Fallback
-  { path: '/:pathMatch(.*)*', redirect: '/' },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
+  },
 ];
 
 export const router = createRouter({

@@ -1,6 +1,8 @@
+
 <script setup lang="ts">
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import type { ILandingCard } from '@/core/models/landingCard';
 
 const props = withDefaults(
@@ -17,13 +19,20 @@ const props = withDefaults(
   },
 );
 
+const { t } = useI18n();
+
 const isChecking = computed(() => props.enabled === null);
 const isDisabled = computed(() => props.enabled === false);
 
 const noteText = computed(() => {
-  if (isChecking.value) return 'Checking availability…';
-  if (isDisabled.value) return props.disabledReason ?? props.card.note ?? 'Unavailable.';
-  return props.card.note ?? null;
+  if (isChecking.value) return t('landing.status.checking');
+
+  if (isDisabled.value) {
+    return props.disabledReason
+      ?? (props.card.note ? t(props.card.note) : t('landing.status.unavailable'));
+  }
+
+  return props.card.note ? t(props.card.note) : null;
 });
 </script>
 
@@ -39,8 +48,10 @@ const noteText = computed(() => {
     }"
   >
     <div class="feature-card__body">
-      <h3 class="feature-card__title">{{ card.title }}</h3>
-      <p class="feature-card__description">{{ card.description }}</p>
+      <h3 class="feature-card__title">{{ t(card.title) }}</h3>
+      <p class="feature-card__description">
+        {{ t(card.description) }}
+      </p>
     </div>
 
     <p v-if="noteText" class="feature-card__note">
@@ -54,10 +65,7 @@ const noteText = computed(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-
-  /* Height driven by the parent grid. */
   height: 100%;
-
   border: 2px solid var(--border);
   background: var(--bg-elevated);
   color: var(--fg);

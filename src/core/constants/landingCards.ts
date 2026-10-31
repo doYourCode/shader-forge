@@ -1,39 +1,41 @@
+
 import type { ILandingCard } from '@/core/models/landingCard';
 
 export const landingCards: ILandingCard[] = [
   {
     id: 'glsl-editor',
-    title: 'GLSL Editor',
-    description: 'GLES 3.0 · Write and compile shaders live in the browser.',
+    title: 'landing.cards.glsl.title',
+    description: 'landing.cards.glsl.description',
+    note: 'landing.cards.glsl.note',
     to: '/editor',
     requiresWebGpu: false,
   },
   {
     id: 'wgsl-editor',
-    title: 'WGSL (WebGPU)',
-    description: 'Write WGSL shaders powered by the WebGPU backend.',
-    note: 'Requires WebGPU.',
+    title: 'landing.cards.wgsl.title',
+    description: 'landing.cards.wgsl.description',
+    note: 'landing.cards.wgsl.note',
     to: '',
     requiresWebGpu: true,
   },
   {
     id: 'reference-docs',
-    title: 'Reference & Docs',
-    description: 'API reference, guides, and built-in function cheatsheets.',
+    title: 'landing.cards.docs.title',
+    description: 'landing.cards.docs.description',
     to: '/docs',
     requiresWebGpu: false,
   },
   {
     id: 'base-of-knowledge',
-    title: 'Base of Knowledge',
-    description: 'Curated articles on graphics techniques and shader theory.',
+    title: 'landing.cards.knowledge.title',
+    description: 'landing.cards.knowledge.description',
     to: '/knowledge',
     requiresWebGpu: false,
   },
   {
     id: 'fragment-sandbox',
-    title: 'Fragment Sandbox',
-    description: 'Experiment with fragment shaders in an isolated playground.',
+    title: 'landing.cards.sandbox.title',
+    description: 'landing.cards.sandbox.description',
     to: '',
     requiresWebGpu: false,
   },

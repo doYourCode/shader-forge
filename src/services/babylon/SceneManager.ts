@@ -175,6 +175,7 @@ export class  SceneManager {
     } else {
       mesh.name = 'preview';
       this.mesh = mesh;
+      this.mesh.rotationQuaternion = null;
     }
 
     this.prepareErrorMaterial();
@@ -187,12 +188,12 @@ export class  SceneManager {
     this.mesh.material = material;
 
     //this.mesh.getChildMeshes(false).forEach(m => { m.material = material; });
-
     this.scene.registerBeforeRender(() => {
-      if (this.material && this.scene?.activeCamera) {
+      if (this.material && this.scene?.activeCamera && this.mesh) {
         this.material.setFloat("time", performance.now() * 0.001);
         this.material.setVector3("cameraPos", this.scene.activeCamera.position);
         this.material.setVector3("lightDir", dir.direction);
+        this.mesh.rotation.y += 0.001;
       }
     });
 

@@ -5,20 +5,21 @@ import {
   Vector3,
   HemisphericLight,
   DirectionalLight,
+  SceneLoader,
   Mesh,
-  MeshBuilder,
+  //MeshBuilder,
   ShaderMaterial,
   Color4,
   type Effect,
 } from '@babylonjs/core';
+import '@babylonjs/loaders/glTF';
 import type { ShaderError, ShaderErrorStage } from '@/core/models/shaderError';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import { getStateObject } from '@babylonjs/core/Engines/thinEngine.functions';
-import {
-  ShaderLogRecorder,
-  type WebGlInfoLogContext,
-} from '@/services/webgl/ShaderLogRecorder';
+import { ShaderLogRecorder, type WebGlInfoLogContext } from '@/services/webgl/ShaderLogRecorder';
 import { internalShaders } from './internalShaders';
+
+import sphereUrl from '@/assets/meshes/monkey.glb?url';
 
 export interface ShaderSource {
   vertex: string;
@@ -39,8 +40,8 @@ interface CompileAttempt {
   effect: Effect | null;
 }
 
-const SHADER_ATTRIBUTES = ['position', 'normal'];
-const SHADER_UNIFORMS = ['worldViewProjection', 'normalMatrix'];
+const SHADER_ATTRIBUTES = ['position', 'normal', 'tangent', 'uv', 'uv2', 'color'];
+const SHADER_UNIFORMS = ["world", "view", "projection", "time", "cameraPos", "lightDir"];
 const COMPILE_TIMEOUT_MS = 15_000;
 const ERROR_PREWARM_FRAMES = 120;
 
@@ -80,7 +81,18 @@ function webGl2RequiredError(): ShaderError {
   };
 }
 
-export class SceneManager {
+async function loadGlbMesh(scene: Scene, glbUrl: string): Promise<Mesh> {
+  const result = await SceneLoader.ImportMeshAsync('', '', glbUrl, scene);
+  const root = result.meshes[0];
+  if (!root) throw new Error(`No meshes in GLB: ${glbUrl}`);
+
+  // Find first actual renderable mesh, keep hierarchy intact
+  const mesh = result.meshes.find((m): m is Mesh => m instanceof Mesh && m.getTotalVertices() > 0);
+  if (!mesh) throw new Error(`No renderable mesh in GLB: ${glbUrl}`);
+  return mesh;
+}
+
+export class  SceneManager {
   private engine: Engine | null = null;
   private scene: Scene | null = null;
   private material: ShaderMaterial | null = null;
@@ -93,7 +105,7 @@ export class SceneManager {
 
   onError: (errors: ShaderError[]) => void = () => {};
 
-  init(canvas: HTMLCanvasElement, source: ShaderSource): void {
+  async init(canvas: HTMLCanvasElement, source: ShaderSource): Promise<void> {
     this.dispose();
     this.disposed = false;
 
@@ -127,20 +139,43 @@ export class SceneManager {
     camera.attachControl(canvas, true);
     camera.lowerRadiusLimit = 1.5;
     camera.upperRadiusLimit = 8;
+    this.scene.activeCamera = camera;
 
     new HemisphericLight('hemi', new Vector3(0, 1, 0), this.scene);
     const dir = new DirectionalLight(
       'dir',
-      new Vector3(-0.5, -1, -0.5),
+      new Vector3(0.5, 1, 0.3),
       this.scene,
     );
     dir.intensity = 0.7;
 
-    this.mesh = MeshBuilder.CreateSphere(
+    /*this.mesh = MeshBuilder.CreateSphere(
       'preview',
-      { diameter: 2, segments: 32 },
+      { diameter: 2, segments: 24 },
       this.scene,
-    );
+    );*/
+
+    // Load the GLB mesh instead of creating a sphere.
+  let mesh: Mesh;
+  try {
+    mesh = await loadGlbMesh(this.scene, sphereUrl);
+  } catch (error) {
+    // Bail out cleanly if loading fails.
+    this.dispose();
+    this.onError([internalError(
+      error instanceof Error ? error.message : String(error),
+    )]);
+    return;
+  }
+
+    // If init() was cancelled while we awaited the loader:
+    if (this.disposed) {
+      mesh.dispose();
+      return;
+    } else {
+      mesh.name = 'preview';
+      this.mesh = mesh;
+    }
 
     this.prepareErrorMaterial();
 
@@ -150,6 +185,16 @@ export class SceneManager {
     };
     this.material = material;
     this.mesh.material = material;
+
+    //this.mesh.getChildMeshes(false).forEach(m => { m.material = material; });
+
+    this.scene.registerBeforeRender(() => {
+      if (this.material && this.scene?.activeCamera) {
+        this.material.setFloat("time", performance.now() * 0.001);
+        this.material.setVector3("cameraPos", this.scene.activeCamera.position);
+        this.material.setVector3("lightDir", dir.direction);
+      }
+    });
 
     this.engine.runRenderLoop(() => {
       this.scene?.render();

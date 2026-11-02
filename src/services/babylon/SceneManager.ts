@@ -1,23 +1,26 @@
-import {
-  Engine,
-  Scene,
-  ArcRotateCamera,
-  Vector3,
-  HemisphericLight,
+import type {
   DirectionalLight,
-  SceneLoader,
+  Engine,
   Mesh,
-  //MeshBuilder,
+  Scene,
   ShaderMaterial,
-  Color4,
-  type Effect,
 } from '@babylonjs/core';
-import '@babylonjs/loaders/glTF';
-import type { ShaderError, ShaderErrorStage } from '@/core/models/shaderError';
+import type { ShaderError } from '@/core/models/shaderError';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
-import { getStateObject } from '@babylonjs/core/Engines/thinEngine.functions';
-import { ShaderLogRecorder, type WebGlInfoLogContext } from '@/services/webgl/ShaderLogRecorder';
+import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
 import { internalShaders } from './internalShaders';
+import { FragmentDiagnostics } from './preview/compile/FragmentDiagnostics';
+import { ShaderCompiler } from './preview/compile/ShaderCompiler';
+import { internalErrorFrom } from './preview/errors/shaderErrorFactory';
+import { MaterialController } from './preview/MaterialController';
+import { PreviewAnimator } from './preview/PreviewAnimator';
+import { PreviewEngine } from './preview/PreviewEngine';
+import {
+  createPreviewScene,
+  type PreviewScene,
+} from './preview/createPreviewScene';
+import { GlbMeshProvider } from './preview/mesh/GlbMeshProvider';
+import type { PreviewMeshProvider } from './preview/mesh/PreviewMeshProvider';
 
 import sphereUrl from '@/assets/meshes/monkey.glb?url';
 
@@ -32,307 +35,191 @@ export interface CompileResult {
   errors: ShaderError[];
 }
 
-interface CompileAttempt {
-  ok: boolean;
-  errors: ShaderError[];
-  stage: ShaderErrorStage | null;
-  material: ShaderMaterial | null;
-  effect: Effect | null;
+export { assertWebGl2 } from './preview/PreviewEngine';
+export type {
+  WebGl2EngineLike,
+  WebGl2GuardResult,
+} from './preview/PreviewEngine';
+
+/** Factories for the collaborators, so tests can substitute them. */
+export interface SceneManagerDeps {
+  createEngine(reportError: (errors: ShaderError[]) => void): PreviewEngine;
+  createScene(engine: Engine, canvas: HTMLCanvasElement): PreviewScene;
+  createMaterialController(
+    scene: Scene,
+    mesh: Mesh,
+    onCompileFailure: (source: ShaderSource, fallbackLog: string) => void,
+  ): MaterialController;
+  createAnimator(
+    scene: Scene,
+    light: DirectionalLight,
+    mesh: Mesh,
+    getMaterial: () => ShaderMaterial | null,
+  ): PreviewAnimator;
+  createCompiler(
+    scene: Scene,
+    recorder: ShaderLogRecorder | null,
+  ): ShaderCompiler;
+  createDiagnostics(compiler: ShaderCompiler): FragmentDiagnostics;
 }
 
-const SHADER_ATTRIBUTES = ['position', 'normal', 'tangent', 'uv', 'uv2', 'color'];
-const SHADER_UNIFORMS = ["world", "view", "projection", "time", "cameraPos", "lightDir"];
-const COMPILE_TIMEOUT_MS = 15_000;
-const ERROR_PREWARM_FRAMES = 120;
-
-/** The only engine state the WebGL 2 guard needs, which keeps it testable. */
-export interface WebGl2EngineLike {
-  readonly webGLVersion: number;
-}
-
-export type WebGl2GuardResult =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly error: ShaderError };
+const defaultDeps: SceneManagerDeps = {
+  createEngine: (reportError) => new PreviewEngine(reportError),
+  createScene: (engine, canvas) => createPreviewScene(engine, canvas),
+  createMaterialController: (scene, mesh, onCompileFailure) =>
+    new MaterialController(scene, mesh, onCompileFailure),
+  createAnimator: (scene, light, mesh, getMaterial) =>
+    new PreviewAnimator(scene, light, mesh, getMaterial),
+  createCompiler: (scene, recorder) => new ShaderCompiler(scene, recorder),
+  createDiagnostics: (compiler) =>
+    new FragmentDiagnostics(compiler, internalShaders.validation.vertex),
+};
 
 /**
- * WebGL 2 is a hard requirement: the internal shaders are GLSL ES 3.00 and
- * Babylon only leaves those sources alone when it created a WebGL 2 context.
- * There is deliberately no WebGL 1 fallback.
+ * Thin facade that wires the preview collaborators together and keeps the
+ * public API of the original monolithic manager.
  */
-export function assertWebGl2(engine: WebGl2EngineLike): WebGl2GuardResult {
-  if (engine.webGLVersion >= 2) {
-    return { ok: true };
-  }
-
-  return { ok: false, error: webGl2RequiredError() };
-}
-
-function webGl2RequiredError(): ShaderError {
-  return {
-    stage: 'program',
-    line: null,
-    column: null,
-    kind: 'internal',
-    title: 'WebGL 2 is required',
-    message:
-      'WebGL 2 is required to render the shader preview, but the browser created a WebGL 1 context.',
-    advice:
-      'Use a browser or device with WebGL 2 support, and make sure hardware acceleration is enabled.',
-  };
-}
-
-async function loadGlbMesh(scene: Scene, glbUrl: string): Promise<Mesh> {
-  const result = await SceneLoader.ImportMeshAsync('', '', glbUrl, scene);
-  const root = result.meshes[0];
-  if (!root) throw new Error(`No meshes in GLB: ${glbUrl}`);
-
-  // Find first actual renderable mesh, keep hierarchy intact
-  const mesh = result.meshes.find((m): m is Mesh => m instanceof Mesh && m.getTotalVertices() > 0);
-  if (!mesh) throw new Error(`No renderable mesh in GLB: ${glbUrl}`);
-  return mesh;
-}
-
-export class  SceneManager {
-  private engine: Engine | null = null;
+export class SceneManager {
+  private readonly meshProvider: PreviewMeshProvider;
+  private readonly deps: SceneManagerDeps;
+  private previewEngine: PreviewEngine | null = null;
   private scene: Scene | null = null;
-  private material: ShaderMaterial | null = null;
-  private errorMaterial: ShaderMaterial | null = null;
   private mesh: Mesh | null = null;
+  private materials: MaterialController | null = null;
+  private animator: PreviewAnimator | null = null;
+  private compiler: ShaderCompiler | null = null;
+  private fragmentDiagnostics: FragmentDiagnostics | null = null;
   private wireframe = false;
-  private disposed = false;
-  private errorPrewarmFrame: number | null = null;
-  private logRecorder: ShaderLogRecorder | null = null;
+  /**
+   * Monotonic token identifying the current init session. Any `await` resumes
+   * only if its token is still current; dispose or a newer init supersedes it.
+   */
+  private session = 0;
 
   onError: (errors: ShaderError[]) => void = () => {};
 
+  constructor(
+    meshProvider: PreviewMeshProvider = new GlbMeshProvider(sphereUrl),
+    deps: Partial<SceneManagerDeps> = defaultDeps,
+  ) {
+    this.meshProvider = meshProvider;
+    this.deps = {
+      createEngine: deps.createEngine ?? defaultDeps.createEngine,
+      createScene: deps.createScene ?? defaultDeps.createScene,
+      createMaterialController:
+        deps.createMaterialController ?? defaultDeps.createMaterialController,
+      createAnimator: deps.createAnimator ?? defaultDeps.createAnimator,
+      createCompiler: deps.createCompiler ?? defaultDeps.createCompiler,
+      createDiagnostics: deps.createDiagnostics ?? defaultDeps.createDiagnostics,
+    };
+  }
+
   async init(canvas: HTMLCanvasElement, source: ShaderSource): Promise<void> {
     this.dispose();
-    this.disposed = false;
+    const session = this.session;
 
-    this.engine = new Engine(canvas, true, {
-      preserveDrawingBuffer: true,
-      stencil: true,
-    });
+    const previewEngine = this.deps.createEngine((errors) =>
+      this.onError(errors),
+    );
+    this.previewEngine = previewEngine;
 
-    const webGl2 = assertWebGl2(this.engine);
-    if (!webGl2.ok) {
-      this.engine.dispose();
-      this.engine = null;
-      this.disposed = true;
-      this.onError([webGl2.error]);
+    const engine = previewEngine.create(canvas);
+    if (!engine) {
+      this.previewEngine = null;
       return;
     }
 
-    this.logRecorder = createLogRecorder(this.engine);
+    const { scene, directionalLight } = this.deps.createScene(engine, canvas);
+    this.scene = scene;
+    previewEngine.attachScene(scene);
 
-    this.scene = new Scene(this.engine);
-    this.scene.clearColor = Color4.FromHexString('#282c34ff');
+    let mesh: Mesh;
+    try {
+      mesh = await this.meshProvider.load(scene);
+    } catch (error) {
+      // A superseded/disposed init must not tear down a newer session.
+      if (!this.isCurrent(session)) return;
 
-    const camera = new ArcRotateCamera(
-      'camera',
-      Math.PI / 2,
-      Math.PI / 3,
-      3.5,
-      Vector3.Zero(),
-      this.scene,
-    );
-    camera.attachControl(canvas, true);
-    camera.lowerRadiusLimit = 1.5;
-    camera.upperRadiusLimit = 8;
-    this.scene.activeCamera = camera;
+      // Bail out cleanly if loading fails.
+      this.dispose();
+      this.onError([internalErrorFrom(error)]);
+      return;
+    }
 
-    new HemisphericLight('hemi', new Vector3(0, 1, 0), this.scene);
-    const dir = new DirectionalLight(
-      'dir',
-      new Vector3(0.5, 1, 0.3),
-      this.scene,
-    );
-    dir.intensity = 0.7;
-
-    /*this.mesh = MeshBuilder.CreateSphere(
-      'preview',
-      { diameter: 2, segments: 24 },
-      this.scene,
-    );*/
-
-    // Load the GLB mesh instead of creating a sphere.
-  let mesh: Mesh;
-  try {
-    mesh = await loadGlbMesh(this.scene, sphereUrl);
-  } catch (error) {
-    // Bail out cleanly if loading fails.
-    this.dispose();
-    this.onError([internalError(
-      error instanceof Error ? error.message : String(error),
-    )]);
-    return;
-  }
-
-    // If init() was cancelled while we awaited the loader:
-    if (this.disposed) {
+    // If init() was superseded or disposed while we awaited the loader.
+    if (!this.isCurrent(session)) {
       mesh.dispose();
       return;
-    } else {
-      mesh.name = 'preview';
-      this.mesh = mesh;
-      this.mesh.rotationQuaternion = null;
     }
 
-    this.prepareErrorMaterial();
+    mesh.name = 'preview';
+    this.mesh = mesh;
+    this.mesh.rotationQuaternion = null;
 
-    const material = this.buildMaterial(source);
-    material.onError = (_effect, rawErrors) => {
-      this.reportCompileFailure(source, rawErrors);
-    };
-    this.material = material;
-    this.mesh.material = material;
-
-    //this.mesh.getChildMeshes(false).forEach(m => { m.material = material; });
-    this.scene.registerBeforeRender(() => {
-      if (this.material && this.scene?.activeCamera && this.mesh) {
-        this.material.setFloat("time", performance.now() * 0.001);
-        this.material.setVector3("cameraPos", this.scene.activeCamera.position);
-        this.material.setVector3("lightDir", dir.direction);
-        this.mesh.rotation.y += 0.001;
-      }
-    });
-
-    this.engine.runRenderLoop(() => {
-      this.scene?.render();
-    });
-  }
-
-  private buildMaterial(
-    source: ShaderSource,
-    name = 'previewShader',
-  ): ShaderMaterial {
-    if (!this.scene) {
-      throw new Error('Scene not initialized');
-    }
-
-    const material = new ShaderMaterial(
-      name,
-      this.scene,
-      {
-        vertexSource: source.vertex,
-        fragmentSource: source.fragment,
+    const materials = this.deps.createMaterialController(
+      scene,
+      mesh,
+      (failedSource, fallbackLog) => {
+        this.reportCompileFailure(failedSource, fallbackLog);
       },
-      {
-        attributes: [...SHADER_ATTRIBUTES],
-        uniforms: [...SHADER_UNIFORMS],
-      },
-      false,
     );
+    this.materials = materials;
+    materials.setWireframe(this.wireframe);
 
-    material.wireframe = this.wireframe;
-    return material;
-  }
+    materials.prepareErrorMaterial();
+    materials.apply(materials.buildMaterial(source), source);
 
-  private prepareErrorMaterial(): void {
-    const material = this.ensureErrorMaterial();
-    if (!material || !this.mesh || this.errorPrewarmFrame !== null) return;
+    const compiler = this.deps.createCompiler(scene, previewEngine.recorder);
+    this.compiler = compiler;
+    this.fragmentDiagnostics = this.deps.createDiagnostics(compiler);
 
-    let frames = 0;
-    const warm = () => {
-      this.errorPrewarmFrame = null;
-      if (this.disposed || !this.mesh || !this.errorMaterial) return;
-
-      if (this.errorMaterial.isReady(this.mesh)) return;
-      if (frames++ >= ERROR_PREWARM_FRAMES) return;
-
-      this.errorPrewarmFrame = requestAnimationFrame(warm);
-    };
-
-    this.errorPrewarmFrame = requestAnimationFrame(warm);
-  }
-
-  private ensureErrorMaterial(): ShaderMaterial | null {
-    if (!this.scene) return null;
-
-    if (!this.errorMaterial) {
-      this.errorMaterial = new ShaderMaterial(
-        'previewErrorShader',
-        this.scene,
-        {
-          vertexSource: internalShaders.error.vertex,
-          fragmentSource: internalShaders.error.fragment,
-        },
-        {
-          attributes: ['position'],
-          uniforms: ['worldViewProjection'],
-        },
-        false,
-      );
-      this.errorMaterial.wireframe = this.wireframe;
-    }
-
-    return this.errorMaterial;
-  }
-
-  private showErrorMaterial(): void {
-    if (!this.mesh) return;
-
-    const material = this.ensureErrorMaterial();
-    if (!material) return;
-
-    material.wireframe = this.wireframe;
-    this.mesh.material = material;
-  }
-
-  private applyMaterial(material: ShaderMaterial, source: ShaderSource): void {
-    if (!this.mesh) {
-      material.dispose();
-      return;
-    }
-
-    const previous = this.material;
-
-    material.wireframe = this.wireframe;
-    material.onError = (_effect, rawErrors) => {
-      this.reportCompileFailure(source, rawErrors);
-    };
-
-    this.material = material;
-    this.mesh.material = material;
-    previous?.dispose();
-  }
-
-  private reportCompileFailure(
-    source: ShaderSource,
-    fallbackLog: string,
-  ): void {
-    this.showErrorMaterial();
-    this.onError(
-      parseShaderCompileErrors(
-        this.logRecorder?.drain() ?? [],
-        source,
-        fallbackLog,
-      ),
+    const animator = this.deps.createAnimator(
+      scene,
+      directionalLight,
+      mesh,
+      () => materials.activeMaterial,
     );
+    this.animator = animator;
+    animator.start();
+
+    previewEngine.start();
   }
 
   resize(): void {
-    this.engine?.resize();
+    this.previewEngine?.resize();
   }
 
   async compile(source: ShaderSource): Promise<CompileResult> {
-    if (!this.scene || !this.mesh || this.disposed) {
+    const session = this.session;
+    const mesh = this.mesh;
+    const materials = this.materials;
+    const compiler = this.compiler;
+    const diagnostics = this.fragmentDiagnostics;
+
+    if (
+      !this.scene ||
+      !mesh ||
+      !materials ||
+      !compiler ||
+      !diagnostics ||
+      !this.isCurrent(session)
+    ) {
       return { ok: false, message: 'Scene not initialized', errors: [] };
     }
 
-    const attempt = await this.tryCompile(source);
+    const attempt = await compiler.tryCompile(source, mesh);
 
-    if (this.disposed) {
-      releaseAttempt(attempt, true);
+    if (!this.isCurrent(session)) {
+      attempt.release(true);
       return { ok: false, message: 'Scene disposed', errors: [] };
     }
 
     if (attempt.ok && attempt.material) {
-      this.applyMaterial(attempt.material, source);
+      materials.apply(attempt.material, source);
       return { ok: true, message: 'Compiled successfully', errors: [] };
     }
 
-    releaseAttempt(attempt, true);
+    attempt.release(true);
 
     let errors = attempt.errors;
     const message =
@@ -341,284 +228,65 @@ export class  SceneManager {
         : 'Shader program failed to link';
 
     if (attempt.stage === 'vertex') {
-      const fragmentAttempt = await this.tryCompile({
-        vertex: internalShaders.validation.vertex,
-        fragment: source.fragment,
-      });
-      releaseAttempt(fragmentAttempt, !fragmentAttempt.ok);
-
-      if (!fragmentAttempt.ok) {
-        const fragmentErrors = fragmentAttempt.errors.filter(
-          (error) => error.stage === 'fragment',
-        );
-        if (fragmentErrors.length > 0) {
-          errors = [...errors, ...fragmentErrors];
-        }
+      const fragmentErrors = await diagnostics.collect(source, mesh);
+      if (fragmentErrors.length > 0) {
+        errors = [...errors, ...fragmentErrors];
       }
     }
 
-    this.showErrorMaterial();
+    materials.showError();
 
     return { ok: false, message, errors };
   }
 
-  private tryCompile(
-    source: ShaderSource,
-    name = 'previewShader',
-  ): Promise<CompileAttempt> {
-    return new Promise((resolve) => {
-      if (!this.scene || !this.mesh || this.disposed) {
-        resolve({
-          ok: false,
-          errors: [internalError('Scene not initialized')],
-          stage: 'program',
-          material: null,
-          effect: null,
-        });
-        return;
-      }
-
-      let material: ShaderMaterial;
-      try {
-        this.logRecorder?.begin();
-        material = this.buildMaterial(source, name);
-      } catch (error) {
-        resolve({
-          ok: false,
-          errors: [
-            internalError(
-              error instanceof Error ? error.message : String(error),
-            ),
-          ],
-          stage: 'program',
-          material: null,
-          effect: null,
-        });
-        return;
-      }
-
-      let settled = false;
-      let timer: number | undefined;
-
-      const finish = (attempt: CompileAttempt) => {
-        if (settled) return;
-        settled = true;
-        if (timer !== undefined) {
-          window.clearTimeout(timer);
-          timer = undefined;
-        }
-        resolve(attempt);
-      };
-
-      material.onCompiled = (effect) => {
-        finish({ ok: true, errors: [], stage: null, material, effect });
-      };
-
-      material.onError = (failedEffect, rawErrors) => {
-        const records = this.logRecorder?.drain() ?? [];
-        const errors = parseShaderCompileErrors(records, source, rawErrors);
-
-        finish({
-          ok: false,
-          errors,
-          stage: errors[0]?.stage ?? null,
-          material,
-          effect: failedEffect,
-        });
-      };
-
-      const started = performance.now();
-      const poll = () => {
-        timer = undefined;
-        if (settled) return;
-
-        if (performance.now() - started > COMPILE_TIMEOUT_MS) {
-          finish({
-            ok: false,
-            errors: [timeoutError()],
-            stage: 'program',
-            material,
-            effect: material.getEffect(),
-          });
-          return;
-        }
-
-        let ready = false;
-        try {
-          ready = material.isReady(this.mesh ?? undefined);
-        } catch (error) {
-          finish({
-            ok: false,
-            errors: [
-              internalError(
-                error instanceof Error ? error.message : String(error),
-              ),
-            ],
-            stage: 'program',
-            material,
-            effect: material.getEffect(),
-          });
-          return;
-        }
-
-        if (ready) {
-          finish({
-            ok: true,
-            errors: [],
-            stage: null,
-            material,
-            effect: material.getEffect(),
-          });
-          return;
-        }
-
-        timer = window.setTimeout(poll, 32);
-      };
-
-      timer = window.setTimeout(poll, 32);
-
-      try {
-        if (material.isReady(this.mesh)) {
-          finish({
-            ok: true,
-            errors: [],
-            stage: null,
-            material,
-            effect: material.getEffect(),
-          });
-        }
-      } catch (error) {
-        finish({
-          ok: false,
-          errors: [
-            internalError(
-              error instanceof Error ? error.message : String(error),
-            ),
-          ],
-          stage: 'program',
-          material,
-          effect: material.getEffect(),
-        });
-      }
-    });
-  }
-
   setWireframe(on: boolean): void {
     this.wireframe = on;
-    if (this.material) {
-      this.material.wireframe = on;
-    }
-    if (this.errorMaterial) {
-      this.errorMaterial.wireframe = on;
-    }
+    this.materials?.setWireframe(on);
   }
 
   setPaused(on: boolean): void {
-    if (!this.engine) return;
-    if (on) {
-      this.engine.stopRenderLoop();
-    } else {
-      this.engine.runRenderLoop(() => {
-        this.scene?.render();
-      });
-    }
+    this.previewEngine?.setPaused(on);
   }
 
   dispose(): void {
-    this.disposed = true;
+    this.session += 1;
 
-    if (this.errorPrewarmFrame !== null) {
-      cancelAnimationFrame(this.errorPrewarmFrame);
-      this.errorPrewarmFrame = null;
-    }
+    this.animator?.dispose();
+    this.animator = null;
 
-    this.engine?.stopRenderLoop();
-    this.logRecorder?.dispose();
-    this.material?.dispose();
-    this.errorMaterial?.dispose();
+    this.previewEngine?.stopRenderLoop();
+
+    this.materials?.dispose();
+    this.materials = null;
+
     this.scene?.dispose();
-    this.engine?.dispose();
     this.scene = null;
-    this.engine = null;
-    this.material = null;
-    this.errorMaterial = null;
+
+    this.previewEngine?.dispose();
+    this.previewEngine = null;
+
+    this.compiler = null;
+    this.fragmentDiagnostics = null;
     this.mesh = null;
+    // Intentional-for-now: the original manager reset this flag on dispose.
     this.wireframe = false;
-    this.logRecorder = null;
-  }
-}
-
-function createLogRecorder(engine: Engine): ShaderLogRecorder | null {
-  const context = (engine as unknown as { _gl?: WebGlInfoLogContext })._gl;
-  if (!context) return null;
-
-  try {
-    return new ShaderLogRecorder(context);
-  } catch {
-    // Error reporting still works through Babylon's fallback message.
-    return null;
-  }
-}
-
-function internalError(message: string): ShaderError {
-  return {
-    stage: 'program',
-    line: null,
-    column: null,
-    kind: 'internal',
-    title: 'Shader compilation failed',
-    message,
-    advice: null,
-  };
-}
-
-function timeoutError(): ShaderError {
-  return {
-    stage: 'program',
-    line: null,
-    column: null,
-    kind: 'timeout',
-    title: 'Compilation timed out',
-    message: `The shader compiler did not finish within ${
-      COMPILE_TIMEOUT_MS / 1000
-    } seconds.`,
-    advice:
-      'The shader may be too complex for this GPU. Simplify loops or reduce function calls, then compile again.',
-  };
-}
-
-function releaseAttempt(
-  attempt: CompileAttempt,
-  failed: boolean,
-): void {
-  if (failed) {
-    clearCachedPipeline(attempt.effect);
   }
 
-  const effect = attempt.effect;
-  const attached = attempt.material?.getEffect() === effect;
-
-  attempt.material?.dispose();
-  if (!attached) {
-    effect?.dispose();
+  private isCurrent(session: number): boolean {
+    return session === this.session;
   }
-}
 
-function clearCachedPipeline(effect: Effect | null): void {
-  if (!effect) return;
-
-  const engine = effect.getEngine() as unknown as {
-    _gl?: WebGL2RenderingContext;
-  };
-  const context = engine._gl;
-  if (!context) return;
-
-  const state = getStateObject(context);
-  const pipelineName = effect.key.replace(/\r/g, '').replace(/\n/g, '|');
-  const pipeline = state.cachedPipelines[pipelineName];
-
-  if (!pipeline) return;
-
-  pipeline.dispose();
-  delete state.cachedPipelines[pipelineName];
+  private reportCompileFailure(
+    source: ShaderSource,
+    fallbackLog: string,
+  ): void {
+    this.materials?.showError();
+    this.onError(
+      parseShaderCompileErrors(
+        this.previewEngine?.recorder?.drain() ?? [],
+        source,
+        fallbackLog,
+      ),
+    );
+  }
 }

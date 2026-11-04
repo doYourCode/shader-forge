@@ -15,6 +15,7 @@ import { internalErrorFrom } from './preview/errors/shaderErrorFactory';
 import { MaterialController } from './preview/MaterialController';
 import { PreviewAnimator } from './preview/PreviewAnimator';
 import { PreviewEngine } from './preview/PreviewEngine';
+import type { CompileResult, ShaderSource } from './preview/PreviewTypes';
 import {
   createPreviewScene,
   type PreviewScene,
@@ -24,22 +25,15 @@ import type { PreviewMeshProvider } from './preview/mesh/PreviewMeshProvider';
 
 import sphereUrl from '@/assets/meshes/monkey.glb?url';
 
-export interface ShaderSource {
-  vertex: string;
-  fragment: string;
-}
-
-export interface CompileResult {
-  ok: boolean;
-  message: string;
-  errors: ShaderError[];
-}
-
 export { assertWebGl2 } from './preview/PreviewEngine';
 export type {
   WebGl2EngineLike,
   WebGl2GuardResult,
 } from './preview/PreviewEngine';
+export type {
+  CompileResult,
+  ShaderSource,
+} from './preview/PreviewTypes';
 
 /** Factories for the collaborators, so tests can substitute them. */
 export interface SceneManagerDeps {

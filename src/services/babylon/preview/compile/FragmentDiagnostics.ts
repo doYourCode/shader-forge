@@ -1,6 +1,6 @@
 import type { Mesh } from '@babylonjs/core';
 import type { ShaderError } from '@/core/models/shaderError';
-import type { ShaderSource } from '../../SceneManager';
+import type { ShaderSource } from '../PreviewTypes';
 import type { ShaderCompiler } from './ShaderCompiler';
 
 /**

@@ -6,6 +6,8 @@ import type {
   ShaderMaterial,
 } from '@babylonjs/core';
 import { SHADER_UNIFORM_NAMES } from './MaterialController';
+import { Matrix } from '@babylonjs/core';
+import { updateNormalMatrix } from './mesh/MeshMatricesProc';
 
 /**
  * Drives the animated shader uniforms and the mesh spin once per rendered
@@ -18,6 +20,8 @@ export class PreviewAnimator {
   private readonly mesh: Mesh;
   private readonly getMaterial: () => ShaderMaterial | null;
   private observer: Observer<Scene> | null = null;
+  private readonly inverseWorldMatrix = Matrix.Identity();
+  private readonly normalMatrix = Matrix.Identity();
 
   constructor(
     scene: Scene,
@@ -51,14 +55,16 @@ export class PreviewAnimator {
     if (!material || !this.scene.activeCamera) return;
 
     material.setFloat(SHADER_UNIFORM_NAMES.time, performance.now() * 0.001);
-    material.setVector3(
-      SHADER_UNIFORM_NAMES.cameraPos,
-      this.scene.activeCamera.position,
+    material.setVector3(SHADER_UNIFORM_NAMES.cameraPos,this.scene.activeCamera.position);
+    material.setVector3(SHADER_UNIFORM_NAMES.lightDir,this.light.direction);
+    // set the normal matrix here
+        updateNormalMatrix(
+      this.mesh,
+      material,
+      this.inverseWorldMatrix,
+      this.normalMatrix,
     );
-    material.setVector3(
-      SHADER_UNIFORM_NAMES.lightDir,
-      this.light.direction,
-    );
+
     this.mesh.rotation.y += 0.001;
   }
 }

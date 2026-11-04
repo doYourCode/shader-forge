@@ -1,6 +1,6 @@
 import { ShaderMaterial, type Mesh, type Scene } from '@babylonjs/core';
-import type { ShaderSource } from '../SceneManager';
 import { internalShaders } from '../internalShaders';
+import type { ShaderSource } from './PreviewTypes';
 
 const ERROR_MATERIAL_NAME = 'previewErrorShader';
 const DEFAULT_MATERIAL_NAME = 'previewShader';
@@ -23,6 +23,7 @@ export const SHADER_UNIFORM_NAMES = {
   time: 'time',
   cameraPos: 'cameraPos',
   lightDir: 'lightDir',
+  normalMatrix: 'normalMatrix'
 } as const;
 
 export const SHADER_UNIFORMS: string[] = [
@@ -32,6 +33,7 @@ export const SHADER_UNIFORMS: string[] = [
   SHADER_UNIFORM_NAMES.time,
   SHADER_UNIFORM_NAMES.cameraPos,
   SHADER_UNIFORM_NAMES.lightDir,
+  SHADER_UNIFORM_NAMES.normalMatrix
 ];
 
 /**

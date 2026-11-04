@@ -5,8 +5,8 @@ import type {
 } from '@babylonjs/core';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
-import type { ShaderSource } from '../../SceneManager';
 import { buildShaderMaterial } from '../MaterialController';
+import type { ShaderSource } from '../PreviewTypes';
 import {
   internalError,
   internalErrorFrom,

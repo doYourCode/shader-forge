@@ -1,31 +1,44 @@
 #version 300 es
 precision highp float;
 
-// In attributes from the vertex shader
+// Inputs from vertex shader
 in vec3 vPosition;
+in vec3 vWorldPosition;
 in vec3 vNormal;
+in vec3 vWorldNormal;
 in vec3 vTangent;
 in vec2 vUv;
 in vec2 vUv2;
 in vec4 vColor;
 
-// Built-in uniforms (from babylon.js engine)
+// Babylon.js uniforms
 uniform float time;
 uniform vec3 cameraPos;
-uniform vec3 lightDir;
 
-// Out attributes to the next rendering pipeline stage
+// Output
 layout(location = 0) out vec4 fragColor;
 
-void main(void) {
-  vec3 N = normalize(vNormal);
-  vec3 L = normalize(lightDir);
+void main(void)
+{
+    // World-space vectors
+    vec3 N = normalize(vWorldNormal);
+    vec3 V = normalize(cameraPos - vWorldPosition);
 
-  float ndl = max(dot(N, L), 0.0);
+    // Fresnel
+    float NdotV = max(dot(N, V), 0.0);
 
-  vec3 albedo  = vec3(0.35, 0.55, 0.95);
-  vec3 ambient = vec3(0.08, 0.08, 0.10);
-  vec3 color   = ambient + albedo * ndl;
+    float fresnel = pow(1.0 - NdotV, 3.0);
 
-  fragColor = vec4(color, 1.0);
+    // Colors
+    vec3 baseColor = vec3(0.05, 0.1, 0.2);
+    vec3 fresnelColor = vec3(0.0, 0.8, 1.0);
+
+    // Final composition
+    vec3 finalColor = mix(
+        baseColor,
+        fresnelColor,
+        fresnel
+    );
+
+    fragColor = vec4(finalColor, 1.0);
 }

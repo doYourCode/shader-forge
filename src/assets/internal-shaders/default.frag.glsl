@@ -14,6 +14,7 @@ in vec4 vColor;
 // Babylon.js uniforms
 uniform float time;
 uniform vec3 cameraPos;
+uniform vec3 lightDir;
 
 // Output
 layout(location = 0) out vec4 fragColor;
@@ -22,12 +23,17 @@ void main(void)
 {
     // World-space vectors
     vec3 N = normalize(vWorldNormal);
+    vec3 L = normalize(lightDir);
+
     vec3 V = normalize(cameraPos - vWorldPosition);
 
     // Fresnel
     float NdotV = max(dot(N, V), 0.0);
 
     float fresnel = pow(1.0 - NdotV, 3.0);
+
+    // Half lambert term
+    float NdotL = max(dot(N, L) * 0.5 + 0.5, 0.0);
 
     // Colors
     vec3 baseColor = vec3(0.05, 0.1, 0.2);
@@ -37,7 +43,7 @@ void main(void)
     vec3 finalColor = mix(
         baseColor,
         fresnelColor,
-        fresnel
+        max(NdotL, fresnel)
     );
 
     fragColor = vec4(finalColor, 1.0);

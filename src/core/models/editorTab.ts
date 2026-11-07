@@ -6,9 +6,25 @@ export interface EditorTab {
   readOnly: boolean;
 }
 
-export const editorTabs: EditorTab[] = [
+/**
+ * A set of related tabs collapsed into one dropdown trigger. The label is
+ * rendered around the trigger so the group's purpose stays visible while the
+ * individual documents are hidden behind the menu.
+ */
+export interface EditorTabGroup {
+  label: string;
+  tabs: readonly EditorTab[];
+}
+
+export const editableTabs: readonly EditorTab[] = [
   { id: 'vertex', label: 'Vertex', readOnly: false },
   { id: 'fragment', label: 'Fragment', readOnly: false },
-  { id: 'uniforms', label: 'Uniforms', readOnly: true },
-  { id: 'io', label: 'in/out', readOnly: true },
 ];
+
+export const builtInTabGroup: EditorTabGroup = {
+  label: 'Built-in',
+  tabs: [
+    { id: 'uniforms', label: 'Uniforms', readOnly: true },
+    { id: 'io', label: 'Attributes', readOnly: true },
+  ],
+};

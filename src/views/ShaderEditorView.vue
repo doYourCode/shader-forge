@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useShaderEditor } from '@/composables/useShaderEditor';
-import { editorTabs } from '@/core/models/editorTab';
+import {
+  builtInTabGroup,
+  editableTabs,
+} from '@/core/models/editorTab';
 import type { ShaderError, ShaderErrorKind } from '@/core/models/shaderError';
 import EditorToolbar from '@/components/shader/EditorToolbar.vue';
 import ViewerToolbar from '@/components/shader/ViewerToolbar.vue';
@@ -93,7 +96,8 @@ function togglePause() {
   <div class="shader-editor">
     <div class="shader-editor__left">
       <EditorToolbar
-        :tabs="editorTabs"
+        :tabs="editableTabs"
+        :built-in="builtInTabGroup"
         :active="activeTab"
         @switch="switchTab"
         @compile="compile"

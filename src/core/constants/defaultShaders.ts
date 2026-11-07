@@ -10,28 +10,27 @@ export const defaultVertexShader = defaultVertex;
 export const defaultFragmentShader = defaultFragment;
 
 export const defaultUniformsDoc = `
-// Read-only reference for Babylon ShaderMaterial uniforms (GLSL ES 3.00).
+// Uniform input (from the engine)
 
-worldViewProjection : mat4  // vertex: final clip-space transform
-normalMatrix        : mat4  // vertex: inverse-transpose world matrix
-world               : mat4  // mesh world matrix
-worldView           : mat4  // world * view
-view                : mat4  // camera view matrix
-projection          : mat4  // camera projection matrix
-time                : float // optional, set by host if needed
+mat4 worldViewProjection    // Final clip-space transform;
+mat4 normalMatrix           // Inverse-transpose world matrix;
+mat4 world                  // Mesh world matrix;
+mat4 worldView              // World * view;
+mat4 view                   // Camera view matrix;
+mat4 projection             // Camera projection matrix;
+vec3 cameraPos;             // Position of the camera in world-space;
+vec3 lightDir;              // Direction vector of the light in world-space.
+float time                  // Used for animating effects based on a timescale;
 `.trim();
 
 export const defaultIoDoc = `
-// Read-only reference for GLSL ES 3.00 shader inputs and outputs.
+// Vertex attribute (from mesh data)
 
-// Vertex inputs (in)
-position : vec3
-normal   : vec3
-uv       : vec2
+vec3 position   // Vertex position in object/local space;
+vec3 normal     // Surface normal direction;
+vec3 tangent    // Tangent direction for normal mapping;
+vec2 uv         // Primary texture coordinates;
+vec2 uv2        // Secondary texture coordinates;
+vec3 color      // Vertex color (RGB).
 
-// Vertex outputs (out) / fragment inputs (in)
-vNormal  : vec3
-
-// Fragment output (out)
-fragColor : vec4  // layout(location = 0) out vec4 fragColor;
 `.trim();

@@ -5,7 +5,7 @@ import ptBR from './locales/pt-BR.json';
 
 export const i18n = createI18n({
   legacy: false,
-  locale: 'pt-BR',      // always boot in Portuguese
+  locale: 'pt-BR',      // Always boot in Portuguese
   fallbackLocale: 'en', // keep English as the fallback
   messages: {
     en,

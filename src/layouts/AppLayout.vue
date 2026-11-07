@@ -4,8 +4,6 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
-import { APP_NAME } from '@/core/constants/app';
-
 const route = useRoute();
 const { locale, t } = useI18n();
 
@@ -13,6 +11,8 @@ const headerTitle = computed(() => {
   const key = route.meta.headerTitleKey;
   return key ? t(key) : '';
 });
+
+const appTitle = computed(() => t('app.title'));
 
 const footerText = computed(() => t('app.footer'));
 
@@ -38,7 +38,7 @@ const selectedLocale = computed<AppLocale>({
         alt=""
         class="app-header__logo"
       />
-      <span class="app-header__name">{{ APP_NAME }}</span>
+      <span class="app-header__name">{{ appTitle }}</span>
     </RouterLink>
 
     <div class="app-header__actions">

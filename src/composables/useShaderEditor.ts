@@ -1,4 +1,4 @@
-import { ref, onBeforeUnmount } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import {
   EditorManager,
   type EditorDiagnostic,
@@ -8,7 +8,13 @@ import {
   type CompileResult,
 } from '@/services/babylon/SceneManager';
 import type { EditorTabId } from '@/core/models/editorTab';
+import type { PreviewModel } from '@/core/models/previewModel';
 import type { ShaderError } from '@/core/models/shaderError';
+import {
+  defaultPreviewModel,
+  findPreviewModel,
+  previewModels,
+} from '@/core/constants/previewModels';
 import {
   defaultVertexShader,
   defaultFragmentShader,
@@ -25,6 +31,8 @@ export function useShaderEditor() {
   const sceneManager = new SceneManager();
 
   const activeTab = ref<EditorTabId>('vertex');
+  const activeModel = ref<PreviewModel>(defaultPreviewModel);
+  const activeModelId = computed(() => activeModel.value.id);
   const cursorLine = ref(1);
   const cursorCol = ref(1);
   const status = ref<EditorStatus>('idle');
@@ -39,9 +47,12 @@ export function useShaderEditor() {
     fragment: defaultFragmentShader,
     uniforms: defaultUniformsDoc,
     io: defaultIoDoc,
+    user_data: '',
   };
 
   let compileInFlight = false;
+  let confirmedModel = defaultPreviewModel;
+  let modelSelection = 0;
 
   sceneManager.onError = (shaderErrors) => {
     errors.value = shaderErrors;
@@ -106,11 +117,38 @@ export function useShaderEditor() {
   }
 
   function mountCanvas(canvas: HTMLCanvasElement) {
-    sceneManager.init(canvas, {
-      vertex: tabDocs.vertex,
-      fragment: tabDocs.fragment,
-    });
+    sceneManager.init(
+      canvas,
+      {
+        vertex: tabDocs.vertex,
+        fragment: tabDocs.fragment,
+      },
+      activeModel.value,
+    );
     sceneManager.setPaused(false);
+  }
+
+  async function selectModel(id: string) {
+    if (id === activeModel.value.id) return;
+
+    const model = findPreviewModel(id);
+    if (!model) return;
+
+    const request = ++modelSelection;
+    const previous = confirmedModel;
+    activeModel.value = model;
+
+    const loaded = await sceneManager.loadModel(model);
+
+    if (loaded) {
+      confirmedModel = model;
+      return;
+    }
+
+    // A newer selection owns the dropdown now; don't revert over it.
+    if (request === modelSelection) {
+      activeModel.value = previous;
+    }
   }
 
   function switchTab(tab: EditorTabId) {
@@ -246,6 +284,8 @@ export function useShaderEditor() {
 
   return {
     activeTab,
+    activeModelId,
+    models: previewModels,
     cursorLine,
     cursorCol,
     status,
@@ -257,6 +297,7 @@ export function useShaderEditor() {
     mountEditor,
     mountCanvas,
     switchTab,
+    selectModel,
     compile,
     revealError,
     resize,

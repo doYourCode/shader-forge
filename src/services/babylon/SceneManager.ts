@@ -22,8 +22,8 @@ import {
 } from './preview/createPreviewScene';
 import { GlbMeshProvider } from './preview/mesh/GlbMeshProvider';
 import type { PreviewMeshProvider } from './preview/mesh/PreviewMeshProvider';
-
-import sphereUrl from '@/assets/meshes/monkey.glb?url';
+import { defaultPreviewModel } from '@/core/constants/previewModels';
+import type { PreviewModel } from '@/core/models/previewModel';
 
 export { assertWebGl2 } from './preview/PreviewEngine';
 export type {
@@ -57,6 +57,13 @@ export interface SceneManagerDeps {
   createDiagnostics(compiler: ShaderCompiler): FragmentDiagnostics;
 }
 
+export type PreviewMeshProviderFactory = (
+  model: PreviewModel,
+) => PreviewMeshProvider;
+
+const defaultMeshProviderFactory: PreviewMeshProviderFactory = (model) =>
+  new GlbMeshProvider(model.url);
+
 const defaultDeps: SceneManagerDeps = {
   createEngine: (reportError) => new PreviewEngine(reportError),
   createScene: (engine, canvas) => createPreviewScene(engine, canvas),
@@ -74,11 +81,12 @@ const defaultDeps: SceneManagerDeps = {
  * public API of the original monolithic manager.
  */
 export class SceneManager {
-  private readonly meshProvider: PreviewMeshProvider;
+  private readonly meshProviderFactory: PreviewMeshProviderFactory;
   private readonly deps: SceneManagerDeps;
   private previewEngine: PreviewEngine | null = null;
   private scene: Scene | null = null;
   private mesh: Mesh | null = null;
+  private model: PreviewModel | null = null;
   private materials: MaterialController | null = null;
   private animator: PreviewAnimator | null = null;
   private compiler: ShaderCompiler | null = null;
@@ -89,14 +97,16 @@ export class SceneManager {
    * only if its token is still current; dispose or a newer init supersedes it.
    */
   private session = 0;
+  /** Separately cancels in-flight model swaps inside the current session. */
+  private modelRequest = 0;
 
   onError: (errors: ShaderError[]) => void = () => {};
 
   constructor(
-    meshProvider: PreviewMeshProvider = new GlbMeshProvider(sphereUrl),
+    meshProviderFactory: PreviewMeshProviderFactory = defaultMeshProviderFactory,
     deps: Partial<SceneManagerDeps> = defaultDeps,
   ) {
-    this.meshProvider = meshProvider;
+    this.meshProviderFactory = meshProviderFactory;
     this.deps = {
       createEngine: deps.createEngine ?? defaultDeps.createEngine,
       createScene: deps.createScene ?? defaultDeps.createScene,
@@ -108,7 +118,11 @@ export class SceneManager {
     };
   }
 
-  async init(canvas: HTMLCanvasElement, source: ShaderSource): Promise<void> {
+  async init(
+    canvas: HTMLCanvasElement,
+    source: ShaderSource,
+    model: PreviewModel = defaultPreviewModel,
+  ): Promise<void> {
     this.dispose();
     const session = this.session;
 
@@ -129,7 +143,7 @@ export class SceneManager {
 
     let mesh: Mesh;
     try {
-      mesh = await this.meshProvider.load(scene);
+      mesh = await this.meshProviderFactory(model).load(scene);
     } catch (error) {
       // A superseded/disposed init must not tear down a newer session.
       if (!this.isCurrent(session)) return;
@@ -148,6 +162,7 @@ export class SceneManager {
 
     mesh.name = 'preview';
     this.mesh = mesh;
+    this.model = model;
     this.mesh.rotationQuaternion = null;
 
     const materials = this.deps.createMaterialController(
@@ -177,6 +192,55 @@ export class SceneManager {
     animator.start();
 
     previewEngine.start();
+  }
+
+  /**
+   * Swaps the preview geometry while keeping the active material, wireframe
+   * state, animation, and compiler bound to the current scene.
+   */
+  async loadModel(model: PreviewModel): Promise<boolean> {
+    if (model.id === this.model?.id) {
+      // Selecting the displayed model also cancels a swap that is still loading.
+      this.modelRequest += 1;
+      return true;
+    }
+
+    const scene = this.scene;
+    const currentMesh = this.mesh;
+    const materials = this.materials;
+
+    if (!scene || !currentMesh || !materials) return false;
+
+    const session = this.session;
+    const request = ++this.modelRequest;
+
+    let nextMesh: Mesh;
+    try {
+      nextMesh = await this.meshProviderFactory(model).load(scene);
+    } catch (error) {
+      if (!this.isCurrent(session) || request !== this.modelRequest) {
+        return false;
+      }
+
+      this.onError([internalErrorFrom(error)]);
+      return false;
+    }
+
+    if (!this.isCurrent(session) || request !== this.modelRequest) {
+      nextMesh.dispose();
+      return false;
+    }
+
+    nextMesh.name = 'preview';
+    nextMesh.rotationQuaternion = null;
+
+    materials.setMesh(nextMesh);
+    this.animator?.setMesh(nextMesh);
+    currentMesh.dispose();
+
+    this.mesh = nextMesh;
+    this.model = model;
+    return true;
   }
 
   resize(): void {
@@ -244,6 +308,7 @@ export class SceneManager {
 
   dispose(): void {
     this.session += 1;
+    this.modelRequest += 1;
 
     this.animator?.dispose();
     this.animator = null;
@@ -262,6 +327,7 @@ export class SceneManager {
     this.compiler = null;
     this.fragmentDiagnostics = null;
     this.mesh = null;
+    this.model = null;
     // Intentional-for-now: the original manager reset this flag on dispose.
     this.wireframe = false;
   }

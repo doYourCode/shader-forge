@@ -15,6 +15,8 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 const {
   activeTab,
+  activeModelId,
+  models,
   cursorLine,
   cursorCol,
   status,
@@ -25,6 +27,7 @@ const {
   mountEditor,
   mountCanvas,
   switchTab,
+  selectModel,
   compile,
   revealError,
   resize,
@@ -107,8 +110,11 @@ function togglePause() {
 
     <div class="shader-editor__right">
       <ViewerToolbar
+        :models="models"
+        :active-model-id="activeModelId"
         :wireframe="wireframe"
         :paused="paused"
+        @select-model="selectModel"
         @toggle-wireframe="toggleWireframe"
         @toggle-pause="togglePause"
       />

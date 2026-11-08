@@ -70,7 +70,7 @@ export function buildShaderMaterial(
  */
 export class MaterialController {
   private readonly scene: Scene;
-  private readonly meshes: Mesh[];
+  private meshes: Mesh[];
   private readonly onCompileFailure: (
     source: ShaderSource,
     fallbackLog: string,
@@ -79,6 +79,7 @@ export class MaterialController {
   private errorMaterial: ShaderMaterial | null = null;
   private wireframe = false;
   private disposed = false;
+  private showingError = false;
   private errorPrewarmFrame: number | null = null;
 
   constructor(
@@ -123,10 +124,27 @@ export class MaterialController {
     };
 
     this.material = material;
+    this.showingError = false;
     for (const mesh of this.meshes) {
       mesh.material = material;
     }
     previous?.dispose();
+  }
+
+  /**
+   * Rebinds the controller to replacement geometry while keeping the currently
+   * displayed material (including the error material).
+   */
+  setMesh(mesh: Mesh): void {
+    this.meshes = [mesh];
+
+    const material = this.showingError
+      ? (this.errorMaterial ?? this.material)
+      : this.material;
+
+    if (material) {
+      mesh.material = material;
+    }
   }
 
   prepareErrorMaterial(): void {
@@ -161,6 +179,7 @@ export class MaterialController {
     const material = this.ensureErrorMaterial();
     if (!material) return;
 
+    this.showingError = true;
     material.wireframe = this.wireframe;
     for (const mesh of this.meshes) {
       mesh.material = material;
@@ -179,6 +198,7 @@ export class MaterialController {
 
   dispose(): void {
     this.disposed = true;
+    this.showingError = false;
 
     if (this.errorPrewarmFrame !== null) {
       cancelAnimationFrame(this.errorPrewarmFrame);

@@ -17,7 +17,7 @@ import { updateNormalMatrix } from './mesh/MeshMatricesProc';
 export class PreviewAnimator {
   private readonly scene: Scene;
   private readonly light: DirectionalLight;
-  private readonly mesh: Mesh;
+  private mesh: Mesh;
   private readonly getMaterial: () => ShaderMaterial | null;
   private observer: Observer<Scene> | null = null;
   private readonly inverseWorldMatrix = Matrix.Identity();
@@ -33,6 +33,11 @@ export class PreviewAnimator {
     this.light = light;
     this.mesh = mesh;
     this.getMaterial = getMaterial;
+  }
+
+  /** Rebinds the animation to replacement geometry without restarting it. */
+  setMesh(mesh: Mesh): void {
+    this.mesh = mesh;
   }
 
   start(): void {

@@ -1,19 +1,49 @@
 <script setup lang="ts">
+import type { PreviewModel } from '@/core/models/previewModel';
+
 const props = defineProps<{
+  models: readonly PreviewModel[];
+  activeModelId: string;
   wireframe: boolean;
   paused: boolean;
 }>();
 
 const emit = defineEmits<{
+  (e: 'select-model', id: string): void;
   (e: 'toggle-wireframe'): void;
   (e: 'toggle-pause'): void;
 }>();
+
+function handleModelChange(event: Event): void {
+  const select = event.currentTarget;
+  if (!(select instanceof HTMLSelectElement)) return;
+
+  emit('select-model', select.value);
+}
 </script>
 
 <template>
   <div class="viewer-toolbar">
     <div class="viewer-toolbar__group">
-      <button class="viewer-toolbar__btn">Models</button>
+      <fieldset class="viewer-toolbar__models">
+        <legend class="viewer-toolbar__models-legend">Models</legend>
+
+        <select
+          class="viewer-toolbar__model-select"
+          aria-label="Preview model"
+          :value="props.activeModelId"
+          @change="handleModelChange"
+        >
+          <option
+            v-for="model in props.models"
+            :key="model.id"
+            :value="model.id"
+          >
+            {{ model.label }}
+          </option>
+        </select>
+      </fieldset>
+
       <button class="viewer-toolbar__btn">HDRs</button>
     </div>
 
@@ -50,7 +80,49 @@ const emit = defineEmits<{
 
 .viewer-toolbar__group {
   display: flex;
+  align-items: center;
   gap: 4px;
+}
+
+.viewer-toolbar__models {
+  margin: 0;
+  padding: 0 4px 2px;
+  min-inline-size: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.viewer-toolbar__models-legend {
+  padding: 0 4px;
+  margin-left: 3px;
+  color: var(--fg-subtle);
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  user-select: none;
+  transition: color 0.12s ease;
+}
+
+.viewer-toolbar__model-select {
+  padding: 5px 12px;
+  background: transparent;
+  color: var(--fg-muted);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.viewer-toolbar__model-select:hover {
+  border-color: #4b5263;
+  color: var(--fg-strong);
 }
 
 .viewer-toolbar__btn {

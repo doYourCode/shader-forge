@@ -24,20 +24,20 @@
         "note": "Crie e visualize shaders."
       },
       "wgsl": {
-        "title": "WGSL (WebGPU)",
+        "title": "Editor WGSL (em breve)",
         "description": "Escreva shaders WGSL utilizando o backend WebGPU.",
         "note": "Requer suporte a WebGPU."
       },
       "docs": {
-        "title": "Referência e Documentação",
+        "title": "Referência e Documentação (em breve)",
         "description": "Referência da API, guias e listas de funções integradas."
       },
       "knowledge": {
-        "title": "Base de Conhecimento",
+        "title": "Base de Conhecimento (em breve)",
         "description": "Artigos selecionados sobre técnicas gráficas e teoria de shaders."
       },
       "sandbox": {
-        "title": "Sandbox de Fragment Shader",
+        "title": "Sandbox 2D (em breve)",
         "description": "Experimente shaders de fragmento em um ambiente isolado."
       }
     }

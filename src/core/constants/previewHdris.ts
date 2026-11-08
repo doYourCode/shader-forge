@@ -1,5 +1,8 @@
 import peppermintUrl from '@/assets/hdri/peppermint_powerplant_2k.hdr?url';
 import woodenStudioUrl from '@/assets/hdri/wooden_studio_17_2k.hdr?url';
+import pergolaWalkwayUrl from '@/assets/hdri/pergola_walkway_2k.hdr?url';
+import qwantaniSunriseUrl from '@/assets/hdri/qwantani_sunrise_2k.hdr?url';
+import mossyForestUrl from '@/assets/hdri/mossy_forest_2k.hdr?url';
 import type { PreviewHdri } from '@/core/models/previewHdri';
 
 const defaultHdri: PreviewHdri = {
@@ -18,6 +21,21 @@ export const previewHdris: readonly PreviewHdri[] = [
     id: 'peppermint-powerplant',
     label: 'Peppermint Powerplant',
     url: peppermintUrl,
+  },
+    {
+    id: 'pergola-walkway',
+    label: 'Pergola Walkway',
+    url: pergolaWalkwayUrl,
+  },
+    {
+    id: 'qwantani-sunrise',
+    label: 'Qwantani Sunrise',
+    url: qwantaniSunriseUrl,
+  },
+      {
+    id: 'mossy-forest',
+    label: 'Mossy Forest',
+    url: mossyForestUrl,
   },
 ];
 

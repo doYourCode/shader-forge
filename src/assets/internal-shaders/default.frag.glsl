@@ -49,7 +49,7 @@ void main(void)
 
     // Subtle environment reflection from the selected HDRI
     vec3 reflectionDir = reflect(-V, N);
-    vec3 environmentColor = textureLod(environmentMap, reflectionDir, 5.0).rgb;
+    vec3 environmentColor = textureLod(environmentMap, reflectionDir, 7.5).rgb;
     //environmentColor = environmentColor / (environmentColor + vec3(1.0));
 
     float reflectionAmount = 0.1 + fresnel * 0.30;

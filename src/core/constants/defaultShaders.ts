@@ -21,7 +21,7 @@ mat4 projection             // Camera projection matrix;
 
 vec3 cameraPos;             // Position of the camera in world-space;
 vec3 lightDir;              // Direction vector of the light in world-space.
-float time                  // Used for animating effects based on a timescale;
+float time;                 // Used for animating effects based on a timescale;
 
 samplerCube environmentMap; // The environment map (used for IBL)
 `.trim();

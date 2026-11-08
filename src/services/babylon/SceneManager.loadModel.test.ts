@@ -52,6 +52,10 @@ function createHarness() {
     setPaused: vi.fn(),
     resize: vi.fn(),
   };
+  const environment = {
+    load: vi.fn(async () => true),
+    dispose: vi.fn(),
+  };
   const deps = {
     createEngine: () => previewEngine,
     createScene: () => ({
@@ -63,13 +67,14 @@ function createHarness() {
     createAnimator: () => animator,
     createCompiler: () => ({}),
     createDiagnostics: () => ({}),
+    createEnvironmentController: () => environment,
   } as unknown as SceneManagerDeps;
 
   const load = vi.fn(async () => pending.shift() as unknown as Mesh);
   const factory = vi.fn(() => ({ load })) as unknown as PreviewMeshProviderFactory;
   const manager = new SceneManager(factory, deps);
 
-  return { manager, first, second, materials, animator, load };
+  return { manager, first, second, materials, animator, environment, load };
 }
 
 function init(manager: SceneManager): Promise<void> {

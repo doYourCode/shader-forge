@@ -8,6 +8,7 @@ import {
   type CompileResult,
 } from '@/services/babylon/SceneManager';
 import type { EditorTabId } from '@/core/models/editorTab';
+import type { PreviewHdri } from '@/core/models/previewHdri';
 import type { PreviewModel } from '@/core/models/previewModel';
 import type { ShaderError } from '@/core/models/shaderError';
 import {
@@ -15,6 +16,11 @@ import {
   findPreviewModel,
   previewModels,
 } from '@/core/constants/previewModels';
+import {
+  defaultPreviewHdri,
+  findPreviewHdri,
+  previewHdris,
+} from '@/core/constants/previewHdris';
 import {
   defaultVertexShader,
   defaultFragmentShader,
@@ -33,6 +39,8 @@ export function useShaderEditor() {
   const activeTab = ref<EditorTabId>('vertex');
   const activeModel = ref<PreviewModel>(defaultPreviewModel);
   const activeModelId = computed(() => activeModel.value.id);
+  const activeHdri = ref<PreviewHdri>(defaultPreviewHdri);
+  const activeHdriId = computed(() => activeHdri.value.id);
   const cursorLine = ref(1);
   const cursorCol = ref(1);
   const status = ref<EditorStatus>('idle');
@@ -53,6 +61,8 @@ export function useShaderEditor() {
   let compileInFlight = false;
   let confirmedModel = defaultPreviewModel;
   let modelSelection = 0;
+  let confirmedHdri = defaultPreviewHdri;
+  let hdriSelection = 0;
 
   sceneManager.onError = (shaderErrors) => {
     errors.value = shaderErrors;
@@ -124,6 +134,7 @@ export function useShaderEditor() {
         fragment: tabDocs.fragment,
       },
       activeModel.value,
+      activeHdri.value,
     );
     sceneManager.setPaused(false);
   }
@@ -148,6 +159,29 @@ export function useShaderEditor() {
     // A newer selection owns the dropdown now; don't revert over it.
     if (request === modelSelection) {
       activeModel.value = previous;
+    }
+  }
+
+  async function selectHdri(id: string) {
+    if (id === activeHdri.value.id) return;
+
+    const hdri = findPreviewHdri(id);
+    if (!hdri) return;
+
+    const request = ++hdriSelection;
+    const previous = confirmedHdri;
+    activeHdri.value = hdri;
+
+    const loaded = await sceneManager.loadEnvironment(hdri);
+
+    if (loaded) {
+      confirmedHdri = hdri;
+      return;
+    }
+
+    // A newer selection owns the dropdown now; don't revert over it.
+    if (request === hdriSelection) {
+      activeHdri.value = previous;
     }
   }
 
@@ -285,7 +319,9 @@ export function useShaderEditor() {
   return {
     activeTab,
     activeModelId,
+    activeHdriId,
     models: previewModels,
+    hdris: previewHdris,
     cursorLine,
     cursorCol,
     status,
@@ -298,6 +334,7 @@ export function useShaderEditor() {
     mountCanvas,
     switchTab,
     selectModel,
+    selectHdri,
     compile,
     revealError,
     resize,

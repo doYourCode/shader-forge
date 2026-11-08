@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import ViewerToolbar from './ViewerToolbar.vue';
+import type { PreviewHdri } from '@/core/models/previewHdri';
 import type { PreviewModel } from '@/core/models/previewModel';
 
 const MODELS: readonly PreviewModel[] = [
@@ -11,11 +12,18 @@ const MODELS: readonly PreviewModel[] = [
   { id: 'cube', label: 'Cube', url: '/cube.glb' },
 ];
 
-function mountToolbar(activeModelId = 'monkey') {
+const HDRIS: readonly PreviewHdri[] = [
+  { id: 'studio', label: 'Wooden Studio 17', url: '/studio.hdr' },
+  { id: 'peppermint', label: 'Peppermint Powerplant', url: '/peppermint.hdr' },
+];
+
+function mountToolbar(activeModelId = 'monkey', activeHdriId = 'studio') {
   return mount(ViewerToolbar, {
     props: {
       models: MODELS,
       activeModelId,
+      hdris: HDRIS,
+      activeHdriId,
       wireframe: false,
       paused: false,
     },
@@ -47,5 +55,31 @@ describe('ViewerToolbar', () => {
     await select.setValue('cube');
 
     expect(wrapper.emitted('select-model')?.[0]).toEqual(['cube']);
+  });
+
+  it('renders the HDRIs in a dropdown inside the HDRI fieldset', () => {
+    const wrapper = mountToolbar();
+    const fieldset = wrapper.find('fieldset.viewer-toolbar__hdri');
+    const select = fieldset.find('select.viewer-toolbar__hdri-select');
+
+    expect(fieldset.exists()).toBe(true);
+    expect(fieldset.find('legend').text()).toBe('HDRI');
+    expect(select.exists()).toBe(true);
+    expect(fieldset.findAll('button')).toHaveLength(0);
+    expect(
+      select.findAll('option').map((option) => option.text()),
+    ).toEqual(['Wooden Studio 17', 'Peppermint Powerplant']);
+    expect((select.element as HTMLSelectElement).value).toBe('studio');
+  });
+
+  it('emits the selected HDRI id when the dropdown changes', async () => {
+    const wrapper = mountToolbar('monkey', 'studio');
+    const select = wrapper.find('select.viewer-toolbar__hdri-select');
+
+    expect((select.element as HTMLSelectElement).value).toBe('studio');
+
+    await select.setValue('peppermint');
+
+    expect(wrapper.emitted('select-hdri')?.[0]).toEqual(['peppermint']);
   });
 });

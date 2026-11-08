@@ -16,7 +16,9 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const {
   activeTab,
   activeModelId,
+  activeHdriId,
   models,
+  hdris,
   cursorLine,
   cursorCol,
   status,
@@ -28,6 +30,7 @@ const {
   mountCanvas,
   switchTab,
   selectModel,
+  selectHdri,
   compile,
   revealError,
   resize,
@@ -112,9 +115,12 @@ function togglePause() {
       <ViewerToolbar
         :models="models"
         :active-model-id="activeModelId"
+        :hdris="hdris"
+        :active-hdri-id="activeHdriId"
         :wireframe="wireframe"
         :paused="paused"
         @select-model="selectModel"
+        @select-hdri="selectHdri"
         @toggle-wireframe="toggleWireframe"
         @toggle-pause="togglePause"
       />

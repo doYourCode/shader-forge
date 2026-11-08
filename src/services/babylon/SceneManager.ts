@@ -24,6 +24,9 @@ import { GlbMeshProvider } from './preview/mesh/GlbMeshProvider';
 import type { PreviewMeshProvider } from './preview/mesh/PreviewMeshProvider';
 import { defaultPreviewModel } from '@/core/constants/previewModels';
 import type { PreviewModel } from '@/core/models/previewModel';
+import { defaultPreviewHdri } from '@/core/constants/previewHdris';
+import type { PreviewHdri } from '@/core/models/previewHdri';
+import { EnvironmentController } from './preview/EnvironmentController';
 
 export { assertWebGl2 } from './preview/PreviewEngine';
 export type {
@@ -55,6 +58,7 @@ export interface SceneManagerDeps {
     recorder: ShaderLogRecorder | null,
   ): ShaderCompiler;
   createDiagnostics(compiler: ShaderCompiler): FragmentDiagnostics;
+  createEnvironmentController(scene: Scene): EnvironmentController;
 }
 
 export type PreviewMeshProviderFactory = (
@@ -74,6 +78,7 @@ const defaultDeps: SceneManagerDeps = {
   createCompiler: (scene, recorder) => new ShaderCompiler(scene, recorder),
   createDiagnostics: (compiler) =>
     new FragmentDiagnostics(compiler, internalShaders.validation.vertex),
+  createEnvironmentController: (scene) => new EnvironmentController(scene),
 };
 
 /**
@@ -91,6 +96,7 @@ export class SceneManager {
   private animator: PreviewAnimator | null = null;
   private compiler: ShaderCompiler | null = null;
   private fragmentDiagnostics: FragmentDiagnostics | null = null;
+  private environment: EnvironmentController | null = null;
   private wireframe = false;
   /**
    * Monotonic token identifying the current init session. Any `await` resumes
@@ -115,6 +121,9 @@ export class SceneManager {
       createAnimator: deps.createAnimator ?? defaultDeps.createAnimator,
       createCompiler: deps.createCompiler ?? defaultDeps.createCompiler,
       createDiagnostics: deps.createDiagnostics ?? defaultDeps.createDiagnostics,
+      createEnvironmentController:
+        deps.createEnvironmentController ??
+        defaultDeps.createEnvironmentController,
     };
   }
 
@@ -122,6 +131,7 @@ export class SceneManager {
     canvas: HTMLCanvasElement,
     source: ShaderSource,
     model: PreviewModel = defaultPreviewModel,
+    hdri: PreviewHdri = defaultPreviewHdri,
   ): Promise<void> {
     this.dispose();
     const session = this.session;
@@ -140,6 +150,12 @@ export class SceneManager {
     const { scene, directionalLight } = this.deps.createScene(engine, canvas);
     this.scene = scene;
     previewEngine.attachScene(scene);
+
+    const environment = this.deps.createEnvironmentController(scene);
+    this.environment = environment;
+    // The environment loads in parallel with the mesh; the scene keeps using
+    // its current environment until the texture is ready.
+    void environment.load(hdri);
 
     let mesh: Mesh;
     try {
@@ -243,6 +259,17 @@ export class SceneManager {
     return true;
   }
 
+  /**
+   * Applies an HDRI to the preview scene. The current environment stays active
+   * until the new texture has loaded, and only the latest request can win.
+   */
+  loadEnvironment(hdri: PreviewHdri): Promise<boolean> {
+    const environment = this.environment;
+    if (!environment) return Promise.resolve(false);
+
+    return environment.load(hdri);
+  }
+
   resize(): void {
     this.previewEngine?.resize();
   }
@@ -312,6 +339,9 @@ export class SceneManager {
 
     this.animator?.dispose();
     this.animator = null;
+
+    this.environment?.dispose();
+    this.environment = null;
 
     this.previewEngine?.stopRenderLoop();
 

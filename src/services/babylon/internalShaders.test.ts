@@ -4,6 +4,7 @@ import defaultVertex from '@/assets/internal-shaders/default.vert.glsl?raw';
 import defaultFragment from '@/assets/internal-shaders/default.frag.glsl?raw';
 import errorVertex from '@/assets/internal-shaders/error.vert.glsl?raw';
 import errorFragment from '@/assets/internal-shaders/error.frag.glsl?raw';
+import { SHADER_SAMPLER_NAMES } from '@/services/babylon/preview/MaterialController';
 import { internalShaders } from './internalShaders';
 
 const shaders = {
@@ -36,6 +37,12 @@ describe('internal shaders', () => {
 
     expect(defaultFragment).toMatch(output);
     expect(errorFragment).toMatch(output);
+  });
+
+  it('declares the scene environment cubemap sampler in the default fragment', () => {
+    expect(defaultFragment).toContain(
+      `uniform samplerCube ${SHADER_SAMPLER_NAMES.environment};`,
+    );
   });
 
   it('keeps the validation pair identical to the default pair', () => {

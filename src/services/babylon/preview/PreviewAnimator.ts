@@ -5,7 +5,7 @@ import type {
   Scene,
   ShaderMaterial,
 } from '@babylonjs/core';
-import { SHADER_UNIFORM_NAMES } from './MaterialController';
+import { SHADER_SAMPLER_NAMES, SHADER_UNIFORM_NAMES } from './MaterialController';
 import { Matrix } from '@babylonjs/core';
 import { updateNormalMatrix } from './mesh/MeshMatricesProc';
 
@@ -62,6 +62,16 @@ export class PreviewAnimator {
     material.setFloat(SHADER_UNIFORM_NAMES.time, performance.now() * 0.001);
     material.setVector3(SHADER_UNIFORM_NAMES.cameraPos,this.scene.activeCamera.position);
     material.setVector3(SHADER_UNIFORM_NAMES.lightDir,this.light.direction);
+
+    // Keep the shader reflection in sync with the environment selected in the
+    // viewer, including after an HDRI swap or a successful recompile.
+    if (this.scene.environmentTexture) {
+      material.setTexture(
+        SHADER_SAMPLER_NAMES.environment,
+        this.scene.environmentTexture,
+      );
+    }
+
     // set the normal matrix here
         updateNormalMatrix(
       this.mesh,

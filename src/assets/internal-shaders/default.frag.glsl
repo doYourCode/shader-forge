@@ -15,6 +15,7 @@ in vec4 vColor;
 uniform float time;
 uniform vec3 cameraPos;
 uniform vec3 lightDir;
+uniform samplerCube environmentMap;
 
 // Output
 layout(location = 0) out vec4 fragColor;
@@ -45,6 +46,14 @@ void main(void)
         fresnelColor,
         max(NdotL, fresnel)
     );
+
+    // Subtle environment reflection from the selected HDRI
+    vec3 reflectionDir = reflect(-V, N);
+    vec3 environmentColor = textureLod(environmentMap, reflectionDir, 5.0).rgb;
+    //environmentColor = environmentColor / (environmentColor + vec3(1.0));
+
+    float reflectionAmount = 0.1 + fresnel * 0.30;
+    finalColor = mix(finalColor, environmentColor, reflectionAmount);
 
     fragColor = vec4(finalColor, 1.0);
 }

@@ -26,6 +26,18 @@ export const SHADER_UNIFORM_NAMES = {
   normalMatrix: 'normalMatrix'
 } as const;
 
+/**
+ * Sampler names available to user shaders. The active scene HDRI is bound to
+ * `environmentMap` before every render, so it follows environment changes.
+ */
+export const SHADER_SAMPLER_NAMES = {
+  environment: 'environmentMap',
+} as const;
+
+export const SHADER_SAMPLERS: string[] = [
+  SHADER_SAMPLER_NAMES.environment,
+];
+
 export const SHADER_UNIFORMS: string[] = [
   'world',
   'view',
@@ -56,6 +68,7 @@ export function buildShaderMaterial(
     {
       attributes: [...SHADER_ATTRIBUTES],
       uniforms: [...SHADER_UNIFORMS],
+      samplers: [...SHADER_SAMPLERS],
     },
     false,
   );

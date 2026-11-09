@@ -33,14 +33,16 @@ function createHarness() {
     },
   } as unknown as Scene;
   const light = { direction: {} } as unknown as DirectionalLight;
+  const ibl = { bind: vi.fn(), dispose: vi.fn() };
   const animator = new PreviewAnimator(
     scene,
     light,
     mesh,
     () => material as unknown as ShaderMaterial,
+    ibl,
   );
 
-  return { animator, scene, material, environment };
+  return { animator, scene, material, environment, ibl };
 }
 
 function triggerRender(scene: Scene): void {
@@ -76,5 +78,26 @@ describe('PreviewAnimator', () => {
       SHADER_SAMPLER_NAMES.environment,
       replacement,
     );
+  });
+
+  it('rebinds the IBL resources on every frame', () => {
+    const harness = createHarness();
+    harness.animator.start();
+    triggerRender(harness.scene);
+    triggerRender(harness.scene);
+
+    expect(harness.ibl.bind).toHaveBeenCalledTimes(2);
+    expect(harness.ibl.bind).toHaveBeenLastCalledWith(
+      harness.material as unknown as ShaderMaterial,
+    );
+  });
+
+  it('disposes the IBL binder with the animator', () => {
+    const harness = createHarness();
+    harness.animator.start();
+
+    harness.animator.dispose();
+
+    expect(harness.ibl.dispose).toHaveBeenCalledTimes(1);
   });
 });

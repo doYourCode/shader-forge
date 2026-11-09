@@ -47,10 +47,13 @@ function createHarness() {
     dispose: vi.fn(),
   };
   const createBackground = vi.fn(() => background);
+  const filter = { prefilter: vi.fn(async () => {}) };
+  const createIblFilter = vi.fn(() => filter);
   const controller = new EnvironmentController(
     scene,
     createTexture,
     createBackground,
+    createIblFilter,
   );
 
   return {
@@ -61,7 +64,28 @@ function createHarness() {
     callbacks,
     background,
     createBackground,
+    filter,
+    createIblFilter,
   };
+}
+
+function deferred(): {
+  readonly promise: Promise<void>;
+  readonly resolve: () => void;
+  readonly reject: (reason?: unknown) => void;
+} {
+  let resolve!: () => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<void>((onResolve, onReject) => {
+    resolve = onResolve;
+    reject = onReject;
+  });
+  return { promise, resolve, reject };
+}
+
+async function flush(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
 }
 
 describe('EnvironmentController', () => {
@@ -246,5 +270,96 @@ describe('EnvironmentController', () => {
     harness.callbacks.get(PEPPERMINT.url)!.onLoad();
     expect(harness.scene.environmentTexture).toBeNull();
     await expect(harness.controller.load(STUDIO)).resolves.toBe(false);
+  });
+
+  it('publishes the environment only after IBL filtering completes', async () => {
+    const harness = createHarness();
+    const gate = deferred();
+    harness.filter.prefilter.mockReturnValueOnce(gate.promise);
+
+    const loaded = harness.controller.load(STUDIO);
+    harness.callbacks.get(STUDIO.url)!.onLoad();
+    await flush();
+
+    expect(harness.filter.prefilter).toHaveBeenCalledWith(
+      harness.textures.get(STUDIO.url),
+    );
+    expect(harness.scene.environmentTexture).toBeNull();
+    expect(harness.background.setTexture).not.toHaveBeenCalled();
+
+    gate.resolve();
+    await expect(loaded).resolves.toBe(true);
+    expect(harness.scene.environmentTexture).toBe(
+      harness.textures.get(STUDIO.url),
+    );
+  });
+
+  it('keeps the current environment when IBL filtering fails', async () => {
+    const harness = createHarness();
+
+    const first = harness.controller.load(STUDIO);
+    harness.callbacks.get(STUDIO.url)!.onLoad();
+    await first;
+    const studioTexture = harness.textures.get(STUDIO.url)!;
+
+    const failing = deferred();
+    harness.filter.prefilter.mockReturnValueOnce(failing.promise);
+
+    const second = harness.controller.load(PEPPERMINT);
+    harness.callbacks.get(PEPPERMINT.url)!.onLoad();
+    await flush();
+    failing.reject(new Error('filter failed'));
+
+    await expect(second).resolves.toBe(false);
+    expect(harness.scene.environmentTexture).toBe(
+      studioTexture as unknown as BaseTexture,
+    );
+    expect(harness.scene.environmentTexture).not.toBe(
+      harness.textures.get(PEPPERMINT.url),
+    );
+    expect(harness.textures.get(PEPPERMINT.url)!.dispose).toHaveBeenCalledTimes(
+      1,
+    );
+    expect(studioTexture.dispose).not.toHaveBeenCalled();
+  });
+
+  it('disposes a superseded texture only after its filtering settles', async () => {
+    const harness = createHarness();
+    const firstGate = deferred();
+    harness.filter.prefilter.mockReturnValueOnce(firstGate.promise);
+
+    const first = harness.controller.load(STUDIO);
+    harness.callbacks.get(STUDIO.url)!.onLoad();
+    await flush();
+    const studioTexture = harness.textures.get(STUDIO.url)!;
+
+    const second = harness.controller.load(PEPPERMINT);
+    await expect(first).resolves.toBe(false);
+    expect(studioTexture.dispose).not.toHaveBeenCalled();
+
+    firstGate.resolve();
+    await flush();
+    expect(studioTexture.dispose).toHaveBeenCalledTimes(1);
+
+    harness.callbacks.get(PEPPERMINT.url)!.onLoad();
+    await expect(second).resolves.toBe(true);
+  });
+
+  it('does not start filtering for a selection superseded before load', async () => {
+    const harness = createHarness();
+
+    const first = harness.controller.load(STUDIO);
+    harness.callbacks.get(STUDIO.url)!.onLoad();
+    await first;
+
+    const pending = harness.controller.load(PEPPERMINT);
+    await expect(harness.controller.load(STUDIO)).resolves.toBe(true);
+
+    harness.callbacks.get(PEPPERMINT.url)!.onLoad();
+    await expect(pending).resolves.toBe(false);
+
+    expect(harness.filter.prefilter).not.toHaveBeenCalledWith(
+      harness.textures.get(PEPPERMINT.url),
+    );
   });
 });

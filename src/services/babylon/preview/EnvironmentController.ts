@@ -8,6 +8,11 @@ import {
   type Scene,
 } from '@babylonjs/core';
 import type { PreviewHdri } from '@/core/models/previewHdri';
+import {
+  createNativeEnvironmentIblFilter,
+  type EnvironmentIblFilter,
+  type EnvironmentIblFilterFactory,
+} from './IblFiltering';
 
 /** Face size used when converting the equirectangular HDR panorama. */
 const HDR_CUBE_SIZE = 512;
@@ -90,6 +95,8 @@ interface PendingEnvironment {
   readonly promise: Promise<boolean>;
   readonly resolve: (result: boolean) => void;
   texture: BaseTexture | null;
+  /** In-flight native IBL filtering; the texture must outlive it. */
+  filtering: Promise<void> | null;
   settled: boolean;
 }
 
@@ -103,9 +110,11 @@ export class EnvironmentController {
   private readonly scene: Scene;
   private readonly createTexture: EnvironmentTextureFactory;
   private readonly createBackground: EnvironmentBackgroundFactory;
+  private readonly createIblFilter: EnvironmentIblFilterFactory;
   private current: BaseTexture | null = null;
   private currentId: string | null = null;
   private background: EnvironmentBackground | null = null;
+  private iblFilter: EnvironmentIblFilter | null = null;
   private pending: PendingEnvironment | null = null;
   private disposed = false;
 
@@ -114,10 +123,13 @@ export class EnvironmentController {
     createTexture: EnvironmentTextureFactory = createHdrEnvironmentTexture,
     createBackground: EnvironmentBackgroundFactory =
       createHdrEnvironmentBackground,
+    createIblFilter: EnvironmentIblFilterFactory =
+      createNativeEnvironmentIblFilter,
   ) {
     this.scene = scene;
     this.createTexture = createTexture;
     this.createBackground = createBackground;
+    this.createIblFilter = createIblFilter;
   }
 
   /**
@@ -148,6 +160,7 @@ export class EnvironmentController {
       promise,
       resolve: resolveEntry,
       texture: null,
+      filtering: null,
       settled: false,
     };
     this.pending = entry;
@@ -156,7 +169,7 @@ export class EnvironmentController {
       const texture = this.createTexture(
         this.scene,
         hdri.url,
-        () => queueMicrotask(() => this.finishLoad(entry, hdri)),
+        () => queueMicrotask(() => this.beginFiltering(entry, hdri)),
         () => queueMicrotask(() => this.finishError(entry)),
       );
       entry.texture = texture;
@@ -178,6 +191,48 @@ export class EnvironmentController {
     this.current?.dispose();
     this.current = null;
     this.currentId = null;
+  }
+
+  /**
+   * Runs the native HDR filters before the texture becomes visible. Only the
+   * pending entry is processed; a superseded one is released as soon as its
+   * filtering settles, because GPU filtering itself cannot be cancelled.
+   */
+  private beginFiltering(
+    entry: PendingEnvironment,
+    hdri: PreviewHdri,
+  ): void {
+    if (this.disposed || this.pending !== entry) {
+      this.disposeTexture(entry);
+      return;
+    }
+
+    const texture = entry.texture;
+    if (!texture) {
+      this.finishError(entry);
+      return;
+    }
+
+    let filtering: Promise<void>;
+    try {
+      this.iblFilter ??= this.createIblFilter(this.scene);
+      filtering = this.iblFilter.prefilter(texture);
+    } catch {
+      this.finishError(entry);
+      return;
+    }
+
+    entry.filtering = filtering;
+    void filtering.then(
+      () => {
+        entry.filtering = null;
+        this.finishLoad(entry, hdri);
+      },
+      () => {
+        entry.filtering = null;
+        this.finishError(entry);
+      },
+    );
   }
 
   private finishLoad(entry: PendingEnvironment, hdri: PreviewHdri): void {
@@ -220,8 +275,19 @@ export class EnvironmentController {
     if (!entry) return;
 
     this.pending = null;
-    this.disposeTexture(entry);
     this.settle(entry, false);
+
+    // A texture being filtered is still read by the GPU; release it only once
+    // the filter settles, otherwise the shader would sample disposed storage.
+    if (entry.filtering) {
+      void entry.filtering.then(
+        () => this.disposeTexture(entry),
+        () => this.disposeTexture(entry),
+      );
+      return;
+    }
+
+    this.disposeTexture(entry);
   }
 
   private disposeTexture(entry: PendingEnvironment): void {

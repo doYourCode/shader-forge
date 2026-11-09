@@ -8,6 +8,7 @@ import type {
 import { SHADER_SAMPLER_NAMES, SHADER_UNIFORM_NAMES } from './MaterialController';
 import { Matrix } from '@babylonjs/core';
 import { updateNormalMatrix } from './mesh/MeshMatricesProc';
+import { IblEnvironment, type IblBindingTarget } from './IblEnvironment';
 
 /**
  * Drives the animated shader uniforms and the mesh spin once per rendered
@@ -19,6 +20,7 @@ export class PreviewAnimator {
   private readonly light: DirectionalLight;
   private mesh: Mesh;
   private readonly getMaterial: () => ShaderMaterial | null;
+  private readonly ibl: IblBindingTarget;
   private observer: Observer<Scene> | null = null;
   private readonly inverseWorldMatrix = Matrix.Identity();
   private readonly normalMatrix = Matrix.Identity();
@@ -28,11 +30,13 @@ export class PreviewAnimator {
     light: DirectionalLight,
     mesh: Mesh,
     getMaterial: () => ShaderMaterial | null,
+    ibl: IblBindingTarget = new IblEnvironment(scene),
   ) {
     this.scene = scene;
     this.light = light;
     this.mesh = mesh;
     this.getMaterial = getMaterial;
+    this.ibl = ibl;
   }
 
   /** Rebinds the animation to replacement geometry without restarting it. */
@@ -49,6 +53,7 @@ export class PreviewAnimator {
   }
 
   dispose(): void {
+    this.ibl.dispose();
     if (!this.observer) return;
 
     this.scene.onBeforeRenderObservable.remove(this.observer);
@@ -71,6 +76,9 @@ export class PreviewAnimator {
         this.scene.environmentTexture,
       );
     }
+
+    // IBL resources follow the current material and environment each frame.
+    this.ibl.bind(material);
 
     // set the normal matrix here
         updateNormalMatrix(

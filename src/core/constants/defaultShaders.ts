@@ -24,6 +24,10 @@ vec3 lightDir;              // Direction vector of the light in world-space.
 float time;                 // Used for animating effects based on a timescale;
 
 samplerCube environmentMap; // The environment map (used for IBL)
+
+samplerCube irradianceMap;              // Diffuse irradiance (cosine-convolved environment cubemap);
+samplerCube prefilteredEnvironmentMap;  // GGX-prefiltered specular cubemap (higher mip levels = rougher);
+sampler2D brdfLUT;                      // Split-sum LUT (R = bias, G = albedo); sample at (NdotV, roughness), then mix(R, G, F0).
 `.trim();
 
 export const defaultIoDoc = `

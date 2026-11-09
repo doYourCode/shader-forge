@@ -29,13 +29,21 @@ export const SHADER_UNIFORM_NAMES = {
 /**
  * Sampler names available to user shaders. The active scene HDRI is bound to
  * `environmentMap` before every render, so it follows environment changes.
+ * The IBL samplers are bound from the same environment (plus the scene-cached
+ * BRDF LUT) by `IblEnvironment` on every frame.
  */
 export const SHADER_SAMPLER_NAMES = {
   environment: 'environmentMap',
+  irradiance: 'irradianceMap',
+  prefilteredEnvironment: 'prefilteredEnvironmentMap',
+  brdfLut: 'brdfLUT',
 } as const;
 
 export const SHADER_SAMPLERS: string[] = [
   SHADER_SAMPLER_NAMES.environment,
+  SHADER_SAMPLER_NAMES.irradiance,
+  SHADER_SAMPLER_NAMES.prefilteredEnvironment,
+  SHADER_SAMPLER_NAMES.brdfLut,
 ];
 
 export const SHADER_UNIFORMS: string[] = [

@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref } from 'vue';
 import {
   EditorManager,
   type EditorDiagnostic,
@@ -6,11 +6,20 @@ import {
 import {
   SceneManager,
   type CompileResult,
+  type MaterialBlueprint,
+  type ShaderSource,
 } from '@/services/babylon/SceneManager';
 import type { EditorTabId } from '@/core/models/editorTab';
 import type { PreviewHdri } from '@/core/models/previewHdri';
 import type { PreviewModel } from '@/core/models/previewModel';
 import type { ShaderError } from '@/core/models/shaderError';
+import type {
+  UserDataDocument,
+  UserUniformKind,
+  UserUniformStage,
+  UserUniformValue,
+} from '@/core/models/userUniform';
+import { createEmptyUserDataDocument } from '@/core/models/userUniform';
 import {
   defaultPreviewModel,
   findPreviewModel,
@@ -27,10 +36,16 @@ import {
   defaultUniformsDoc,
   defaultIoDoc,
 } from '@/core/constants/defaultShaders';
+import {
+  UserDataController,
+  type AddUserUniformResult,
+  type UserDataCommandResult,
+} from '@/services/userdata/UserDataController';
 
 export type EditorStatus = 'idle' | 'ready' | 'error' | 'compiling';
 
 type EditableTabId = 'vertex' | 'fragment';
+type TextTabId = Exclude<EditorTabId, 'user_data'>;
 
 export function useShaderEditor() {
   const editorManager = new EditorManager();
@@ -49,16 +64,28 @@ export function useShaderEditor() {
   const wireframe = ref(false);
   const paused = ref(false);
   const errors = ref<ShaderError[]>([]);
+  const highlightedUserRow = ref<number | null>(null);
 
-  const tabDocs: Record<EditorTabId, string> = {
+  const tabDocs: Record<TextTabId, string> = {
     vertex: defaultVertexShader,
     fragment: defaultFragmentShader,
     uniforms: defaultUniformsDoc,
     io: defaultIoDoc,
-    user_data: '',
   };
 
+  const userDataDoc: UserDataDocument = reactive(createEmptyUserDataDocument());
+  const userData = new UserDataController(
+    {
+      getSources: () => currentSources(),
+      onCompileRequested: (blueprint) => {
+        void compile(blueprint);
+      },
+    },
+    userDataDoc,
+  );
+
   let compileInFlight = false;
+  let queuedCompile: MaterialBlueprint | 'current' | null = null;
   let confirmedModel = defaultPreviewModel;
   let modelSelection = 0;
   let confirmedHdri = defaultPreviewHdri;
@@ -68,8 +95,13 @@ export function useShaderEditor() {
     errors.value = shaderErrors;
     status.value = 'error';
     statusMessage.value = formatErrorStatus(shaderErrors);
+    highlightedUserRow.value = firstUserDataRow(shaderErrors);
     editorManager.setDiagnostics(diagnosticsFor(activeTab.value));
   };
+
+  function currentSources(): ShaderSource {
+    return { vertex: tabDocs.vertex, fragment: tabDocs.fragment };
+  }
 
   function isEditableTab(tab: EditorTabId): tab is EditableTabId {
     return tab === 'vertex' || tab === 'fragment';
@@ -98,8 +130,25 @@ export function useShaderEditor() {
       }));
   }
 
+  function firstUserDataRow(
+    shaderErrors: readonly ShaderError[],
+  ): number | null {
+    const match = shaderErrors.find(
+      (error) => error.stage === 'user_data' && error.row != null,
+    );
+
+    return match?.row ?? null;
+  }
+
   function applyTab(tab: EditorTabId) {
     activeTab.value = tab;
+
+    if (tab === 'user_data') {
+      // The structured panel replaces the text editor. Leaving the editor
+      // buffer alone keeps the exact document when switching back.
+      editorManager.setReadOnly(true);
+      return;
+    }
 
     const readOnly = !isEditableTab(tab);
     editorManager.setValue(tabDocs[tab]);
@@ -129,12 +178,10 @@ export function useShaderEditor() {
   function mountCanvas(canvas: HTMLCanvasElement) {
     sceneManager.init(
       canvas,
-      {
-        vertex: tabDocs.vertex,
-        fragment: tabDocs.fragment,
-      },
+      userData.buildBlueprint(currentSources()),
       activeModel.value,
       activeHdri.value,
+      userData,
     );
     sceneManager.setPaused(false);
   }
@@ -195,21 +242,25 @@ export function useShaderEditor() {
     statusMessage.value = `Switched to ${tab}`;
   }
 
-  async function compile() {
-    if (compileInFlight) return;
+  async function compile(blueprint?: MaterialBlueprint) {
+    // A structural edit may land while a compile is in flight; the latest
+    // request is replayed after the current one settles.
+    if (compileInFlight) {
+      queuedCompile = blueprint ?? 'current';
+      return;
+    }
 
     compileInFlight = true;
     storeActiveDocument();
+
+    const target = blueprint ?? userData.buildBlueprint(currentSources());
 
     status.value = 'compiling';
     statusMessage.value = 'Compiling…';
 
     let result: CompileResult;
     try {
-      result = await sceneManager.compile({
-        vertex: tabDocs.vertex,
-        fragment: tabDocs.fragment,
-      });
+      result = await sceneManager.compile(target);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       result = {
@@ -231,7 +282,18 @@ export function useShaderEditor() {
       compileInFlight = false;
     }
 
+    applyCompileResult(result);
+
+    const next = queuedCompile;
+    queuedCompile = null;
+    if (next !== null) {
+      void compile(next === 'current' ? undefined : next);
+    }
+  }
+
+  function applyCompileResult(result: CompileResult): void {
     errors.value = result.errors;
+    highlightedUserRow.value = firstUserDataRow(result.errors);
 
     if (result.ok) {
       status.value = 'ready';
@@ -276,6 +338,17 @@ export function useShaderEditor() {
   }
 
   function revealError(error: ShaderError) {
+    if (error.stage === 'user_data') {
+      if (error.row == null) return;
+
+      if (activeTab.value !== 'user_data') {
+        storeActiveDocument();
+        applyTab('user_data');
+      }
+      highlightedUserRow.value = error.row;
+      return;
+    }
+
     if (error.stage !== 'vertex' && error.stage !== 'fragment') return;
 
     storeActiveDocument();
@@ -287,6 +360,50 @@ export function useShaderEditor() {
     if (error.line !== null) {
       editorManager.revealPosition(error.line, error.column);
     }
+  }
+
+  function addUserUniform(request: {
+    name: string;
+    kind: UserUniformKind;
+    stages?: UserUniformStage;
+  }): AddUserUniformResult {
+    return userData.add(request);
+  }
+
+  function removeUserUniform(id: string): UserDataCommandResult {
+    return userData.remove(id);
+  }
+
+  function renameUserUniform(
+    id: string,
+    name: string,
+  ): UserDataCommandResult {
+    return userData.rename(id, name);
+  }
+
+  function changeUserUniformKind(
+    id: string,
+    kind: UserUniformKind,
+  ): UserDataCommandResult {
+    return userData.changeKind(id, kind);
+  }
+
+  function changeUserUniformStages(
+    id: string,
+    stages: UserUniformStage,
+  ): UserDataCommandResult {
+    return userData.changeStages(id, stages);
+  }
+
+  function setUserUniformValue(
+    id: string,
+    value: UserUniformValue,
+  ): UserDataCommandResult {
+    return userData.setValue(id, value);
+  }
+
+  function validateUserUniformName(name: string, exceptId?: string) {
+    return userData.validateName(name, exceptId);
   }
 
   function formatErrorStatus(shaderErrors: readonly ShaderError[]): string {
@@ -314,6 +431,7 @@ export function useShaderEditor() {
   onBeforeUnmount(() => {
     editorManager.dispose();
     sceneManager.dispose();
+    userData.dispose();
   });
 
   return {
@@ -330,6 +448,8 @@ export function useShaderEditor() {
     wireframe,
     paused,
     errors,
+    userDataDoc,
+    highlightedUserRow,
     mountEditor,
     mountCanvas,
     switchTab,
@@ -340,5 +460,12 @@ export function useShaderEditor() {
     resize,
     setWireframe,
     setPaused,
+    addUserUniform,
+    removeUserUniform,
+    renameUserUniform,
+    changeUserUniformKind,
+    changeUserUniformStages,
+    setUserUniformValue,
+    validateUserUniformName,
   };
 }

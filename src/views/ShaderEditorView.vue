@@ -4,14 +4,25 @@ import { useShaderEditor } from '@/composables/useShaderEditor';
 import {
   builtInTabGroup,
   editableTabs,
+  userDataTab,
+  type EditorTab,
 } from '@/core/models/editorTab';
 import type { ShaderError, ShaderErrorKind } from '@/core/models/shaderError';
+import type {
+  UserUniformKind,
+  UserUniformStage,
+  UserUniformValue,
+} from '@/core/models/userUniform';
 import EditorToolbar from '@/components/shader/EditorToolbar.vue';
 import ViewerToolbar from '@/components/shader/ViewerToolbar.vue';
 import StatusBar from '@/components/shader/StatusBar.vue';
+import UserDataPanel from '@/components/shader/UserDataPanel.vue';
 
 const editorHostRef = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+
+/** The structured user-data tab lives beside the text documents. */
+const editorTabs: readonly EditorTab[] = [...editableTabs, userDataTab];
 
 const {
   activeTab,
@@ -26,6 +37,8 @@ const {
   wireframe,
   paused,
   errors,
+  userDataDoc,
+  highlightedUserRow,
   mountEditor,
   mountCanvas,
   switchTab,
@@ -36,6 +49,13 @@ const {
   resize,
   setWireframe,
   setPaused,
+  addUserUniform,
+  removeUserUniform,
+  renameUserUniform,
+  changeUserUniformKind,
+  changeUserUniformStages,
+  setUserUniformValue,
+  validateUserUniformName,
 } = useShaderEditor();
 
 const ERROR_KIND_LABELS: Record<ShaderErrorKind, string> = {
@@ -54,7 +74,13 @@ function errorStageLabel(error: ShaderError): string {
       ? 'Vertex shader'
       : error.stage === 'fragment'
         ? 'Fragment shader'
-        : 'Shader program';
+        : error.stage === 'user_data'
+          ? 'User data'
+          : 'Shader program';
+
+  if (error.stage === 'user_data') {
+    return error.row == null ? stage : `${stage} · row ${error.row + 1}`;
+  }
 
   return error.line === null
     ? stage
@@ -68,7 +94,35 @@ function errorKindLabel(error: ShaderError): string {
 }
 
 function isRevealable(error: ShaderError): boolean {
+  if (error.stage === 'user_data') return error.row != null;
   return error.stage !== 'program' && error.line !== null;
+}
+
+function handleAddUniform(request: {
+  name: string;
+  kind: UserUniformKind;
+}): void {
+  addUserUniform(request);
+}
+
+function handleRemoveUniform(id: string): void {
+  removeUserUniform(id);
+}
+
+function handleRenameUniform(id: string, name: string): void {
+  renameUserUniform(id, name);
+}
+
+function handleKindChange(id: string, kind: UserUniformKind): void {
+  changeUserUniformKind(id, kind);
+}
+
+function handleStagesChange(id: string, stages: UserUniformStage): void {
+  changeUserUniformStages(id, stages);
+}
+
+function handleValueChange(id: string, value: UserUniformValue): void {
+  setUserUniformValue(id, value);
 }
 
 function handleResize() {
@@ -102,13 +156,30 @@ function togglePause() {
   <div class="shader-editor">
     <div class="shader-editor__left">
       <EditorToolbar
-        :tabs="editableTabs"
+        :tabs="editorTabs"
         :built-in="builtInTabGroup"
         :active="activeTab"
         @switch="switchTab"
         @compile="compile"
       />
-      <div ref="editorHostRef" class="shader-editor__editor-host" />
+      <div
+        v-show="activeTab !== 'user_data'"
+        ref="editorHostRef"
+        class="shader-editor__editor-host"
+      />
+      <UserDataPanel
+        v-if="activeTab === 'user_data'"
+        class="shader-editor__user-data"
+        :definitions="userDataDoc.definitions"
+        :highlighted-row="highlightedUserRow"
+        :validate-name="validateUserUniformName"
+        @add="handleAddUniform"
+        @remove="handleRemoveUniform"
+        @rename="handleRenameUniform"
+        @change-kind="handleKindChange"
+        @change-stages="handleStagesChange"
+        @change-value="handleValueChange"
+      />
     </div>
 
     <div class="shader-editor__right">
@@ -210,6 +281,11 @@ function togglePause() {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+.shader-editor__user-data {
+  flex: 1;
+  min-height: 0;
 }
 
 /* Let CodeMirror use the full height of its host instead of only the

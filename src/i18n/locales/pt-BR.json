@@ -41,5 +41,55 @@
         "description": "Experimente shaders de fragmento em um ambiente isolado."
       }
     }
+  },
+  "userData": {
+    "title": "Dados do usuário",
+    "description": "Declare seus próprios uniforms. Editar valores atualiza a prévia sem recompilar; adicionar, renomear ou alterar o destino reconstrói o shader.",
+    "add": "Adicionar uniform",
+    "addHeading": "Novo uniform",
+    "namePlaceholder": "nomeDoUniform",
+    "empty": "Nenhum uniform do usuário ainda. Adicione um para expor um controle na prévia.",
+    "remove": "Remover",
+    "columns": {
+      "name": "Nome",
+      "kind": "Tipo",
+      "stages": "Etapas",
+      "value": "Valor",
+      "actions": "Ações"
+    },
+    "stages": {
+      "fragment": "Fragmento",
+      "vertex": "Vértice",
+      "both": "Ambos"
+    },
+    "kinds": {
+      "float": "Float",
+      "vec2": "Vec2",
+      "vec3": "Vec3",
+      "vec4": "Vec4",
+      "color": "Cor",
+      "color4": "Cor (RGBA)",
+      "direction": "Direção",
+      "position": "Posição (espaço do objeto)",
+      "sampler2D": "Textura 2D",
+      "samplerCube": "Textura cúbica"
+    },
+    "error": {
+      "invalid": "Use um identificador GLSL válido: letras, dígitos e sublinhados, sem começar com dígito.",
+      "reserved": "Este nome é reservado pelo shader ou pelo ShaderForge.",
+      "duplicate": "Outro uniform já usa este nome."
+    },
+    "texture": {
+      "urlPlaceholder": "URL da textura",
+      "chooseFile": "Enviar imagem",
+      "noTexture": "Nenhuma textura selecionada"
+    },
+    "generated": {
+      "title": "GLSL gerado",
+      "note": "Prévia somente leitura do bloco gerenciado. Estas linhas são injetadas no código compilado; o texto do editor não é alterado.",
+      "fragment": "Estágio de fragmento",
+      "vertex": "Estágio de vértice",
+      "empty": "Adicione um uniform para ver as declarações geradas aqui."
+    }
   }
 }

@@ -1,0 +1,282 @@
+import { describe, expect, it } from 'vitest';
+
+import type {
+  UserDataDocument,
+  UserUniformDefinition,
+  UserUniformKind,
+} from '@/core/models/userUniform';
+import {
+  assembleStage,
+  assembleUserData,
+  generateBlock,
+  locateInjectedBlock,
+  USER_DATA_BLOCK_END,
+  USER_DATA_BLOCK_START,
+} from './uniformCodegen';
+
+function definition(
+  id: string,
+  name: string,
+  kind: UserUniformKind,
+  stages: UserUniformDefinition['stages'],
+  value: UserUniformDefinition['value'],
+): UserUniformDefinition {
+  return { id, name, kind, stages, value };
+}
+
+function documentWith(
+  definitions: UserUniformDefinition[],
+  revision = 1,
+): UserDataDocument {
+  return { revision, definitions };
+}
+
+const COLOR = definition('u1', 'tint', 'color', 'fragment', {
+  r: 1,
+  g: 0.5,
+  b: 0,
+});
+const TIME = definition('u2', 'scale', 'float', 'both', 2);
+const DIRECTION = definition('u3', 'sunDir', 'direction', 'vertex', {
+  x: 0,
+  y: 1,
+  z: 0,
+});
+
+describe('generateBlock', () => {
+  it('returns null when no definition targets the stage', () => {
+    const document = documentWith([COLOR]);
+
+    expect(generateBlock(document, 'vertex')).toBeNull();
+  });
+
+  it('wraps one declaration per definition in sentinel comments', () => {
+    const block = generateBlock(documentWith([COLOR], 4), 'fragment');
+
+    expect(block).not.toBeNull();
+    const lines = block!.lines;
+
+    expect(lines[0]).toBe(
+      `${USER_DATA_BLOCK_START} (managed block — edit it in the User data tab)`,
+    );
+    expect(lines[1]).toBe('uniform vec3 tint; // color (RGB)');
+    expect(lines[lines.length - 2]).toBe(
+      '// current values: tint = (1, 0.5, 0)',
+    );
+    expect(lines[lines.length - 1]).toBe(USER_DATA_BLOCK_END);
+  });
+
+  it('never emits uniform initializers', () => {
+    const block = generateBlock(documentWith([COLOR, TIME, DIRECTION]), 'fragment');
+
+    for (const line of block!.lines) {
+      if (!line.startsWith('uniform ')) continue;
+      expect(line).not.toContain('=');
+    }
+  });
+
+  it('emits only the definitions targeting the requested stage', () => {
+    const document = documentWith([COLOR, TIME, DIRECTION]);
+
+    const fragment = generateBlock(document, 'fragment')!;
+    const vertex = generateBlock(document, 'vertex')!;
+
+    expect(fragment.lines).toContain('uniform vec3 tint; // color (RGB)');
+    expect(fragment.lines).toContain('uniform float scale; // float');
+    expect(fragment.lines).not.toContain(
+      'uniform vec3 sunDir; // direction (normalized)',
+    );
+
+    expect(vertex.lines).toContain(
+      'uniform vec3 sunDir; // direction (normalized)',
+    );
+    expect(vertex.lines).toContain('uniform float scale; // float');
+    expect(vertex.lines).not.toContain('uniform vec3 tint; // color (RGB)');
+  });
+
+  it('records the definition row for every declaration line', () => {
+    const document = documentWith([COLOR, TIME, DIRECTION]);
+    const block = generateBlock(document, 'fragment')!;
+
+    expect(block.declarationRows).toHaveLength(block.lines.length);
+    expect(block.declarationRows[0]).toBe(-1); // sentinel
+    expect(block.declarationRows[1]).toBe(0); // tint
+    expect(block.declarationRows[2]).toBe(1); // scale
+    expect(block.declarationRows[3]).toBe(-1); // values comment
+    expect(block.declarationRows[4]).toBe(-1); // sentinel
+  });
+
+  it('refreshes the current values comment from the document', () => {
+    const first = generateBlock(documentWith([COLOR]), 'fragment')!;
+    const second = generateBlock(
+      documentWith([
+        { ...COLOR, value: { r: 0, g: 1, b: 0 } } as UserUniformDefinition,
+      ]),
+      'fragment',
+    )!;
+
+    expect(first.lines.some((line) => line.includes('(1, 0.5, 0)'))).toBe(true);
+    expect(second.lines.some((line) => line.includes('(0, 1, 0)'))).toBe(true);
+    expect(second.lines.filter((line) => line.startsWith('uniform '))).toEqual(
+      first.lines.filter((line) => line.startsWith('uniform ')),
+    );
+  });
+});
+
+describe('assembleStage', () => {
+  const FRAGMENT = `#version 300 es
+precision highp float;
+
+in vec3 vNormal;
+
+void main() {}`;
+
+  it('returns the source untouched when there is no block', () => {
+    const assembly = assembleStage(FRAGMENT, null);
+
+    expect(assembly.source).toBe(FRAGMENT);
+    expect(assembly.injected).toBeNull();
+    expect(assembly.declarationRowByLine).toEqual([]);
+  });
+
+  it('inserts the block after the leading #version and precision lines', () => {
+    const block = generateBlock(documentWith([COLOR]), 'fragment')!;
+    const assembly = assembleStage(FRAGMENT, block);
+
+    const lines = assembly.source.split('\n');
+    expect(lines[0]).toBe('#version 300 es');
+    expect(lines[1]).toBe('precision highp float;');
+    expect(lines[2]).toBe('');
+    expect(lines[3]).toBe(block.lines[0]);
+
+    expect(assembly.injected).toEqual({
+      startLine: 4,
+      endLine: 4 + block.lines.length - 1,
+    });
+  });
+
+  it('skips preamble comments so #version stays first', () => {
+    const source = `// generated by ShaderForge
+#version 300 es
+precision highp float;
+
+void main() {}`;
+    const assembly = assembleStage(
+      source,
+      generateBlock(documentWith([COLOR]), 'fragment'),
+    );
+
+    const lines = assembly.source.split('\n');
+    expect(lines[0]).toBe('// generated by ShaderForge');
+    expect(lines[1]).toBe('#version 300 es');
+    expect(lines[2]).toBe('precision highp float;');
+    expect(lines[3]).toBe('');
+    expect(lines[4]).toBe(USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)');
+  });
+
+  it('inserts at the top when the stage has no header directives', () => {
+    const assembly = assembleStage(
+      'void main() {}',
+      generateBlock(documentWith([COLOR]), 'fragment'),
+    );
+
+    const lines = assembly.source.split('\n');
+    expect(lines[0]).toBe(
+      USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)',
+    );
+    expect(lines[lines.length - 1]).toBe('void main() {}');
+    expect(assembly.injected?.startLine).toBe(1);
+  });
+
+  it('tolerates blank lines inside the header run', () => {
+    const source = `#version 300 es
+
+precision highp float;
+
+void main() {}`;
+    const assembly = assembleStage(
+      source,
+      generateBlock(documentWith([COLOR]), 'fragment'),
+    );
+
+    const lines = assembly.source.split('\n');
+    expect(lines[0]).toBe('#version 300 es');
+    expect(lines[1]).toBe('');
+    expect(lines[2]).toBe('precision highp float;');
+    expect(lines[3]).toBe('');
+    expect(lines[4]).toBe(USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)');
+  });
+
+  it('keeps #extension directives before the injected declarations', () => {
+    const source = `#version 300 es
+#extension GL_EXT_shader_texture_lod : enable
+precision highp float;
+
+void main() {}`;
+    const assembly = assembleStage(
+      source,
+      generateBlock(documentWith([COLOR]), 'fragment'),
+    );
+
+    const lines = assembly.source.split('\n');
+    expect(lines[1]).toBe('#extension GL_EXT_shader_texture_lod : enable');
+    expect(lines[2]).toBe('precision highp float;');
+    expect(lines[4]).toBe(USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)');
+  });
+});
+
+describe('assembleUserData', () => {
+  it('assembles both stages and records the injected ranges', () => {
+    const vertexSource = '#version 300 es\nprecision highp float;\nvoid main() {}';
+    const fragmentSource = '#version 300 es\nprecision highp float;\nvoid main() {}';
+
+    const assembly = assembleUserData(
+      documentWith([COLOR, TIME, DIRECTION]),
+      vertexSource,
+      fragmentSource,
+    );
+
+    expect(assembly.record.fragment?.injected).not.toBeNull();
+    expect(assembly.record.vertex?.injected).not.toBeNull();
+    expect(assembly.record.fragment?.declarationRowByLine[1]).toBe(0);
+    // Vertex block: scale (row 1) then sunDir (row 2).
+    expect(assembly.record.vertex?.declarationRowByLine.slice(1, 3)).toEqual([
+      1, 2,
+    ]);
+  });
+
+  it('records null for a stage with no block', () => {
+    const assembly = assembleUserData(
+      documentWith([COLOR]),
+      '#version 300 es\nvoid main() {}',
+      '#version 300 es\nvoid main() {}',
+    );
+
+    expect(assembly.record.vertex).toBeNull();
+    expect(assembly.record.fragment).not.toBeNull();
+  });
+});
+
+describe('locateInjectedBlock', () => {
+  it('finds the block in a driver source with prepended lines', () => {
+    const assembly = assembleUserData(
+      documentWith([COLOR]),
+      '',
+      '#version 300 es\nprecision highp float;\nvoid main() {}',
+    );
+    const driverSource = `#version 300 es\n#define WEBGL2\n${assembly.fragment}`;
+
+    const range = locateInjectedBlock(driverSource);
+
+    expect(range).not.toBeNull();
+    const lines = driverSource.split('\n');
+    expect(lines[range!.startLine - 1]).toContain(
+      'ShaderForge user data',
+    );
+    expect(lines[range!.endLine - 1]).toBe(USER_DATA_BLOCK_END);
+  });
+
+  it('returns null when the source has no injected block', () => {
+    expect(locateInjectedBlock('#version 300 es\nvoid main() {}')).toBeNull();
+  });
+});

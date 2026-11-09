@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  assembleUserData,
+  locateInjectedBlock,
+} from '@/core/shader/uniformCodegen';
+import type { UserDataDocument } from '@/core/models/userUniform';
+import {
   detectGlslVersion,
   parseShaderCompileErrors,
   type ShaderCompileRecord,
@@ -163,5 +168,122 @@ describe('parseShaderCompileErrors version handling', () => {
 
     expect(errors).toHaveLength(1);
     expect(errors[0].advice).toContain('GLSL ES 3.00');
+  });
+});
+
+describe('parseShaderCompileErrors user-data attribution', () => {
+  const USER_DATA: UserDataDocument = {
+    revision: 1,
+    definitions: [
+      {
+        id: 'u1',
+        name: 'tint',
+        kind: 'color',
+        stages: 'fragment',
+        value: { r: 1, g: 1, b: 1 },
+      },
+      {
+        id: 'u2',
+        name: 'scale',
+        kind: 'float',
+        stages: 'fragment',
+        value: 2,
+      },
+    ],
+  };
+
+  function compileFragment() {
+    const assembly = assembleUserData(USER_DATA, '', USER_300_FRAGMENT);
+    const driverSource = driverSource300(assembly.fragment);
+    const block = locateInjectedBlock(driverSource);
+    if (!block) throw new Error('expected an injected block');
+
+    return { assembly, driverSource, block };
+  }
+
+  it('attributes an error inside the block to the definition row', () => {
+    const { assembly, driverSource, block } = compileFragment();
+    // Block layout: sentinel, tint, scale, values comment, sentinel.
+    const tintLine = block.startLine + 1;
+    const scaleLine = block.startLine + 2;
+
+    const records: ShaderCompileRecord[] = [
+      {
+        stage: 'fragment',
+        log: `ERROR: 0:${scaleLine}: 'scale' : type mismatch`,
+        source: driverSource,
+      },
+      {
+        stage: 'fragment',
+        log: `ERROR: 0:${tintLine}: 'tint' : invalid operation`,
+        source: driverSource,
+      },
+    ];
+
+    const errors = parseShaderCompileErrors(records, {
+      vertex: '',
+      fragment: assembly.fragment,
+      userData: assembly.record,
+    });
+
+    expect(errors).toHaveLength(2);
+    expect(errors[0].stage).toBe('user_data');
+    expect(errors[0].line).toBeNull();
+    expect(errors[0].column).toBeNull();
+    expect(errors[0].row).toBe(1);
+    expect(errors[0].message).toContain('scale');
+
+    expect(errors[1].stage).toBe('user_data');
+    expect(errors[1].row).toBe(0);
+  });
+
+  it('keeps editor line mapping for errors outside the block', () => {
+    const { assembly, driverSource, block } = compileFragment();
+    const mainLine =
+      driverSource
+        .split('\n')
+        .findIndex((line) => line.includes('fragColor')) + 1;
+    const assembledLine =
+      assembly.fragment
+        .split('\n')
+        .findIndex((line) => line.includes('layout')) + 1;
+
+    const records: ShaderCompileRecord[] = [
+      {
+        stage: 'fragment',
+        log: `ERROR: 0:${mainLine}: 'gl_FragColor' : undeclared identifier`,
+        source: driverSource,
+      },
+    ];
+
+    const errors = parseShaderCompileErrors(records, {
+      vertex: '',
+      fragment: assembly.fragment,
+      userData: assembly.record,
+    });
+
+    expect(block.endLine).toBeLessThan(mainLine);
+    expect(errors[0].stage).toBe('fragment');
+    expect(errors[0].line).toBe(assembledLine);
+    expect(errors[0].row).toBeUndefined();
+  });
+
+  it('attributes the row even without the assembly record', () => {
+    const { assembly, driverSource, block } = compileFragment();
+    const tintLine = block.startLine + 1;
+
+    const errors = parseShaderCompileErrors(
+      [
+        {
+          stage: 'fragment',
+          log: `ERROR: 0:${tintLine}: 'tint' : invalid operation`,
+          source: driverSource,
+        },
+      ],
+      { vertex: '', fragment: assembly.fragment },
+    );
+
+    expect(errors[0].stage).toBe('user_data');
+    expect(errors[0].row).toBeNull();
   });
 });

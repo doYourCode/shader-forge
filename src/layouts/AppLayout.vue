@@ -20,6 +20,10 @@ import { setLocale, type AppLocale } from '@/i18n/setLocale';
 
 const fillViewport = computed(() => route.meta.id === 'editor');
 
+// The editor is a full-bleed workspace: dropping its footer gives the canvas
+// and the tab panel the remaining viewport height. Other screens keep it.
+const showFooter = computed(() => route.meta.id !== 'editor');
+
 const selectedLocale = computed<AppLocale>({
   get: () => locale.value as AppLocale,
   set: setLocale,
@@ -63,8 +67,8 @@ const selectedLocale = computed<AppLocale>({
       <slot />
     </main>
 
-    <!-- FOOTER -->
-    <footer class="app-footer">
+    <!-- FOOTER (the editor is a full-bleed workspace and has none) -->
+    <footer v-if="showFooter" class="app-footer">
       <p>{{ footerText }}</p>
     </footer>
   </div>

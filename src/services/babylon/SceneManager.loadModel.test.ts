@@ -56,6 +56,13 @@ function createHarness() {
     load: vi.fn(async () => true),
     dispose: vi.fn(),
   };
+  const textures = {
+    load: vi.fn(async () => null),
+    release: vi.fn(),
+    textureFor: vi.fn(() => null),
+    dispose: vi.fn(),
+  };
+  const binder = { attach: vi.fn(), apply: vi.fn(), applyAll: vi.fn() };
   const deps = {
     createEngine: () => previewEngine,
     createScene: () => ({
@@ -68,6 +75,9 @@ function createHarness() {
     createCompiler: () => ({}),
     createDiagnostics: () => ({}),
     createEnvironmentController: () => environment,
+    createTextureRegistry: () => textures,
+    createUniformBinder: () => binder,
+    createUniformBindingTarget: () => ({}),
   } as unknown as SceneManagerDeps;
 
   const load = vi.fn(async () => pending.shift() as unknown as Mesh);
@@ -77,10 +87,17 @@ function createHarness() {
   return { manager, first, second, materials, animator, environment, load };
 }
 
+const BLUEPRINT = {
+  vertex: '',
+  fragment: '',
+  extraUniforms: [],
+  extraSamplers: [],
+};
+
 function init(manager: SceneManager): Promise<void> {
   return manager.init(
     {} as HTMLCanvasElement,
-    { vertex: '', fragment: '' },
+    BLUEPRINT,
     MODELS[0]!,
   );
 }

@@ -15,7 +15,11 @@ import { internalErrorFrom } from './preview/errors/shaderErrorFactory';
 import { MaterialController } from './preview/MaterialController';
 import { PreviewAnimator } from './preview/PreviewAnimator';
 import { PreviewEngine } from './preview/PreviewEngine';
-import type { CompileResult, ShaderSource } from './preview/PreviewTypes';
+import type {
+  CompileResult,
+  MaterialBlueprint,
+  ShaderSource,
+} from './preview/PreviewTypes';
 import {
   createPreviewScene,
   type PreviewScene,
@@ -27,6 +31,17 @@ import type { PreviewModel } from '@/core/models/previewModel';
 import { defaultPreviewHdri } from '@/core/constants/previewHdris';
 import type { PreviewHdri } from '@/core/models/previewHdri';
 import { EnvironmentController } from './preview/EnvironmentController';
+import {
+  TextureRegistry,
+  type TextureRegistryPort,
+} from '@/services/userdata/TextureRegistry';
+import {
+  ShaderMaterialBindingTarget,
+  UniformBinder,
+  type UniformBindingTarget,
+  type UniformBinderPort,
+} from '@/services/userdata/UniformBinder';
+import type { UserDataController } from '@/services/userdata/UserDataController';
 
 export { assertWebGl2 } from './preview/PreviewEngine';
 export type {
@@ -35,6 +50,7 @@ export type {
 } from './preview/PreviewEngine';
 export type {
   CompileResult,
+  MaterialBlueprint,
   ShaderSource,
 } from './preview/PreviewTypes';
 
@@ -59,6 +75,9 @@ export interface SceneManagerDeps {
   ): ShaderCompiler;
   createDiagnostics(compiler: ShaderCompiler): FragmentDiagnostics;
   createEnvironmentController(scene: Scene): EnvironmentController;
+  createTextureRegistry(scene: Scene): TextureRegistryPort;
+  createUniformBinder(textures: TextureRegistryPort): UniformBinderPort;
+  createUniformBindingTarget(material: ShaderMaterial): UniformBindingTarget;
 }
 
 export type PreviewMeshProviderFactory = (
@@ -79,6 +98,10 @@ const defaultDeps: SceneManagerDeps = {
   createDiagnostics: (compiler) =>
     new FragmentDiagnostics(compiler, internalShaders.validation.vertex),
   createEnvironmentController: (scene) => new EnvironmentController(scene),
+  createTextureRegistry: (scene) => new TextureRegistry(scene),
+  createUniformBinder: (textures) => new UniformBinder(textures),
+  createUniformBindingTarget: (material) =>
+    new ShaderMaterialBindingTarget(material),
 };
 
 /**
@@ -97,6 +120,8 @@ export class SceneManager {
   private compiler: ShaderCompiler | null = null;
   private fragmentDiagnostics: FragmentDiagnostics | null = null;
   private environment: EnvironmentController | null = null;
+  private textures: TextureRegistryPort | null = null;
+  private userData: UserDataController | null = null;
   private wireframe = false;
   /**
    * Monotonic token identifying the current init session. Any `await` resumes
@@ -124,16 +149,25 @@ export class SceneManager {
       createEnvironmentController:
         deps.createEnvironmentController ??
         defaultDeps.createEnvironmentController,
+      createTextureRegistry:
+        deps.createTextureRegistry ?? defaultDeps.createTextureRegistry,
+      createUniformBinder:
+        deps.createUniformBinder ?? defaultDeps.createUniformBinder,
+      createUniformBindingTarget:
+        deps.createUniformBindingTarget ??
+        defaultDeps.createUniformBindingTarget,
     };
   }
 
   async init(
     canvas: HTMLCanvasElement,
-    source: ShaderSource,
+    blueprint: MaterialBlueprint,
     model: PreviewModel = defaultPreviewModel,
     hdri: PreviewHdri = defaultPreviewHdri,
+    userData: UserDataController | null = null,
   ): Promise<void> {
     this.dispose();
+    this.userData = userData;
     const session = this.session;
 
     const previewEngine = this.deps.createEngine((errors) =>
@@ -150,6 +184,13 @@ export class SceneManager {
     const { scene, directionalLight } = this.deps.createScene(engine, canvas);
     this.scene = scene;
     previewEngine.attachScene(scene);
+
+    // The user-data registry/binder are scene-scoped: textures die with the
+    // scene, while the controller (and its document) outlives it.
+    const textures = this.deps.createTextureRegistry(scene);
+    const binder = this.deps.createUniformBinder(textures);
+    this.textures = textures;
+    userData?.attachGpu({ textures, binder });
 
     const environment = this.deps.createEnvironmentController(scene);
     this.environment = environment;
@@ -192,7 +233,8 @@ export class SceneManager {
     materials.setWireframe(this.wireframe);
 
     materials.prepareErrorMaterial();
-    materials.apply(materials.buildMaterial(source), source);
+    materials.apply(materials.buildMaterial(blueprint), blueprint);
+    this.applyUserDataBindings();
 
     const compiler = this.deps.createCompiler(scene, previewEngine.recorder);
     this.compiler = compiler;
@@ -274,7 +316,7 @@ export class SceneManager {
     this.previewEngine?.resize();
   }
 
-  async compile(source: ShaderSource): Promise<CompileResult> {
+  async compile(blueprint: MaterialBlueprint): Promise<CompileResult> {
     const session = this.session;
     const mesh = this.mesh;
     const materials = this.materials;
@@ -292,7 +334,7 @@ export class SceneManager {
       return { ok: false, message: 'Scene not initialized', errors: [] };
     }
 
-    const attempt = await compiler.tryCompile(source, mesh);
+    const attempt = await compiler.tryCompile(blueprint, mesh);
 
     if (!this.isCurrent(session)) {
       attempt.release(true);
@@ -300,7 +342,8 @@ export class SceneManager {
     }
 
     if (attempt.ok && attempt.material) {
-      materials.apply(attempt.material, source);
+      materials.apply(attempt.material, blueprint);
+      this.applyUserDataBindings();
       return { ok: true, message: 'Compiled successfully', errors: [] };
     }
 
@@ -313,7 +356,7 @@ export class SceneManager {
         : 'Shader program failed to link';
 
     if (attempt.stage === 'vertex') {
-      const fragmentErrors = await diagnostics.collect(source, mesh);
+      const fragmentErrors = await diagnostics.collect(blueprint, mesh);
       if (fragmentErrors.length > 0) {
         errors = [...errors, ...fragmentErrors];
       }
@@ -337,6 +380,11 @@ export class SceneManager {
     this.session += 1;
     this.modelRequest += 1;
 
+    // Detach before the scene dies: the controller keeps its document but must
+    // never hold a registry or binder from a disposed scene.
+    this.userData?.attachGpu(null);
+    this.userData = null;
+
     this.animator?.dispose();
     this.animator = null;
 
@@ -347,6 +395,9 @@ export class SceneManager {
 
     this.materials?.dispose();
     this.materials = null;
+
+    this.textures?.dispose();
+    this.textures = null;
 
     this.scene?.dispose();
     this.scene = null;
@@ -364,6 +415,21 @@ export class SceneManager {
 
   private isCurrent(session: number): boolean {
     return session === this.session;
+  }
+
+  /**
+   * Re-attaches the binder to the material a compile/init just installed and
+   * re-applies the document values. Called after every `apply`.
+   */
+  private applyUserDataBindings(): void {
+    const userData = this.userData;
+    const material = this.materials?.activeMaterial ?? null;
+
+    if (!userData || !material) return;
+
+    userData.onMaterialApplied(
+      this.deps.createUniformBindingTarget(material),
+    );
   }
 
   private reportCompileFailure(

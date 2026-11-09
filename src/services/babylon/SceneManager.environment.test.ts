@@ -64,6 +64,13 @@ function createHarness() {
     load: vi.fn(async () => true),
     dispose: vi.fn(),
   };
+  const textures = {
+    load: vi.fn(async () => null),
+    release: vi.fn(),
+    textureFor: vi.fn(() => null),
+    dispose: vi.fn(),
+  };
+  const binder = { attach: vi.fn(), apply: vi.fn(), applyAll: vi.fn() };
 
   const createScene = vi.fn(() => ({
     scene: { dispose: vi.fn() },
@@ -78,6 +85,9 @@ function createHarness() {
     createCompiler: () => ({}),
     createDiagnostics: () => ({}),
     createEnvironmentController: () => environment,
+    createTextureRegistry: () => textures,
+    createUniformBinder: () => binder,
+    createUniformBindingTarget: () => ({}),
   } as unknown as SceneManagerDeps;
 
   const factory = vi.fn(() => ({
@@ -88,15 +98,23 @@ function createHarness() {
   return {
     manager,
     environment,
+    textures,
     createScene,
     materials,
   };
 }
 
+const BLUEPRINT = {
+  vertex: '',
+  fragment: '',
+  extraUniforms: [],
+  extraSamplers: [],
+};
+
 function init(manager: SceneManager): Promise<void> {
   return manager.init(
     {} as HTMLCanvasElement,
-    { vertex: '', fragment: '' },
+    BLUEPRINT,
     MODEL,
     STUDIO,
   );

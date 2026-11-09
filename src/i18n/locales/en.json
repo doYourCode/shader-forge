@@ -41,5 +41,55 @@
         "description": "Experiment with fragment shaders in an isolated playground."
       }
     }
+  },
+  "userData": {
+    "title": "User data",
+    "description": "Declare your own uniforms. Value edits update the preview without recompiling; adding, renaming or retargeting rebuilds the shader.",
+    "add": "Add uniform",
+    "addHeading": "New uniform",
+    "namePlaceholder": "uniformName",
+    "empty": "No user uniforms yet. Add one to expose a control in the preview.",
+    "remove": "Remove",
+    "columns": {
+      "name": "Name",
+      "kind": "Kind",
+      "stages": "Stages",
+      "value": "Value",
+      "actions": "Actions"
+    },
+    "stages": {
+      "fragment": "Fragment",
+      "vertex": "Vertex",
+      "both": "Both"
+    },
+    "kinds": {
+      "float": "Float",
+      "vec2": "Vec2",
+      "vec3": "Vec3",
+      "vec4": "Vec4",
+      "color": "Color",
+      "color4": "Color (RGBA)",
+      "direction": "Direction",
+      "position": "Position (object-space)",
+      "sampler2D": "Texture 2D",
+      "samplerCube": "Cube texture"
+    },
+    "error": {
+      "invalid": "Use a valid GLSL identifier: letters, digits and underscores, not starting with a digit.",
+      "reserved": "This name is reserved by the shader or by ShaderForge.",
+      "duplicate": "Another uniform already uses this name."
+    },
+    "texture": {
+      "urlPlaceholder": "Texture URL",
+      "chooseFile": "Upload image",
+      "noTexture": "No texture selected"
+    },
+    "generated": {
+      "title": "Generated GLSL",
+      "note": "Read-only preview of the managed block. These lines are injected into the source that is compiled; the editor text is left untouched.",
+      "fragment": "Fragment stage",
+      "vertex": "Vertex stage",
+      "empty": "Add a uniform to see the generated declarations here."
+    }
   }
 }

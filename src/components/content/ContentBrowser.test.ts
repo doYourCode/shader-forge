@@ -67,7 +67,9 @@ describe('ContentBrowser', () => {
     expect(page.text()).toContain(
       'Este conteúdo ainda não foi traduzido. Exibindo o original em inglês.',
     );
-    expect(page.text()).toContain('The short version');
+    expect(page.text()).toContain(
+      'Audience: first-year students in computer graphics.',
+    );
     expect(document.documentElement.lang).toBe('en');
   });
 

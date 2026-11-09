@@ -16,11 +16,24 @@ export interface EditorTabGroup {
   tabs: readonly EditorTab[];
 }
 
+/**
+ * The text documents backed by the code editor. `user_data` is deliberately
+ * absent: it is a structured table panel, not a text buffer.
+ */
 export const editableTabs: readonly EditorTab[] = [
   { id: 'vertex', label: 'Vertex', readOnly: false },
   { id: 'fragment', label: 'Fragment', readOnly: false },
-  { id: 'user_data', label: 'User data', readOnly: false },
 ];
+
+/**
+ * The structured user-data tab. Kept separate from `editableTabs` so the model
+ * never claims it is an editable text document.
+ */
+export const userDataTab: EditorTab = {
+  id: 'user_data',
+  label: 'User data',
+  readOnly: false,
+};
 
 export const builtInTabGroup: EditorTabGroup = {
   label: 'Built-in',

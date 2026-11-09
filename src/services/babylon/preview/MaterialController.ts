@@ -1,6 +1,6 @@
 import { ShaderMaterial, type Mesh, type Scene } from '@babylonjs/core';
 import { internalShaders } from '../internalShaders';
-import type { ShaderSource } from './PreviewTypes';
+import type { MaterialExtras, ShaderSource } from './PreviewTypes';
 
 const ERROR_MATERIAL_NAME = 'previewErrorShader';
 const DEFAULT_MATERIAL_NAME = 'previewShader';
@@ -51,10 +51,14 @@ export const SHADER_UNIFORMS: string[] = [
 /**
  * The single place user shader materials are constructed. Both the init path
  * and the compiler use it, so their options cannot diverge.
+ *
+ * User-defined uniforms/samplers arrive on the source (it is a material
+ * blueprint at compile time) and are spread-appended into fresh copies; the
+ * shared `SHADER_*` constants are never mutated.
  */
 export function buildShaderMaterial(
   scene: Scene,
-  source: ShaderSource,
+  source: ShaderSource & MaterialExtras,
   name = DEFAULT_MATERIAL_NAME,
   wireframe = false,
 ): ShaderMaterial {
@@ -67,8 +71,8 @@ export function buildShaderMaterial(
     },
     {
       attributes: [...SHADER_ATTRIBUTES],
-      uniforms: [...SHADER_UNIFORMS],
-      samplers: [...SHADER_SAMPLERS],
+      uniforms: [...SHADER_UNIFORMS, ...(source.extraUniforms ?? [])],
+      samplers: [...SHADER_SAMPLERS, ...(source.extraSamplers ?? [])],
     },
     false,
   );

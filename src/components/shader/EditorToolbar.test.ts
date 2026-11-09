@@ -55,7 +55,7 @@ describe('EditorToolbar', () => {
     const wrapper = mountToolbar('io');
 
     expect(wrapper.find('.editor-toolbar__tab--builtin').text()).toContain(
-      'in/out',
+      'Attributes',
     );
   });
 });

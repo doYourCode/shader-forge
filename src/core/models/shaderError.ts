@@ -1,4 +1,9 @@
-export type ShaderErrorStage = 'vertex' | 'fragment' | 'program';
+/**
+ * `user_data` is used for diagnostics whose driver line falls inside the
+ * generated user-data block. Those errors belong to a table row, not to an
+ * editor line.
+ */
+export type ShaderErrorStage = 'vertex' | 'fragment' | 'program' | 'user_data';
 
 /**
  * Broad category of a shader failure.
@@ -33,4 +38,9 @@ export interface ShaderError {
   message: string;
   /** Actionable suggestion, or null when there is no specific advice. */
   advice: string | null;
+  /**
+   * Index of the offending row in the user-data table when the error was
+   * attributed to the generated block; absent otherwise.
+   */
+  row?: number | null;
 }

@@ -1,4 +1,9 @@
 import type { ShaderError, ShaderErrorStage } from '@/core/models/shaderError';
+import {
+  locateInjectedBlock,
+  type InjectedBlockRange,
+  type UserDataAssemblyRecord,
+} from '@/core/shader/uniformCodegen';
 import { describeGlslIssue, type GlslVersion } from './glslDiagnostics';
 import { isGlslStackFrame, parseGlslInfoLog } from './glslLogParser';
 import { ShaderLineMap } from './shaderLineMap';
@@ -6,6 +11,12 @@ import { ShaderLineMap } from './shaderLineMap';
 export interface ShaderSourcePair {
   vertex: string;
   fragment: string;
+  /**
+   * Injected user-data block metadata, when the source is a material
+   * blueprint. Errors inside a block are attributed to a table row instead of
+   * an editor line.
+   */
+  userData?: UserDataAssemblyRecord;
 }
 
 /**
@@ -56,29 +67,38 @@ export function parseShaderCompileErrors(
     );
     const lineMap = createLineMap(record, source);
     const glslVersion = detectStageVersion(record.stage, source);
+    const injectedBlock = record.source
+      ? locateInjectedBlock(record.source)
+      : null;
 
     for (const diagnostic of diagnostics) {
-      const line =
-        diagnostic.driverLine !== null && lineMap
-          ? lineMap.toUserLine(diagnostic.driverLine)
-          : null;
-      const column = line === null ? null : diagnostic.column;
+      const attribution = attributeDiagnostic(
+        record.stage,
+        diagnostic.driverLine,
+        diagnostic.column,
+        lineMap,
+        injectedBlock,
+        source,
+      );
       const description = describeGlslIssue(diagnostic.message, {
         glslVersion,
       });
-      const key = `${record.stage}:${line}:${column}:${diagnostic.message.toLowerCase()}`;
+      const key = `${attribution.stage}:${attribution.line}:${attribution.column}:${attribution.row}:${diagnostic.message.toLowerCase()}`;
 
       if (seen.has(key)) continue;
       seen.add(key);
 
       errors.push({
-        stage: record.stage,
-        line,
-        column,
+        stage: attribution.stage,
+        line: attribution.line,
+        column: attribution.column,
         kind: description.kind,
         title: description.title,
         message: diagnostic.message,
         advice: description.advice,
+        ...(attribution.stage === 'user_data'
+          ? { row: attribution.row }
+          : {}),
       });
 
       if (errors.length >= MAX_ERRORS) return errors;
@@ -90,6 +110,65 @@ export function parseShaderCompileErrors(
   }
 
   return errors;
+}
+
+interface DiagnosticAttribution {
+  readonly stage: ShaderErrorStage;
+  readonly line: number | null;
+  readonly column: number | null;
+  readonly row: number | null;
+}
+
+/**
+ * Maps a driver line to either an editor diagnostic or a user-data row.
+ * Lines inside the generated block are not editor lines: they resolve to the
+ * definition row recorded when the block was assembled.
+ */
+function attributeDiagnostic(
+  stage: ShaderErrorStage,
+  driverLine: number | null,
+  driverColumn: number | null,
+  lineMap: ShaderLineMap | null,
+  injectedBlock: InjectedBlockRange | null,
+  source: ShaderSourcePair,
+): DiagnosticAttribution {
+  if (
+    injectedBlock &&
+    driverLine !== null &&
+    driverLine >= injectedBlock.startLine &&
+    driverLine <= injectedBlock.endLine
+  ) {
+    return {
+      stage: 'user_data',
+      line: null,
+      column: null,
+      row: declarationRowAt(
+        stage,
+        driverLine - injectedBlock.startLine,
+        source,
+      ),
+    };
+  }
+
+  const line =
+    driverLine !== null && lineMap ? lineMap.toUserLine(driverLine) : null;
+  return {
+    stage,
+    line,
+    column: line === null ? null : driverColumn,
+    row: null,
+  };
+}
+
+function declarationRowAt(
+  stage: ShaderErrorStage,
+  offset: number,
+  source: ShaderSourcePair,
+): number | null {
+  if (stage !== 'vertex' && stage !== 'fragment') return null;
+
+  const row = source.userData?.[stage]?.declarationRowByLine[offset];
+  return row !== undefined && row >= 0 ? row : null;
 }
 
 /**

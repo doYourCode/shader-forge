@@ -1,0 +1,355 @@
+diff --git a/node_modules/assetpicker/app/src/App.vue b/node_modules/assetpicker/app/src/App.vue
+index bd73eec..a1289f3 100644
+--- a/node_modules/assetpicker/app/src/App.vue
++++ b/node_modules/assetpicker/app/src/App.vue
+@@ -41,7 +41,6 @@ onMounted(() => {
+ <template>
+   <div class="assetpicker" :class="{ loaded: store.ui.loaded, maximized: store.ui.maximized }">
+     <header class="ap-navbar">
+-      <a class="ap-brand" href="#" @click.prevent="picker.home()">{{ config.title || t('header.title') }}</a>
+       <input
+         v-model="searchTerm"
+         type="search"
+@@ -50,8 +49,6 @@ onMounted(() => {
+         :aria-label="t('header.search')"
+         @input="onSearchInput"
+       />
+-      <button type="button" class="ap-icon" :title="t(store.ui.maximized ? 'header.minimize' : 'header.maximize')" @click="picker.toggleMaximize()">⤢</button>
+-      <button type="button" class="ap-icon" :title="t('footer.cancel')" @click="picker.cancel()">×</button>
+       <div class="ap-progress" :class="{ active: store.ui.loading }"></div>
+     </header>
+ 
+@@ -82,36 +79,37 @@ onMounted(() => {
+   display: flex;
+   flex-direction: column;
+   height: 100%;
+-  font-family: system-ui, sans-serif;
+-  color: #222;
+-  background: #fff;
++  font-family: var(--ap-font-sans, system-ui, sans-serif);
++  font-size: 12px;
++  color: var(--ap-text, #222);
++  background: var(--ap-surface, #fff);
+ }
+ .ap-navbar {
+   display: flex;
+   align-items: center;
+-  gap: 0.5rem;
+-  padding: 0.5rem 0.75rem;
+-  background: linear-gradient(135deg, #2f99a4 0%, #257880 100%);
+-  color: #fff;
++  gap: 6px;
++  padding: 6px 8px;
++  background: var(--ap-navbar-surface, linear-gradient(135deg, #2f99a4 0%, #257880 100%));
++  border-bottom: 1px solid var(--ap-border-subtle, #ddd);
+   position: relative;
+ }
+-.ap-brand {
+-  font-weight: 600;
+-  color: #fff;
+-  text-decoration: none;
+-}
+ .ap-search {
+-  margin-left: auto;
+-  padding: 0.25rem 0.5rem;
+-  border: 1px solid rgba(255,255,255,0.35);
+-  border-radius: 4px;
+-}
+-.ap-icon {
+-  background: transparent;
+-  border: 0;
+-  color: #fff;
+-  font-size: 1.1rem;
+-  cursor: pointer;
++  flex: 1;
++  min-width: 0;
++  margin-left: 0;
++  padding: 4px 8px;
++  background: var(--ap-input-surface, #fff);
++  border: 1px solid var(--ap-border, #ddd);
++  border-radius: var(--ap-radius-sm, 4px);
++  color: var(--ap-text-strong, #222);
++  font-family: var(--ap-font-mono, monospace);
++  font-size: 11px;
++}
++.ap-search::placeholder {
++  color: var(--ap-text-subtle, #999);
++}
++.ap-search:focus {
++  border-color: var(--ap-accent, #2f99a4);
+ }
+ .ap-progress {
+   position: absolute;
+@@ -119,7 +117,7 @@ onMounted(() => {
+   bottom: 0;
+   height: 2px;
+   width: 100%;
+-  background: linear-gradient(90deg, transparent, #2f99a4, transparent);
++  background: linear-gradient(90deg, transparent, var(--ap-accent, #2f99a4), transparent);
+   opacity: 0;
+   transition: opacity 0.2s;
+ }
+@@ -138,40 +136,61 @@ onMounted(() => {
+ }
+ .ap-sidebar {
+   overflow: auto;
+-  padding: 0.5rem;
+-  border-right: 1px solid #ddd;
++  padding: 8px;
++  border-right: 1px solid var(--ap-border-subtle, #ddd);
+   flex: none;
+ }
+ .ap-handle {
+   width: 5px;
+   cursor: col-resize;
+-  background: #eee;
++  background: var(--ap-resize-handle, #eee);
++}
++.ap-handle:hover {
++  background: var(--ap-accent, #2f99a4);
+ }
+ .ap-stage {
+   flex: 1;
+   overflow: auto;
+-  padding: 0.75rem;
++  padding: 10px 12px;
++  background: var(--ap-surface, #fff);
+ }
+ .ap-footer {
+   display: flex;
+   align-items: center;
+-  gap: 0.75rem;
+-  padding: 0.5rem 0.75rem;
+-  border-top: 1px solid #ddd;
+-  background: #f7f7f7;
++  gap: 8px;
++  padding: 6px 8px;
++  background: var(--ap-footer-surface, #f7f7f7);
++  border-top: 1px solid var(--ap-border-subtle, #ddd);
++  color: var(--ap-text-muted, #555);
++  font-family: var(--ap-font-mono, monospace);
++  font-size: 11px;
+ }
+ .ap-spacer { flex: 1; }
+ .ap-btn {
+-  padding: 0.3rem 0.9rem;
+-  border: 1px solid #ccc;
+-  border-radius: 4px;
+-  background: #fff;
++  padding: 4px 10px;
++  background: var(--ap-button-surface, #fff);
++  border: 1px solid var(--ap-button-border, #ccc);
++  color: var(--ap-text-strong, #222);
++  border-radius: var(--ap-radius-sm, 4px);
++  font-family: var(--ap-font-mono, monospace);
++  font-size: 11px;
+   cursor: pointer;
+ }
++.ap-btn:hover:not(:disabled) {
++  background: var(--ap-button-hover-surface, #f7f7f7);
++  border-color: var(--ap-accent, #2f99a4);
++}
+ .ap-btn-primary {
+-  background: #2f99a4;
+-  border-color: #257880;
+-  color: #fff;
++  background: var(--ap-accent, #2f99a4);
++  border-color: var(--ap-accent, #2f99a4);
++  color: var(--ap-accent-contrast, #fff);
++}
++.ap-btn-primary:hover:not(:disabled) {
++  background: var(--ap-accent-strong, #257880);
++  border-color: var(--ap-accent-strong, #257880);
++}
++.ap-picked {
++  color: var(--ap-accent, #2f99a4);
+ }
+ .ap-btn:disabled {
+   opacity: 0.5;
+diff --git a/node_modules/assetpicker/app/src/style.css b/node_modules/assetpicker/app/src/style.css
+index 1dc6cab..3ee9630 100644
+--- a/node_modules/assetpicker/app/src/style.css
++++ b/node_modules/assetpicker/app/src/style.css
+@@ -2,89 +2,124 @@
+ body { margin: 0; }
+ 
+ /* Sidebar folder tree */
+-.tree,
+-.tree-children {
++.assetpicker .tree,
++.assetpicker .tree-children {
+   list-style: none;
+   margin: 0;
+   padding-left: 0.75rem;
+ }
+-.tree > li > .tree-node > .tree-label { font-weight: 600; }
+-.tree-node { line-height: 1.7; }
+-.tree-toggle {
++.assetpicker .tree {
++  font-family: var(--ap-font-mono, ui-monospace, monospace);
++  font-size: 12px;
++}
++.assetpicker .tree > li > .tree-node > .tree-label { font-weight: 600; }
++.assetpicker .tree-node { line-height: 1.5; }
++.assetpicker .tree-toggle {
+   cursor: pointer;
+   display: inline-block;
+   width: 1rem;
+-  color: #999;
++  color: var(--ap-text-subtle, #999);
++}
++.assetpicker .tree-toggle:hover { color: var(--ap-accent, #2f99a4); }
++.assetpicker .tree-toggle.loading { opacity: 0.4; }
++.assetpicker .tree-label {
++  cursor: pointer;
++  padding: 1px 4px;
++  border-radius: var(--ap-radius-sm, 4px);
++  color: var(--ap-text, #222);
++}
++.assetpicker .tree-label:hover { background: var(--ap-hover-surface, #f7f7f7); }
++.assetpicker .tree-label.selected {
++  background: var(--ap-tree-selected-surface, transparent);
++  color: var(--ap-tree-selected-text, #257880);
++  box-shadow: inset 2px 0 0 var(--ap-accent, #2f99a4);
+ }
+-.tree-toggle.loading { opacity: 0.4; }
+-.tree-label { cursor: pointer; }
+-.tree-label.selected { color: #257880; }
+-.tree-icon { margin: 0 0.15rem; }
++.assetpicker .tree-icon { margin: 0 0.15rem; }
+ 
+ /* Stage: item grid */
+-.items-container h5 { margin: 0.75rem 0 0.35rem; color: #555; }
+-.items-grid {
++.assetpicker .items-container h5 {
++  margin: 0.75rem 0 0.35rem;
++  color: var(--ap-text-subtle, #555);
++  font-family: var(--ap-font-mono, ui-monospace, monospace);
++  font-size: 10px;
++  letter-spacing: 0.06em;
++  text-transform: uppercase;
++}
++.assetpicker .items-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+   gap: 0.5rem;
+ }
+-.item {
+-  border: 1px solid #ddd;
+-  border-radius: 6px;
+-  padding: 0.4rem;
++.assetpicker .item {
++  background: var(--ap-card-surface, #fff);
++  border: 1px solid var(--ap-border, #ddd);
++  border-radius: var(--ap-radius, 6px);
++  padding: 6px;
+   cursor: pointer;
+   text-align: center;
+   user-select: none;
+-  background: #fff;
++  transition: border-color 0.15s;
+ }
+-.item:hover { border-color: #bbb; }
+-.item.selected {
+-  border-color: #2f99a4;
+-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
++.assetpicker .item:hover { border-color: var(--ap-border-hover, #bbb); }
++.assetpicker .item.selected {
++  border-color: var(--ap-accent, #2f99a4);
++  box-shadow: 0 0 0 2px var(--ap-accent-soft, rgba(52, 152, 219, 0.3));
+ }
+-.item-preview {
++.assetpicker .item-preview {
+   height: 72px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+-  background: #fafafa;
+-  border-radius: 4px;
++  background: var(--ap-input-surface, #fafafa);
++  border-radius: var(--ap-radius-sm, 4px);
+   overflow: hidden;
+ }
+-.item-thumbnail {
++.assetpicker .item-thumbnail {
+   width: 100%;
+   height: 100%;
+   background-size: cover;
+   background-position: center;
+ }
+-.file-type { font-size: 1.4rem; color: #999; }
+-.item-title {
++.assetpicker .file-type {
++  font-size: 24px;
++  color: var(--ap-text-subtle, #999);
++}
++.assetpicker .item-title {
+   margin-top: 0.3rem;
+-  font-size: 0.8rem;
++  font-family: var(--ap-font-mono, ui-monospace, monospace);
++  font-size: 11px;
++  color: var(--ap-text, #222);
+   overflow: hidden;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+ }
+ 
+ /* Storage overview */
+-.storage-overview { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+-.storage {
++.assetpicker .storage-overview { display: flex; flex-wrap: wrap; gap: 0.75rem; }
++.assetpicker .storage {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 0.3rem;
+-  padding: 1rem 1.25rem;
+-  border: 1px solid #ddd;
+-  border-radius: 8px;
+-  background: #fff;
++  padding: 12px 14px;
++  background: var(--ap-card-surface, #fff);
++  border: 1px solid var(--ap-border, #ddd);
++  border-radius: var(--ap-radius-lg, 8px);
++  color: var(--ap-text, #222);
+   cursor: pointer;
+   font: inherit;
+ }
+-.storage-icon { font-size: 1.8rem; }
+-.feedback { color: #999; padding: 1rem; }
+-.ap-warning {
+-  padding: 0.75rem;
+-  background: #fcf8e3;
+-  border: 1px solid #faebcc;
+-  border-radius: 4px;
++.assetpicker .storage:hover { border-color: var(--ap-border-hover, #bbb); }
++.assetpicker .storage-icon { font-size: 28px; }
++.assetpicker .feedback {
++  color: var(--ap-text-subtle, #999);
++  font-size: 12px;
++  padding: 1rem;
++}
++.assetpicker .ap-warning {
++  padding: 10px 12px;
++  background: var(--ap-warning-surface, #fcf8e3);
++  border: 1px solid var(--ap-warning-border, #faebcc);
++  color: var(--ap-warning-text, #222);
++  border-radius: var(--ap-radius, 6px);
+ }
+diff --git a/node_modules/assetpicker/app/tests/App.spec.js b/node_modules/assetpicker/app/tests/App.spec.js
+index 790e8f6..8418bfe 100644
+--- a/node_modules/assetpicker/app/tests/App.spec.js
++++ b/node_modules/assetpicker/app/tests/App.spec.js
+@@ -21,10 +21,10 @@ function mountApp() {
+ }
+ 
+ describe('App', () => {
+-  it('renders the brand and the storage overview', () => {
++  it('renders the storage overview without a brand', () => {
+     const wrapper = mountApp();
+-    expect(wrapper.find('.ap-brand').text()).toBe('AssetPicker');
+     expect(wrapper.text()).toContain('Demo storage');
++    expect(wrapper.find('.ap-brand').exists()).toBe(false);
+   });
+ 
+   it('disables the pick button until something is picked', () => {

@@ -584,10 +584,53 @@ onBeforeUnmount(() => {
 }
 
 .texture-source__picker {
+  /* AssetPicker theme contract: the patched package reads these --ap-* tokens.
+     Keep all picker theming here; do not target AssetPicker internals. */
+  --ap-font-sans: var(--font-sans);
+  --ap-font-mono: var(--font-mono);
+
+  --ap-surface: var(--bg-elevated);
+  --ap-card-surface: var(--bg-raised);
+  --ap-navbar-surface: var(--bg-elevated);
+  --ap-footer-surface: var(--bg-elevated);
+  --ap-input-surface: var(--bg-input);
+  --ap-hover-surface: var(--bg-raised);
+  --ap-resize-handle: var(--border-subtle);
+
+  --ap-border: var(--border);
+  --ap-border-subtle: var(--border-subtle);
+  --ap-border-strong: #4b5263;
+  --ap-border-hover: var(--accent-blue);
+
+  --ap-text: var(--fg);
+  --ap-text-strong: var(--fg-strong);
+  --ap-text-muted: var(--fg-muted);
+  --ap-text-subtle: var(--fg-subtle);
+
+  --ap-accent: var(--accent-blue);
+  --ap-accent-strong: #7fc4f7;
+  --ap-accent-contrast: var(--bg-input);
+  --ap-accent-soft: rgba(97, 175, 239, 0.28);
+
+  --ap-tree-selected-surface: var(--bg-selected);
+  --ap-tree-selected-text: var(--fg-strong);
+
+  --ap-button-surface: #404754;
+  --ap-button-border: #4b5263;
+  --ap-button-hover-surface: #4b5263;
+
+  --ap-warning-surface: rgba(229, 192, 123, 0.12);
+  --ap-warning-border: rgba(229, 192, 123, 0.4);
+  --ap-warning-text: var(--accent-yellow);
+
+  --ap-radius-sm: 3px;
+  --ap-radius: 4px;
+  --ap-radius-lg: 5px;
+
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  /* AssetPicker renders its own light theme; do not restyle its internals. */
-  background: #fff;
+  color-scheme: dark;
+  background: var(--ap-surface);
 }
 </style>

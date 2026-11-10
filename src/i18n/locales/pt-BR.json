@@ -94,7 +94,17 @@
       "missing": "Indisponível",
       "urlPlaceholder": "URL da textura",
       "chooseFile": "Enviar imagem",
-      "noTexture": "Nenhuma textura selecionada"
+      "noTexture": "Nenhuma textura selecionada",
+      "choose": "Escolher textura…",
+      "change": "Alterar textura…",
+      "clear": "Limpar textura",
+      "dialog": "Selecionar uma textura",
+      "close": "Fechar seletor de texturas",
+      "bundled": "Texturas incluídas",
+      "advanced": "Fonte personalizada",
+      "noBundled": "Não há texturas incluídas para este sampler. Use uma fonte personalizada.",
+      "rejected": "Este asset não pode ser usado como textura.",
+      "unavailable": "Não foi possível carregar o seletor de texturas."
     },
     "generated": {
       "title": "GLSL gerado",

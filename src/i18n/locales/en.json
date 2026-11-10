@@ -94,7 +94,17 @@
       "missing": "Unavailable",
       "urlPlaceholder": "Texture URL",
       "chooseFile": "Upload image",
-      "noTexture": "No texture selected"
+      "noTexture": "No texture selected",
+      "choose": "Choose texture…",
+      "change": "Change texture…",
+      "clear": "Clear texture",
+      "dialog": "Select a texture",
+      "close": "Close texture picker",
+      "bundled": "Bundled textures",
+      "advanced": "Custom source",
+      "noBundled": "No bundled textures are available for this sampler. Use a custom source.",
+      "rejected": "That asset cannot be used as a texture.",
+      "unavailable": "The texture picker could not be loaded."
     },
     "generated": {
       "title": "Generated GLSL",

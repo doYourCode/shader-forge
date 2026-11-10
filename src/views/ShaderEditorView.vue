@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, provide } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+import { AssetPickerTexturePicker } from '@/services/assetpicker/AssetPickerTexturePicker';
+import { toAssetPickerLanguage } from '@/services/assetpicker/assetPickerConfig';
+import { TEXTURE_PICKER } from '@/components/shader/texturePickerContext';
 import { useShaderEditor } from '@/composables/useShaderEditor';
 import {
   builtInTabGroup,
@@ -18,8 +23,23 @@ import ViewerToolbar from '@/components/shader/ViewerToolbar.vue';
 import StatusBar from '@/components/shader/StatusBar.vue';
 import UserDataPanel from '@/components/shader/UserDataPanel.vue';
 
+const { t, locale } = useI18n();
+
 const editorHostRef = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+
+/**
+ * One picker instance for the view's lifetime: it lazily imports AssetPicker
+ * and owns every mounted picker session. Widgets receive it through injection.
+ */
+const texturePicker = new AssetPickerTexturePicker({
+  labels: () => ({
+    title: t('userData.texture.dialog'),
+    storage: t('userData.texture.bundled'),
+  }),
+  language: () => toAssetPickerLanguage(locale.value),
+});
+provide(TEXTURE_PICKER, texturePicker);
 
 /** The structured user-data tab lives beside the text documents. */
 const editorTabs: readonly EditorTab[] = [...editableTabs, userDataTab];
@@ -141,6 +161,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+  texturePicker.dispose();
 });
 
 function toggleWireframe() {

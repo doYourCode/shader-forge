@@ -22,4 +22,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  optimizeDeps: {
+    // AssetPicker is a source-only package: the Vue plugin must transform its
+    // SFCs instead of the dependency optimizer pre-bundling it.
+    exclude: ['assetpicker'],
+  },
 });

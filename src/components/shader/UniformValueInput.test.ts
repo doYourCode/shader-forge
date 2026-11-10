@@ -4,13 +4,33 @@ import { mount } from '@vue/test-utils';
 
 import { i18n } from '@/i18n';
 import type { UserUniformKind, UserUniformValue } from '@/core/models/userUniform';
+import type { TexturePickerPort } from '@/services/texturepicker/TexturePicker';
+import TextureSourceInput from './TextureSourceInput.vue';
 import UniformValueInput from './UniformValueInput.vue';
 import UserColorPicker from './UserColorPicker.vue';
+import { TEXTURE_PICKER } from './texturePickerContext';
 
-function mountInput(kind: UserUniformKind, value: UserUniformValue) {
+/** The texture widget is only delegated to; opening is covered elsewhere. */
+function createFakeTexturePicker(): TexturePickerPort {
+  return {
+    open: () => ({
+      result: Promise.resolve({ status: 'cancelled' }),
+      dispose: () => undefined,
+    }),
+  };
+}
+
+function mountInput(
+  kind: UserUniformKind,
+  value: UserUniformValue,
+  label?: string,
+) {
   return mount(UniformValueInput, {
-    props: { kind, value },
-    global: { plugins: [i18n] },
+    props: { kind, value, label },
+    global: {
+      plugins: [i18n],
+      provide: { [TEXTURE_PICKER]: createFakeTexturePicker() },
+    },
   });
 }
 
@@ -115,127 +135,27 @@ describe('UniformValueInput', () => {
     ]);
   });
 
-  it('emits a URL texture source while typing', async () => {
-    const wrapper = mountInput('sampler2D', { kind: 'url', url: '' });
+  it('delegates texture values to TextureSourceInput and forwards changes', async () => {
+    const wrapper = mountInput(
+      'sampler2D',
+      { kind: 'repository', textureId: 'uv-checker-01' },
+      'albedo',
+    );
 
-    await wrapper.find('input.uniform-value__url').setValue('/albedo.png');
+    const textureInput = wrapper.findComponent(TextureSourceInput);
+    expect(textureInput.exists()).toBe(true);
+    expect(textureInput.props('kind')).toBe('sampler2D');
+    expect(textureInput.props('value')).toEqual({
+      kind: 'repository',
+      textureId: 'uv-checker-01',
+    });
+    expect(textureInput.props('label')).toBe('albedo');
+
+    textureInput.vm.$emit('change', { kind: 'url', url: '/albedo.png' });
+    await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted('change')?.[0]).toEqual([
       { kind: 'url', url: '/albedo.png' },
     ]);
-  });
-
-  it('emits an uploaded file as a texture source', async () => {
-    const wrapper = mountInput('sampler2D', { kind: 'url', url: '' });
-    const file = new File(['pixels'], 'albedo.png', { type: 'image/png' });
-    const input = wrapper.find('input.uniform-value__file-input');
-
-    Object.defineProperty(input.element, 'files', {
-      value: [file],
-      configurable: true,
-    });
-    await input.trigger('change');
-
-    expect(wrapper.emitted('change')?.[0]).toEqual([{ kind: 'file', file }]);
-  });
-
-  it('shows the uploaded file name as the current texture', () => {
-    const file = new File(['pixels'], 'albedo.png');
-    const wrapper = mountInput('sampler2D', { kind: 'file', file });
-
-    expect(wrapper.find('.uniform-value__texture-name').text()).toBe(
-      'albedo.png',
-    );
-  });
-
-  it('lists only repository textures matching the sampler kind', () => {
-    const sampler2D = mountInput('sampler2D', { kind: 'url', url: '' });
-    expect(
-      sampler2D
-        .findAll('select.uniform-value__texture-select option')
-        .map((option) => option.attributes('value')),
-    ).toEqual(['none', 'repository:uv-checker-01', 'custom']);
-
-    const samplerCube = mountInput('samplerCube', { kind: 'url', url: '' });
-    expect(
-      samplerCube
-        .findAll('select.uniform-value__texture-select option')
-        .map((option) => option.attributes('value')),
-    ).toEqual(['none', 'custom']);
-  });
-
-  it('emits a repository source when a catalog texture is selected', async () => {
-    const wrapper = mountInput('sampler2D', { kind: 'url', url: '' });
-
-    await wrapper
-      .find('select.uniform-value__texture-select')
-      .setValue('repository:uv-checker-01');
-
-    expect(wrapper.emitted('change')?.[0]).toEqual([
-      { kind: 'repository', textureId: 'uv-checker-01' },
-    ]);
-  });
-
-  it('emits an empty URL when None is selected', async () => {
-    const wrapper = mountInput('sampler2D', {
-      kind: 'repository',
-      textureId: 'uv-checker-01',
-    });
-
-    await wrapper.find('select.uniform-value__texture-select').setValue('none');
-
-    expect(wrapper.emitted('change')?.[0]).toEqual([{ kind: 'url', url: '' }]);
-  });
-
-  it('shows the catalog label for a repository texture', () => {
-    const wrapper = mountInput('sampler2D', {
-      kind: 'repository',
-      textureId: 'uv-checker-01',
-    });
-    const select = wrapper.find('select.uniform-value__texture-select');
-
-    expect((select.element as HTMLSelectElement).value).toBe(
-      'repository:uv-checker-01',
-    );
-    expect(wrapper.find('.uniform-value__texture-name').text()).toBe(
-      'UV Checker 01',
-    );
-    expect(wrapper.find('input.uniform-value__url').exists()).toBe(false);
-    expect(wrapper.find('input.uniform-value__file-input').exists()).toBe(
-      false,
-    );
-  });
-
-  it('shows a disabled option when a repository id is not in the catalog', () => {
-    const wrapper = mountInput('sampler2D', {
-      kind: 'repository',
-      textureId: 'removed-texture',
-    });
-    const select = wrapper.find('select.uniform-value__texture-select');
-    const missing = select.find('option[disabled]');
-
-    expect((select.element as HTMLSelectElement).value).toBe('missing');
-    expect(missing.exists()).toBe(true);
-    expect(missing.text()).toContain('Unavailable');
-    expect(missing.text()).toContain('removed-texture');
-    expect(wrapper.find('.uniform-value__texture-name').text()).toBe(
-      'Unavailable',
-    );
-  });
-
-  it('reveals the URL field when custom mode is chosen', async () => {
-    const wrapper = mountInput('sampler2D', {
-      kind: 'repository',
-      textureId: 'uv-checker-01',
-    });
-
-    expect(wrapper.find('input.uniform-value__url').exists()).toBe(false);
-
-    await wrapper
-      .find('select.uniform-value__texture-select')
-      .setValue('custom');
-
-    expect(wrapper.find('input.uniform-value__url').exists()).toBe(true);
-    expect(wrapper.emitted('change')).toBeUndefined();
   });
 });

@@ -37,3 +37,18 @@ export function previewTexturesFor(
 ): readonly PreviewTexture[] {
   return previewTextures.filter((texture) => texture.sampler === sampler);
 }
+
+/**
+ * Read-only catalog port over the bundled repository textures. Consumers such
+ * as the texture picker depend on this shape rather than on the module-level
+ * array, so the source of entries can change without touching them.
+ */
+export interface TextureCatalog {
+  find(id: string): PreviewTexture | undefined;
+  forSampler(sampler: SamplerKind): readonly PreviewTexture[];
+}
+
+export const previewTextureCatalog: TextureCatalog = {
+  find: findPreviewTexture,
+  forSampler: previewTexturesFor,
+};

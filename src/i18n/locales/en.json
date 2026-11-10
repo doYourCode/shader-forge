@@ -58,9 +58,9 @@
       "actions": "Actions"
     },
     "stages": {
-      "fragment": "Fragment",
-      "vertex": "Vertex",
-      "both": "Both"
+      "fragment": "Frag",
+      "vertex": "Vert",
+      "both": "All"
     },
     "kinds": {
       "float": "Float",
@@ -70,7 +70,7 @@
       "color": "Color",
       "color4": "Color (RGBA)",
       "direction": "Direction",
-      "position": "Position (object-space)",
+      "position": "Position",
       "sampler2D": "Texture 2D",
       "samplerCube": "Cube texture"
     },

@@ -80,6 +80,10 @@
       "duplicate": "Outro uniform já usa este nome."
     },
     "texture": {
+      "repository": "Textura do repositório",
+      "none": "Nenhuma",
+      "customUrl": "URL personalizada…",
+      "missing": "Indisponível",
       "urlPlaceholder": "URL da textura",
       "chooseFile": "Enviar imagem",
       "noTexture": "Nenhuma textura selecionada"

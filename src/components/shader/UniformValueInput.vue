@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import {
+  findPreviewTexture,
+  previewTexturesFor,
+} from '@/core/constants/previewTextures';
 import { USER_UNIFORM_KIND_MAP } from '@/core/constants/userUniformKinds';
-import type {
-  UserColor3Value,
-  UserColor4Value,
-  UserTextureSource,
-  UserUniformKind,
-  UserUniformValue,
+import {
+  isSamplerKind,
+  type UserColor3Value,
+  type UserColor4Value,
+  type UserTextureSource,
+  type UserUniformKind,
+  type UserUniformValue,
 } from '@/core/models/userUniform';
+
+const NONE_VALUE = 'none';
+const CUSTOM_VALUE = 'custom';
+const MISSING_VALUE = 'missing';
+const REPOSITORY_PREFIX = 'repository:';
 
 const props = defineProps<{
   kind: UserUniformKind;
@@ -62,13 +72,52 @@ const texture = computed<UserTextureSource>(
   () => props.value as UserTextureSource,
 );
 
+const catalogTextures = computed(() =>
+  isSamplerKind(props.kind) ? previewTexturesFor(props.kind) : [],
+);
+
+const customMode = ref(false);
+
+const customVisible = computed(
+  () => texture.value.kind !== 'repository' || customMode.value,
+);
+
+const missingTextureId = computed(() => {
+  if (texture.value.kind !== 'repository') return null;
+
+  const { textureId } = texture.value;
+  return findPreviewTexture(textureId) ? null : textureId;
+});
+
+const textureSelection = computed(() => {
+  const source = texture.value;
+
+  if (customMode.value) return CUSTOM_VALUE;
+
+  if (source.kind === 'repository') {
+    return missingTextureId.value === null
+      ? `${REPOSITORY_PREFIX}${source.textureId}`
+      : MISSING_VALUE;
+  }
+
+  if (source.kind === 'file') return CUSTOM_VALUE;
+  return source.url.trim().length > 0 ? CUSTOM_VALUE : NONE_VALUE;
+});
+
 const textureUrl = computed(() =>
   texture.value.kind === 'url' ? texture.value.url : '',
 );
 
 const textureLabel = computed(() => {
-  if (texture.value.kind === 'file') return texture.value.file.name;
-  if (texture.value.url.trim().length > 0) return texture.value.url;
+  const source = texture.value;
+  if (source.kind === 'file') return source.file.name;
+  if (source.kind === 'repository') {
+    return (
+      findPreviewTexture(source.textureId)?.label ??
+      t('userData.texture.missing')
+    );
+  }
+  if (source.url.trim().length > 0) return source.url;
   return t('userData.texture.noTexture');
 });
 
@@ -129,6 +178,29 @@ function onUrlInput(event: Event): void {
     kind: 'url',
     url: (event.target as HTMLInputElement).value,
   });
+}
+
+function onTextureSelection(event: Event): void {
+  const selection = (event.target as HTMLSelectElement).value;
+
+  if (selection.startsWith(REPOSITORY_PREFIX)) {
+    customMode.value = false;
+    emit('change', {
+      kind: 'repository',
+      textureId: selection.slice(REPOSITORY_PREFIX.length),
+    });
+    return;
+  }
+
+  if (selection === CUSTOM_VALUE) {
+    customMode.value = true;
+    return;
+  }
+
+  if (selection === NONE_VALUE) {
+    customMode.value = false;
+    emit('change', { kind: 'url', url: '' });
+  }
 }
 
 function onFileInput(event: Event): void {
@@ -200,24 +272,55 @@ function parseHex(
     </div>
 
     <div v-else class="uniform-value__texture">
-      <input
-        class="uniform-value__url"
-        type="text"
-        :placeholder="t('userData.texture.urlPlaceholder')"
-        :value="textureUrl"
-        @input="onUrlInput"
-      />
-      <label class="uniform-value__file">
+      <select
+        class="uniform-value__texture-select"
+        :value="textureSelection"
+        :aria-label="t('userData.texture.repository')"
+        @change="onTextureSelection"
+      >
+        <option :value="NONE_VALUE">{{ t('userData.texture.none') }}</option>
+        <option
+          v-for="entry in catalogTextures"
+          :key="entry.id"
+          :value="`${REPOSITORY_PREFIX}${entry.id}`"
+        >
+          {{ entry.label }}
+        </option>
+        <option
+          v-if="missingTextureId !== null"
+          :value="MISSING_VALUE"
+          disabled
+        >
+          {{ t('userData.texture.missing') }}: {{ missingTextureId }}
+        </option>
+        <option :value="CUSTOM_VALUE">
+          {{ t('userData.texture.customUrl') }}
+        </option>
+      </select>
+
+      <template v-if="customVisible">
         <input
-          class="uniform-value__file-input"
-          type="file"
-          accept="image/*"
-          @change="onFileInput"
+          class="uniform-value__url"
+          type="text"
+          :aria-label="t('userData.texture.urlPlaceholder')"
+          :placeholder="t('userData.texture.urlPlaceholder')"
+          :value="textureUrl"
+          @input="onUrlInput"
         />
-        <span class="uniform-value__file-label">
-          {{ t('userData.texture.chooseFile') }}
-        </span>
-      </label>
+        <label class="uniform-value__file">
+          <input
+            class="uniform-value__file-input"
+            type="file"
+            accept="image/*"
+            :aria-label="t('userData.texture.chooseFile')"
+            @change="onFileInput"
+          />
+          <span class="uniform-value__file-label">
+            {{ t('userData.texture.chooseFile') }}
+          </span>
+        </label>
+      </template>
+
       <span class="uniform-value__texture-name">{{ textureLabel }}</span>
     </div>
   </div>
@@ -234,7 +337,8 @@ function parseHex(
 .uniform-value__number,
 .uniform-value__component-input,
 .uniform-value__alpha-input,
-.uniform-value__url {
+.uniform-value__url,
+.uniform-value__texture-select {
   min-width: 0;
   padding: 3px 6px;
   background: var(--bg-input);
@@ -304,6 +408,10 @@ function parseHex(
 
 .uniform-value__url {
   width: 180px;
+}
+
+.uniform-value__texture-select {
+  max-width: 180px;
 }
 
 .uniform-value__file {

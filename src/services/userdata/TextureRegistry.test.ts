@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BaseTexture, Scene } from '@babylonjs/core';
 
+import type { PreviewTexture } from '@/core/models/previewTexture';
 import type { SamplerKind } from '@/core/models/userUniform';
 import {
   TextureRegistry,
   type ObjectUrlProvider,
+  type TextureLookup,
   type UserTextureFactory,
 } from './TextureRegistry';
 
@@ -34,9 +36,57 @@ function createHarness() {
     createObjectUrl: vi.fn(() => 'blob:user-file'),
     revokeObjectUrl: vi.fn(),
   };
-  const registry = new TextureRegistry(scene, createTexture, objectUrls);
+  const catalog = new Map<string, PreviewTexture>([
+    [
+      'uv-checker-01',
+      {
+        id: 'uv-checker-01',
+        label: 'UV Checker 01',
+        url: '/textures/checker.png',
+        sampler: 'sampler2D',
+        format: 'image',
+      },
+    ],
+    [
+      'noise-01',
+      {
+        id: 'noise-01',
+        label: 'Noise 01',
+        url: '/textures/noise.png',
+        sampler: 'sampler2D',
+        format: 'image',
+      },
+    ],
+    [
+      'studio-cube',
+      {
+        id: 'studio-cube',
+        label: 'Studio Cube',
+        url: '/textures/studio.env',
+        sampler: 'samplerCube',
+        format: 'cubemap',
+      },
+    ],
+  ]);
+  const lookup: TextureLookup = vi.fn((textureId: string) =>
+    catalog.get(textureId),
+  );
+  const registry = new TextureRegistry(
+    scene,
+    createTexture,
+    objectUrls,
+    lookup,
+  );
 
-  return { registry, createTexture, textures, callbacks, objectUrls };
+  return {
+    registry,
+    createTexture,
+    textures,
+    callbacks,
+    objectUrls,
+    catalog,
+    lookup,
+  };
 }
 
 async function loadUrl(
@@ -50,6 +100,20 @@ async function loadUrl(
     url,
   });
   harness.callbacks.get(url)!.onLoad();
+  return promise;
+}
+
+async function loadRepository(
+  harness: ReturnType<typeof createHarness>,
+  definitionId: string,
+  textureId: string,
+  kind: SamplerKind = 'sampler2D',
+) {
+  const promise = harness.registry.load(definitionId, kind, {
+    kind: 'repository',
+    textureId,
+  });
+  harness.callbacks.get(harness.catalog.get(textureId)!.url)!.onLoad();
   return promise;
 }
 
@@ -223,6 +287,113 @@ describe('TextureRegistry', () => {
     expect(harness.objectUrls.revokeObjectUrl).toHaveBeenCalledWith(
       'blob:user-file',
     );
+  });
+
+  it('resolves a repository id to its catalog URL', async () => {
+    const harness = createHarness();
+
+    const loaded = harness.registry.load('u1', 'sampler2D', {
+      kind: 'repository',
+      textureId: 'uv-checker-01',
+    });
+
+    expect(harness.lookup).toHaveBeenCalledWith('uv-checker-01');
+    expect(harness.registry.textureFor('u1')).toBeNull();
+
+    harness.callbacks.get('/textures/checker.png')!.onLoad();
+
+    await expect(loaded).resolves.toBe(
+      harness.textures.get('/textures/checker.png') as unknown as BaseTexture,
+    );
+    expect(harness.registry.textureFor('u1')).toBe(
+      harness.textures.get('/textures/checker.png') as unknown as BaseTexture,
+    );
+    expect(harness.createTexture).toHaveBeenCalledWith(
+      expect.anything(),
+      'sampler2D',
+      '/textures/checker.png',
+      expect.any(Function),
+      expect.any(Function),
+    );
+  });
+
+  it('releases the definition and resolves null for an unknown repository id', async () => {
+    const harness = createHarness();
+    const release = vi.spyOn(harness.registry, 'release');
+
+    await expect(
+      harness.registry.load('u1', 'sampler2D', {
+        kind: 'repository',
+        textureId: 'does-not-exist',
+      }),
+    ).resolves.toBeNull();
+
+    expect(release).toHaveBeenCalledWith('u1');
+    expect(harness.createTexture).not.toHaveBeenCalled();
+  });
+
+  it('rejects a repository entry whose sampler does not match the kind', async () => {
+    const harness = createHarness();
+    const release = vi.spyOn(harness.registry, 'release');
+
+    await expect(
+      harness.registry.load('u1', 'samplerCube', {
+        kind: 'repository',
+        textureId: 'uv-checker-01',
+      }),
+    ).resolves.toBeNull();
+
+    expect(release).toHaveBeenCalledWith('u1');
+    expect(harness.createTexture).not.toHaveBeenCalled();
+  });
+
+  it('does not reload the same repository id', async () => {
+    const harness = createHarness();
+    const first = await loadRepository(harness, 'u1', 'uv-checker-01');
+
+    const again = harness.registry.load('u1', 'sampler2D', {
+      kind: 'repository',
+      textureId: 'uv-checker-01',
+    });
+
+    await expect(again).resolves.toBe(first);
+    expect(harness.createTexture).toHaveBeenCalledTimes(1);
+  });
+
+  it('disposes the old texture when a different repository id is selected', async () => {
+    const harness = createHarness();
+    await loadRepository(harness, 'u1', 'uv-checker-01');
+    const firstTexture = harness.textures.get('/textures/checker.png')!;
+
+    const next = harness.registry.load('u1', 'sampler2D', {
+      kind: 'repository',
+      textureId: 'noise-01',
+    });
+
+    expect(firstTexture.dispose).not.toHaveBeenCalled();
+
+    harness.callbacks.get('/textures/noise.png')!.onLoad();
+
+    await expect(next).resolves.toBe(
+      harness.textures.get('/textures/noise.png') as unknown as BaseTexture,
+    );
+    expect(firstTexture.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases a loaded texture when its repository id stops resolving', async () => {
+    const harness = createHarness();
+    await loadRepository(harness, 'u1', 'uv-checker-01');
+    const loadedTexture = harness.textures.get('/textures/checker.png')!;
+
+    await expect(
+      harness.registry.load('u1', 'sampler2D', {
+        kind: 'repository',
+        textureId: 'removed-texture',
+      }),
+    ).resolves.toBeNull();
+
+    expect(loadedTexture.dispose).toHaveBeenCalledTimes(1);
+    expect(harness.registry.textureFor('u1')).toBeNull();
   });
 
   it('disposes a released texture exactly once', async () => {

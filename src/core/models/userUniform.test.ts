@@ -5,6 +5,7 @@ import {
   GLSL_RESERVED_WORDS,
   hasTextureContent,
   isSamplerKind,
+  isTextureSource,
   isValueForKind,
   UNIFORM_NAME_PATTERN,
   validateUniformName,
@@ -136,11 +137,39 @@ describe('uniform values', () => {
     expect(
       isValueForKind('sampler2D', { kind: 'url' } as unknown as UserUniformValue),
     ).toBe(false);
+    expect(
+      isValueForKind('sampler2D', {
+        kind: 'repository',
+        textureId: 'uv-checker-01',
+      }),
+    ).toBe(true);
+  });
+
+  it('narrows repository texture sources', () => {
+    expect(
+      isTextureSource({ kind: 'repository', textureId: 'uv-checker-01' }),
+    ).toBe(true);
+    expect(
+      isTextureSource({
+        kind: 'repository',
+        textureId: 1,
+      } as unknown as UserUniformValue),
+    ).toBe(false);
+    expect(
+      isTextureSource({ kind: 'unknown' } as unknown as UserUniformValue),
+    ).toBe(false);
   });
 
   it('treats empty texture sources as unset', () => {
     expect(hasTextureContent({ kind: 'url', url: '' })).toBe(false);
     expect(hasTextureContent({ kind: 'url', url: '  ' })).toBe(false);
     expect(hasTextureContent({ kind: 'url', url: '/a.png' })).toBe(true);
+    expect(
+      hasTextureContent({ kind: 'repository', textureId: 'uv-checker-01' }),
+    ).toBe(true);
+    expect(hasTextureContent({ kind: 'repository', textureId: '' })).toBe(false);
+    expect(
+      hasTextureContent({ kind: 'repository', textureId: '   ' }),
+    ).toBe(false);
   });
 });

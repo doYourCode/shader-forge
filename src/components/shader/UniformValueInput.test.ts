@@ -119,4 +119,95 @@ describe('UniformValueInput', () => {
       'albedo.png',
     );
   });
+
+  it('lists only repository textures matching the sampler kind', () => {
+    const sampler2D = mountInput('sampler2D', { kind: 'url', url: '' });
+    expect(
+      sampler2D
+        .findAll('select.uniform-value__texture-select option')
+        .map((option) => option.attributes('value')),
+    ).toEqual(['none', 'repository:uv-checker-01', 'custom']);
+
+    const samplerCube = mountInput('samplerCube', { kind: 'url', url: '' });
+    expect(
+      samplerCube
+        .findAll('select.uniform-value__texture-select option')
+        .map((option) => option.attributes('value')),
+    ).toEqual(['none', 'custom']);
+  });
+
+  it('emits a repository source when a catalog texture is selected', async () => {
+    const wrapper = mountInput('sampler2D', { kind: 'url', url: '' });
+
+    await wrapper
+      .find('select.uniform-value__texture-select')
+      .setValue('repository:uv-checker-01');
+
+    expect(wrapper.emitted('change')?.[0]).toEqual([
+      { kind: 'repository', textureId: 'uv-checker-01' },
+    ]);
+  });
+
+  it('emits an empty URL when None is selected', async () => {
+    const wrapper = mountInput('sampler2D', {
+      kind: 'repository',
+      textureId: 'uv-checker-01',
+    });
+
+    await wrapper.find('select.uniform-value__texture-select').setValue('none');
+
+    expect(wrapper.emitted('change')?.[0]).toEqual([{ kind: 'url', url: '' }]);
+  });
+
+  it('shows the catalog label for a repository texture', () => {
+    const wrapper = mountInput('sampler2D', {
+      kind: 'repository',
+      textureId: 'uv-checker-01',
+    });
+    const select = wrapper.find('select.uniform-value__texture-select');
+
+    expect((select.element as HTMLSelectElement).value).toBe(
+      'repository:uv-checker-01',
+    );
+    expect(wrapper.find('.uniform-value__texture-name').text()).toBe(
+      'UV Checker 01',
+    );
+    expect(wrapper.find('input.uniform-value__url').exists()).toBe(false);
+    expect(wrapper.find('input.uniform-value__file-input').exists()).toBe(
+      false,
+    );
+  });
+
+  it('shows a disabled option when a repository id is not in the catalog', () => {
+    const wrapper = mountInput('sampler2D', {
+      kind: 'repository',
+      textureId: 'removed-texture',
+    });
+    const select = wrapper.find('select.uniform-value__texture-select');
+    const missing = select.find('option[disabled]');
+
+    expect((select.element as HTMLSelectElement).value).toBe('missing');
+    expect(missing.exists()).toBe(true);
+    expect(missing.text()).toContain('Unavailable');
+    expect(missing.text()).toContain('removed-texture');
+    expect(wrapper.find('.uniform-value__texture-name').text()).toBe(
+      'Unavailable',
+    );
+  });
+
+  it('reveals the URL field when custom mode is chosen', async () => {
+    const wrapper = mountInput('sampler2D', {
+      kind: 'repository',
+      textureId: 'uv-checker-01',
+    });
+
+    expect(wrapper.find('input.uniform-value__url').exists()).toBe(false);
+
+    await wrapper
+      .find('select.uniform-value__texture-select')
+      .setValue('custom');
+
+    expect(wrapper.find('input.uniform-value__url').exists()).toBe(true);
+    expect(wrapper.emitted('change')).toBeUndefined();
+  });
 });

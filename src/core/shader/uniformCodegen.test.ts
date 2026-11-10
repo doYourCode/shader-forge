@@ -42,6 +42,10 @@ const DIRECTION = definition('u3', 'sunDir', 'direction', 'vertex', {
   y: 1,
   z: 0,
 });
+const REPOSITORY = definition('u4', 'albedo', 'sampler2D', 'fragment', {
+  kind: 'repository',
+  textureId: 'uv-checker-01',
+});
 
 describe('generateBlock', () => {
   it('returns null when no definition targets the stage', () => {
@@ -119,6 +123,15 @@ describe('generateBlock', () => {
     expect(second.lines.some((line) => line.includes('(0, 1, 0)'))).toBe(true);
     expect(second.lines.filter((line) => line.startsWith('uniform '))).toEqual(
       first.lines.filter((line) => line.startsWith('uniform ')),
+    );
+  });
+
+  it('formats a repository texture value as repo:<id>', () => {
+    const block = generateBlock(documentWith([REPOSITORY]), 'fragment')!;
+
+    expect(block.lines).toContain('uniform sampler2D albedo; // texture 2D');
+    expect(block.lines[block.lines.length - 2]).toBe(
+      '// current values: albedo = repo:uv-checker-01',
     );
   });
 });

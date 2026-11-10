@@ -2,6 +2,7 @@ import { uniformKindMeta } from '@/core/constants/userUniformKinds';
 import {
   isSamplerKind,
   type UserDataDocument,
+  type UserTextureSource,
   type UserUniformDefinition,
   type UserUniformKind,
   type UserUniformStage,
@@ -237,8 +238,13 @@ function describeValues(
 
 function formatValue(kind: UserUniformKind, value: UserUniformValue): string {
   if (isSamplerKind(kind)) {
-    const source = value as { kind: 'url' | 'file'; url?: string; file?: File };
-    if (source.kind === 'file' && source.file) return `file:${source.file.name}`;
+    const source = value as UserTextureSource;
+    if (source.kind === 'file') return `file:${source.file.name}`;
+    if (source.kind === 'repository') {
+      return source.textureId.trim().length > 0
+        ? `repo:${source.textureId}`
+        : '(unset)';
+    }
     return source.url && source.url.length > 0 ? source.url : '(unset)';
   }
 

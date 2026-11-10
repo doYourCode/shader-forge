@@ -25,11 +25,14 @@ export type SamplerKind = 'sampler2D' | 'samplerCube';
 
 /**
  * Where a texture uniform's pixels come from. `file` sources are materialised
- * as an ObjectURL by the texture registry, which also revokes it.
+ * as an ObjectURL by the texture registry, which also revokes it. `repository`
+ * sources store a stable catalog id; the registry resolves it to the bundled
+ * asset URL, so the value never depends on Vite's hashed filenames.
  */
 export type UserTextureSource =
   | { readonly kind: 'url'; readonly url: string }
-  | { readonly kind: 'file'; readonly file: File };
+  | { readonly kind: 'file'; readonly file: File }
+  | { readonly kind: 'repository'; readonly textureId: string };
 
 export interface UserVector2Value {
   x: number;
@@ -283,15 +286,37 @@ export function isSamplerKind(kind: UserUniformKind): kind is SamplerKind {
 export function isTextureSource(value: UserUniformValue): value is UserTextureSource {
   if (typeof value !== 'object' || value === null) return false;
 
-  const source = value as Partial<UserTextureSource>;
-  if (source.kind === 'file') return source.file instanceof File;
-  return source.kind === 'url' && typeof source.url === 'string';
+  const source = value as {
+    kind?: unknown;
+    url?: unknown;
+    file?: unknown;
+    textureId?: unknown;
+  };
+
+  switch (source.kind) {
+    case 'file':
+      return source.file instanceof File;
+    case 'url':
+      return typeof source.url === 'string';
+    case 'repository':
+      return typeof source.textureId === 'string';
+    default:
+      return false;
+  }
 }
 
 /** True when the source points at something that can actually be loaded. */
 export function hasTextureContent(value: UserUniformValue): boolean {
   if (!isTextureSource(value)) return false;
-  return value.kind === 'file' || value.url.trim().length > 0;
+
+  switch (value.kind) {
+    case 'file':
+      return true;
+    case 'url':
+      return value.url.trim().length > 0;
+    case 'repository':
+      return value.textureId.trim().length > 0;
+  }
 }
 
 /**

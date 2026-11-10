@@ -4,6 +4,8 @@ import {
   type BaseTexture,
   type Scene,
 } from '@babylonjs/core';
+import { findPreviewTexture } from '@/core/constants/previewTextures';
+import type { PreviewTexture } from '@/core/models/previewTexture';
 import type {
   SamplerKind,
   UserTextureSource,
@@ -23,6 +25,9 @@ export interface ObjectUrlProvider {
   createObjectUrl(file: File): string;
   revokeObjectUrl(url: string): void;
 }
+
+/** Resolves a repository texture id to its bundled catalog entry. */
+export type TextureLookup = (textureId: string) => PreviewTexture | undefined;
 
 /**
  * Registers a plain 2D texture for `sampler2D` and a cube texture for
@@ -99,6 +104,7 @@ export class TextureRegistry implements TextureRegistryPort {
   private readonly scene: Scene;
   private readonly createTexture: UserTextureFactory;
   private readonly objectUrls: ObjectUrlProvider;
+  private readonly lookup: TextureLookup;
   private readonly current = new Map<string, LoadedTexture>();
   private readonly pending = new Map<string, PendingTexture>();
   private disposed = false;
@@ -107,10 +113,12 @@ export class TextureRegistry implements TextureRegistryPort {
     scene: Scene,
     createTexture: UserTextureFactory = createUserTexture,
     objectUrls: ObjectUrlProvider = browserObjectUrls,
+    lookup: TextureLookup = findPreviewTexture,
   ) {
     this.scene = scene;
     this.createTexture = createTexture;
     this.objectUrls = objectUrls;
+    this.lookup = lookup;
   }
 
   load(
@@ -131,10 +139,19 @@ export class TextureRegistry implements TextureRegistryPort {
     }
     if (inFlight) this.cancelPending(definitionId, inFlight);
 
-    const url =
-      source.kind === 'file'
-        ? this.objectUrls.createObjectUrl(source.file)
-        : source.url.trim();
+    let url: string;
+    if (source.kind === 'file') {
+      url = this.objectUrls.createObjectUrl(source.file);
+    } else if (source.kind === 'repository') {
+      const entry = this.lookup(source.textureId);
+      if (!entry || entry.sampler !== kind) {
+        this.release(definitionId);
+        return Promise.resolve(null);
+      }
+      url = entry.url;
+    } else {
+      url = source.url.trim();
+    }
 
     if (url.length === 0) {
       this.release(definitionId);
@@ -286,6 +303,10 @@ function sameSource(
 
   if (previous.kind === 'url' && next.kind === 'url') {
     return previous.url.trim() === next.url.trim();
+  }
+
+  if (previous.kind === 'repository' && next.kind === 'repository') {
+    return previous.textureId === next.textureId;
   }
 
   return false;

@@ -74,6 +74,14 @@
       "sampler2D": "Texture 2D",
       "samplerCube": "Cube texture"
     },
+    "color": {
+      "open": "Open color picker for {name}",
+      "dialog": "Color picker for {name}",
+      "hex": "Hex value",
+      "invalidHex": "Enter a valid hex color (3, 4, 6 or 8 digits).",
+      "close": "Close color picker",
+      "alpha": "Alpha"
+    },
     "error": {
       "invalid": "Use a valid GLSL identifier: letters, digits and underscores, not starting with a digit.",
       "reserved": "This name is reserved by the shader or by ShaderForge.",

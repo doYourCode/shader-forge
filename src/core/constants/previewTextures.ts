@@ -1,4 +1,6 @@
 import checkerUrl from '@/assets/textures/Uv_checker_01.png?url';
+import checker2Url from '@/assets/textures/Uv_checker_02.png?url';
+
 import type { PreviewTexture } from '@/core/models/previewTexture';
 import type { SamplerKind } from '@/core/models/userUniform';
 
@@ -13,6 +15,13 @@ export const previewTextures: readonly PreviewTexture[] = [
     id: 'uv-checker-01',
     label: 'UV Checker 01',
     url: checkerUrl,
+    sampler: 'sampler2D',
+    format: 'image',
+  },
+    {
+    id: 'uv-checker-02',
+    label: 'UV Checker 02',
+    url: checker2Url,
     sampler: 'sampler2D',
     format: 'image',
   },

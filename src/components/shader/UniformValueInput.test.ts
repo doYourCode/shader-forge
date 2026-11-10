@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import { i18n } from '@/i18n';
 import type { UserUniformKind, UserUniformValue } from '@/core/models/userUniform';
 import UniformValueInput from './UniformValueInput.vue';
+import UserColorPicker from './UserColorPicker.vue';
 
 function mountInput(kind: UserUniformKind, value: UserUniformValue) {
   return mount(UniformValueInput, {
@@ -16,6 +17,11 @@ function mountInput(kind: UserUniformKind, value: UserUniformValue) {
 describe('UniformValueInput', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en';
+  });
+
+  afterEach(() => {
+    // Teleported color panels live in body, outside the wrapper.
+    document.body.innerHTML = '';
   });
 
   it('edits a float through a number input', async () => {
@@ -62,7 +68,12 @@ describe('UniformValueInput', () => {
   it('edits an RGB colour through the colour picker', async () => {
     const wrapper = mountInput('color', { r: 1, g: 1, b: 1 });
 
-    await wrapper.find('input.uniform-value__color-input').setValue('#ff0000');
+    wrapper.findComponent(UserColorPicker).vm.$emit('change', {
+      r: 1,
+      g: 0,
+      b: 0,
+    });
+    await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted('change')?.[0]).toEqual([{ r: 1, g: 0, b: 0 }]);
   });
@@ -70,11 +81,28 @@ describe('UniformValueInput', () => {
   it('keeps the alpha channel when an RGBA colour changes', async () => {
     const wrapper = mountInput('color4', { r: 0, g: 0, b: 0, a: 0.5 });
 
-    await wrapper
-      .find('input.uniform-value__color-input')
-      .setValue('#00ff00');
+    const picker = wrapper.findComponent(UserColorPicker);
+    expect(picker.props('alpha')).toBe(0.5);
 
-    expect(wrapper.emitted('change')?.[0]).toEqual([{ r: 0, g: 1, b: 0, a: 0.5 }]);
+    picker.vm.$emit('change', { r: 0, g: 1, b: 0, a: 0.5 });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('change')?.[0]).toEqual([
+      { r: 0, g: 1, b: 0, a: 0.5 },
+    ]);
+  });
+
+  it('forwards the uniform name to the colour picker', () => {
+    const wrapper = mount(UniformValueInput, {
+      props: {
+        kind: 'color',
+        value: { r: 1, g: 1, b: 1 },
+        label: 'tint',
+      },
+      global: { plugins: [i18n] },
+    });
+
+    expect(wrapper.findComponent(UserColorPicker).props('label')).toBe('tint');
   });
 
   it('edits the alpha channel without touching the colour', async () => {

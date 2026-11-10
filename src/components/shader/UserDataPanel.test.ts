@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import { i18n } from '@/i18n';
@@ -11,6 +11,7 @@ import {
 } from '@/core/models/userUniform';
 import UserDataPanel from './UserDataPanel.vue';
 import UniformValueInput from './UniformValueInput.vue';
+import UserColorPicker from './UserColorPicker.vue';
 
 const RESERVED = new Set<string>(['time', ...GLSL_RESERVED_WORDS]);
 
@@ -52,6 +53,11 @@ function mountPanel(definitions: UserUniformDefinition[] = []) {
     global: { plugins: [i18n] },
   });
 }
+
+afterEach(() => {
+  // Teleported color panels live in body, outside the wrapper.
+  document.body.innerHTML = '';
+});
 
 describe('UserDataPanel', () => {
   beforeEach(() => {
@@ -169,7 +175,14 @@ describe('UserDataPanel', () => {
   it('forwards value edits from the per-kind widget', async () => {
     const wrapper = mountPanel([createDefinition('u1', 'tint')]);
 
-    wrapper.findComponent(UniformValueInput).vm.$emit('change', {
+    expect(wrapper.findComponent(UniformValueInput).props('label')).toBe(
+      'tint',
+    );
+    expect(wrapper.findComponent(UserColorPicker).props('label')).toBe(
+      'tint',
+    );
+
+    wrapper.findComponent(UserColorPicker).vm.$emit('change', {
       r: 0,
       g: 0,
       b: 0,

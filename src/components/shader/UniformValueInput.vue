@@ -15,6 +15,7 @@ import {
   type UserUniformKind,
   type UserUniformValue,
 } from '@/core/models/userUniform';
+import UserColorPicker from './UserColorPicker.vue';
 
 const NONE_VALUE = 'none';
 const CUSTOM_VALUE = 'custom';
@@ -24,6 +25,8 @@ const REPOSITORY_PREFIX = 'repository:';
 const props = defineProps<{
   kind: UserUniformKind;
   value: UserUniformValue;
+  /** Uniform name, forwarded to the color picker's accessible labels. */
+  label?: string;
 }>();
 
 const emit = defineEmits<{
@@ -62,11 +65,6 @@ const hasAlpha = computed(() => props.kind === 'color4');
 const alphaValue = computed(() =>
   hasAlpha.value ? (props.value as UserColor4Value).a : 1,
 );
-
-const colorHex = computed(() => {
-  const color = props.value as UserColor3Value;
-  return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
-});
 
 const texture = computed<UserTextureSource>(
   () => props.value as UserTextureSource,
@@ -121,13 +119,6 @@ const textureLabel = computed(() => {
   return t('userData.texture.noTexture');
 });
 
-function toHex(channel: number): string {
-  const clamped = Math.min(1, Math.max(0, channel));
-  return Math.round(clamped * 255)
-    .toString(16)
-    .padStart(2, '0');
-}
-
 function readNumber(event: Event): number | null {
   const target = event.target as HTMLInputElement;
   if (target.value.trim() === '') return null;
@@ -152,18 +143,6 @@ function onComponentInput(component: string, event: Event): void {
   }
 
   emit('change', next as unknown as UserUniformValue);
-}
-
-function onColorInput(event: Event): void {
-  const rgb = parseHex((event.target as HTMLInputElement).value);
-  if (!rgb) return;
-
-  if (hasAlpha.value) {
-    emit('change', { ...rgb, a: alphaValue.value });
-    return;
-  }
-
-  emit('change', rgb);
 }
 
 function onAlphaInput(event: Event): void {
@@ -207,19 +186,6 @@ function onFileInput(event: Event): void {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (file) emit('change', { kind: 'file', file });
 }
-
-function parseHex(
-  hex: string,
-): { r: number; g: number; b: number } | null {
-  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-  if (!match) return null;
-
-  return {
-    r: parseInt(match[1], 16) / 255,
-    g: parseInt(match[2], 16) / 255,
-    b: parseInt(match[3], 16) / 255,
-  };
-}
 </script>
 
 <template>
@@ -251,11 +217,11 @@ function parseHex(
     </div>
 
     <div v-else-if="widget === 'color'" class="uniform-value__color">
-      <input
-        class="uniform-value__color-input"
-        type="color"
-        :value="colorHex"
-        @input="onColorInput"
+      <UserColorPicker
+        :color="props.value as UserColor3Value"
+        :alpha="hasAlpha ? alphaValue : undefined"
+        :label="props.label"
+        @change="emit('change', $event)"
       />
       <label v-if="hasAlpha" class="uniform-value__alpha">
         <span class="uniform-value__component-label">a</span>
@@ -266,6 +232,7 @@ function parseHex(
           min="0"
           max="1"
           :value="alphaValue"
+          :aria-label="t('userData.color.alpha')"
           @input="onAlphaInput"
         />
       </label>
@@ -380,16 +347,6 @@ function parseHex(
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.uniform-value__color-input {
-  width: 34px;
-  height: 24px;
-  padding: 0;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  cursor: pointer;
 }
 
 .uniform-value__alpha {

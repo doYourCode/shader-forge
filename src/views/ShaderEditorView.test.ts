@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 
 import { i18n } from '@/i18n';
+import UserColorPicker from '@/components/shader/UserColorPicker.vue';
 import ShaderEditorView from './ShaderEditorView.vue';
 
 interface BlueprintLike {
@@ -84,6 +85,8 @@ describe('ShaderEditorView user data panel', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    // Teleported color panels live in body, outside the wrapper.
+    document.body.innerHTML = '';
   });
 
   it('renders the user-data table when the tab is active', async () => {
@@ -150,9 +153,11 @@ describe('ShaderEditorView user data panel', () => {
     await nextTick();
     sceneManager.compile.mockClear();
 
-    await wrapper
-      .find('.user-data__row input.uniform-value__color-input')
-      .setValue('#00ff00');
+    wrapper
+      .find('.user-data__row')
+      .findComponent(UserColorPicker)
+      .vm.$emit('change', { r: 0, g: 1, b: 0 });
+    await nextTick();
     await vi.advanceTimersByTimeAsync(300);
     await nextTick();
 

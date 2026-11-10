@@ -274,6 +274,7 @@ function onNewKindChange(event: Event): void {
             <UniformValueInput
               :kind="definition.kind"
               :value="definition.value"
+              :label="definition.name"
               @change="onValueChange(definition.id, $event)"
             />
           </td>

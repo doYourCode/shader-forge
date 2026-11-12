@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ShaderForge — environment baker</title>
+    <style>
+      body {
+        background: #21252b;
+        color: #d7dae0;
+        font: 13px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+        padding: 24px;
+        max-width: 900px;
+      }
+      h1 {
+        font-size: 16px;
+        letter-spacing: 0.02em;
+        margin: 0 0 4px;
+      }
+      p {
+        color: #9aa1ad;
+        margin: 0 0 16px;
+      }
+      button {
+        background: #3a404b;
+        border: 1px solid #4d5566;
+        border-radius: 3px;
+        color: #d7dae0;
+        cursor: pointer;
+        font: inherit;
+        padding: 4px 10px;
+      }
+      button:disabled {
+        cursor: progress;
+        opacity: 0.6;
+      }
+      #log {
+        margin: 16px 0;
+        white-space: pre-wrap;
+      }
+      #results div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 4px 0;
+      }
+      code {
+        color: #98c379;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Environment baker</h1>
+    <p>
+      Dev-only tool. Runs Babylon's HDR decode, irradiance convolution and GGX
+      prefilter once, then writes a prefiltered <code>.env</code> per catalog
+      environment. Not part of the production build.
+    </p>
+    <button id="bake" type="button">Bake all environments</button>
+    <div id="log" aria-live="polite"></div>
+    <div id="results"></div>
+    <script type="module" src="/src/tools/bakeEnv.ts"></script>
+  </body>
+</html>

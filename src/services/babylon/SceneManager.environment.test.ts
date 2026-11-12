@@ -19,12 +19,14 @@ const STUDIO: PreviewHdri = {
   id: 'studio',
   label: 'Wooden Studio 17',
   url: '/studio.hdr',
+  format: 'hdr',
 };
 
 const PEPPERMINT: PreviewHdri = {
   id: 'peppermint',
   label: 'Peppermint Powerplant',
   url: '/peppermint.hdr',
+  format: 'hdr',
 };
 
 function createHarness() {

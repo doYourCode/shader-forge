@@ -13,8 +13,13 @@ const MODELS: readonly PreviewModel[] = [
 ];
 
 const HDRIS: readonly PreviewHdri[] = [
-  { id: 'studio', label: 'Wooden Studio 17', url: '/studio.hdr' },
-  { id: 'peppermint', label: 'Peppermint Powerplant', url: '/peppermint.hdr' },
+  { id: 'studio', label: 'Wooden Studio 17', url: '/studio.env', format: 'env' },
+  {
+    id: 'peppermint',
+    label: 'Peppermint Powerplant',
+    url: '/peppermint.env',
+    format: 'env',
+  },
 ];
 
 function mountToolbar(activeModelId = 'monkey', activeHdriId = 'studio') {

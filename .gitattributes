@@ -1,0 +1,5 @@
+# Preview assets are binary containers: never let Git rewrite their bytes or
+# line endings on checkout (a corrupted .env/glb/hdr fails at runtime only).
+*.env binary
+*.glb binary
+*.hdr binary

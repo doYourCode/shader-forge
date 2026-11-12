@@ -59,6 +59,7 @@ const {
   errors,
   userDataDoc,
   highlightedUserRow,
+  loadingMessage,
   mountEditor,
   mountCanvas,
   switchTab,
@@ -220,6 +221,16 @@ function togglePause() {
         <canvas ref="canvasRef" class="shader-editor__canvas" />
 
         <div
+          v-if="loadingMessage"
+          class="shader-editor__loading"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="shader-editor__loading-spinner" aria-hidden="true" />
+          <span>{{ loadingMessage }}</span>
+        </div>
+
+        <div
           v-if="errors.length"
           class="shader-editor__errors"
           role="alert"
@@ -337,6 +348,36 @@ function togglePause() {
   height: 100%;
   display: block;
   outline: none;
+}
+
+.shader-editor__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(33, 37, 43, 0.72);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.shader-editor__loading-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: shader-editor-spin 0.8s linear infinite;
+}
+
+@keyframes shader-editor-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .shader-editor__errors {

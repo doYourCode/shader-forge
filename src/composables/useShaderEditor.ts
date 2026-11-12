@@ -41,6 +41,7 @@ import {
   type AddUserUniformResult,
   type UserDataCommandResult,
 } from '@/services/userdata/UserDataController';
+import { LoadProfiler, exposeProfiler } from '@/services/perf/LoadProfiler';
 
 export type EditorStatus = 'idle' | 'ready' | 'error' | 'compiling';
 
@@ -49,7 +50,19 @@ type TextTabId = Exclude<EditorTabId, 'user_data'>;
 
 export function useShaderEditor() {
   const editorManager = new EditorManager();
-  const sceneManager = new SceneManager();
+  /**
+   * Load-phase instrumentation lives at the composition root: the manager and
+   * the environment controller only know the `LoadTimer` port. Dev builds (and
+   * `?perf` in production) expose it as `window.__shaderForgePerf`.
+   */
+  const loadProfiler = new LoadProfiler();
+  const profileEnabled =
+    typeof window !== 'undefined' &&
+    (import.meta.env.DEV ||
+      new URLSearchParams(window.location.search).has('perf'));
+  if (profileEnabled) exposeProfiler(loadProfiler);
+
+  const sceneManager = new SceneManager(undefined, undefined, loadProfiler);
 
   const activeTab = ref<EditorTabId>('vertex');
   const activeModel = ref<PreviewModel>(defaultPreviewModel);
@@ -65,6 +78,19 @@ export function useShaderEditor() {
   const paused = ref(false);
   const errors = ref<ShaderError[]>([]);
   const highlightedUserRow = ref<number | null>(null);
+  /** Empty while the preview is idle; drives the canvas loading overlay. */
+  const loadingMessage = ref('');
+  let loadingDepth = 0;
+
+  function beginLoad(message: string): void {
+    loadingDepth += 1;
+    loadingMessage.value = message;
+  }
+
+  function endLoad(): void {
+    loadingDepth = Math.max(0, loadingDepth - 1);
+    if (loadingDepth === 0) loadingMessage.value = '';
+  }
 
   const tabDocs: Record<TextTabId, string> = {
     vertex: defaultVertexShader,
@@ -176,13 +202,23 @@ export function useShaderEditor() {
   }
 
   function mountCanvas(canvas: HTMLCanvasElement) {
-    sceneManager.init(
-      canvas,
-      userData.buildBlueprint(currentSources()),
-      activeModel.value,
-      activeHdri.value,
-      userData,
-    );
+    beginLoad('Loading preview…');
+
+    // init resolves once the mesh, material and environment are ready,
+    // which is what the overlay reports; frames may already be clearing the
+    // canvas in the meantime (setPaused(false) starts the render loop early).
+    void loadProfiler
+      .measure('scene:init', () =>
+        sceneManager.init(
+          canvas,
+          userData.buildBlueprint(currentSources()),
+          activeModel.value,
+          activeHdri.value,
+          userData,
+        ),
+      )
+      .finally(endLoad);
+
     sceneManager.setPaused(false);
   }
 
@@ -196,16 +232,23 @@ export function useShaderEditor() {
     const previous = confirmedModel;
     activeModel.value = model;
 
-    const loaded = await sceneManager.loadModel(model);
+    beginLoad('Loading model…');
+    try {
+      const loaded = await loadProfiler.measure('model:swap', () =>
+        sceneManager.loadModel(model),
+      );
 
-    if (loaded) {
-      confirmedModel = model;
-      return;
-    }
+      if (loaded) {
+        confirmedModel = model;
+        return;
+      }
 
-    // A newer selection owns the dropdown now; don't revert over it.
-    if (request === modelSelection) {
-      activeModel.value = previous;
+      // A newer selection owns the dropdown now; don't revert over it.
+      if (request === modelSelection) {
+        activeModel.value = previous;
+      }
+    } finally {
+      endLoad();
     }
   }
 
@@ -219,16 +262,23 @@ export function useShaderEditor() {
     const previous = confirmedHdri;
     activeHdri.value = hdri;
 
-    const loaded = await sceneManager.loadEnvironment(hdri);
+    beginLoad('Loading environment…');
+    try {
+      const loaded = await loadProfiler.measure('env:swap', () =>
+        sceneManager.loadEnvironment(hdri),
+      );
 
-    if (loaded) {
-      confirmedHdri = hdri;
-      return;
-    }
+      if (loaded) {
+        confirmedHdri = hdri;
+        return;
+      }
 
-    // A newer selection owns the dropdown now; don't revert over it.
-    if (request === hdriSelection) {
-      activeHdri.value = previous;
+      // A newer selection owns the dropdown now; don't revert over it.
+      if (request === hdriSelection) {
+        activeHdri.value = previous;
+      }
+    } finally {
+      endLoad();
     }
   }
 
@@ -450,6 +500,7 @@ export function useShaderEditor() {
     errors,
     userDataDoc,
     highlightedUserRow,
+    loadingMessage,
     mountEditor,
     mountCanvas,
     switchTab,

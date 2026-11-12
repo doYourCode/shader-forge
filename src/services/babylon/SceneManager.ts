@@ -30,7 +30,14 @@ import { defaultPreviewModel } from '@/core/constants/previewModels';
 import type { PreviewModel } from '@/core/models/previewModel';
 import { defaultPreviewHdri } from '@/core/constants/previewHdris';
 import type { PreviewHdri } from '@/core/models/previewHdri';
-import { EnvironmentController } from './preview/EnvironmentController';
+import {
+  createDefaultEnvironmentController,
+  type EnvironmentController,
+} from './preview/EnvironmentController';
+import {
+  noopLoadTimer,
+  type LoadTimer,
+} from '@/services/perf/LoadProfiler';
 import {
   TextureRegistry,
   type TextureRegistryPort,
@@ -74,7 +81,7 @@ export interface SceneManagerDeps {
     recorder: ShaderLogRecorder | null,
   ): ShaderCompiler;
   createDiagnostics(compiler: ShaderCompiler): FragmentDiagnostics;
-  createEnvironmentController(scene: Scene): EnvironmentController;
+  createEnvironmentController(scene: Scene, timer: LoadTimer): EnvironmentController;
   createTextureRegistry(scene: Scene): TextureRegistryPort;
   createUniformBinder(textures: TextureRegistryPort): UniformBinderPort;
   createUniformBindingTarget(material: ShaderMaterial): UniformBindingTarget;
@@ -97,7 +104,8 @@ const defaultDeps: SceneManagerDeps = {
   createCompiler: (scene, recorder) => new ShaderCompiler(scene, recorder),
   createDiagnostics: (compiler) =>
     new FragmentDiagnostics(compiler, internalShaders.validation.vertex),
-  createEnvironmentController: (scene) => new EnvironmentController(scene),
+  createEnvironmentController: (scene, timer) =>
+    createDefaultEnvironmentController(scene, timer),
   createTextureRegistry: (scene) => new TextureRegistry(scene),
   createUniformBinder: (textures) => new UniformBinder(textures),
   createUniformBindingTarget: (material) =>
@@ -111,6 +119,7 @@ const defaultDeps: SceneManagerDeps = {
 export class SceneManager {
   private readonly meshProviderFactory: PreviewMeshProviderFactory;
   private readonly deps: SceneManagerDeps;
+  private readonly timer: LoadTimer;
   private previewEngine: PreviewEngine | null = null;
   private scene: Scene | null = null;
   private mesh: Mesh | null = null;
@@ -136,6 +145,11 @@ export class SceneManager {
   constructor(
     meshProviderFactory: PreviewMeshProviderFactory = defaultMeshProviderFactory,
     deps: Partial<SceneManagerDeps> = defaultDeps,
+    /**
+     * Optional load-phase instrumentation. The composition root supplies a real
+     * profiler; tests and production defaults get the no-op timer.
+     */
+    timer: LoadTimer = noopLoadTimer,
   ) {
     this.meshProviderFactory = meshProviderFactory;
     this.deps = {
@@ -157,6 +171,7 @@ export class SceneManager {
         deps.createUniformBindingTarget ??
         defaultDeps.createUniformBindingTarget,
     };
+    this.timer = timer;
   }
 
   async init(
@@ -192,15 +207,18 @@ export class SceneManager {
     this.textures = textures;
     userData?.attachGpu({ textures, binder });
 
-    const environment = this.deps.createEnvironmentController(scene);
+    const environment = this.deps.createEnvironmentController(scene, this.timer);
     this.environment = environment;
     // The environment loads in parallel with the mesh; the scene keeps using
-    // its current environment until the texture is ready.
-    void environment.load(hdri);
+    // its current environment until the texture is ready. Init only settles
+    // once it is in, so the loading overlay covers the whole sequence.
+    const environmentReady = environment.load(hdri);
 
     let mesh: Mesh;
     try {
-      mesh = await this.meshProviderFactory(model).load(scene);
+      mesh = await this.timer.measure('mesh:load', () =>
+        this.meshProviderFactory(model).load(scene),
+      );
     } catch (error) {
       // A superseded/disposed init must not tear down a newer session.
       if (!this.isCurrent(session)) return;
@@ -249,6 +267,13 @@ export class SceneManager {
     this.animator = animator;
     animator.start();
 
+    // Frames may already be drawing (mountCanvas unpauses the engine so the
+    // canvas is cleared while assets load), but init only completes — and the
+    // loading overlay only hides once the environment is ready as well.
+
+    await environmentReady;
+    if (!this.isCurrent(session)) return;
+
     previewEngine.start();
   }
 
@@ -274,7 +299,9 @@ export class SceneManager {
 
     let nextMesh: Mesh;
     try {
-      nextMesh = await this.meshProviderFactory(model).load(scene);
+      nextMesh = await this.timer.measure('mesh:load', () =>
+        this.meshProviderFactory(model).load(scene),
+      );
     } catch (error) {
       if (!this.isCurrent(session) || request !== this.modelRequest) {
         return false;
@@ -334,7 +361,9 @@ export class SceneManager {
       return { ok: false, message: 'Scene not initialized', errors: [] };
     }
 
-    const attempt = await compiler.tryCompile(blueprint, mesh);
+    const attempt = await this.timer.measure('shader:compile', () =>
+      compiler.tryCompile(blueprint, mesh),
+    );
 
     if (!this.isCurrent(session)) {
       attempt.release(true);

@@ -1,22 +1,31 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BaseTexture, Scene } from '@babylonjs/core';
 
-import type { PreviewHdri } from '@/core/models/previewHdri';
+import type { PreviewHdri, PreviewHdriFormat } from '@/core/models/previewHdri';
 import { EnvironmentController } from './EnvironmentController';
 
 const STUDIO: PreviewHdri = {
   id: 'studio',
   label: 'Wooden Studio 17',
   url: '/studio.hdr',
+  format: 'hdr',
 };
 const PEPPERMINT: PreviewHdri = {
   id: 'peppermint',
   label: 'Peppermint Powerplant',
   url: '/peppermint.hdr',
+  format: 'hdr',
+};
+const BAKED: PreviewHdri = {
+  id: 'baked',
+  label: 'Baked Studio',
+  url: '/baked.env',
+  format: 'env',
 };
 
 interface FakeTexture {
   readonly url: string;
+  readonly format: PreviewHdriFormat;
   readonly dispose: ReturnType<typeof vi.fn>;
 }
 
@@ -33,10 +42,11 @@ function createHarness() {
     (
       _scene: Scene,
       url: string,
+      format: PreviewHdriFormat,
       onLoad: () => void,
       onError: () => void,
     ): BaseTexture => {
-      const texture: FakeTexture = { url, dispose: vi.fn() };
+      const texture: FakeTexture = { url, format, dispose: vi.fn() };
       textures.set(url, texture);
       callbacks.set(url, { onLoad, onError });
       return texture as unknown as BaseTexture;
@@ -108,8 +118,7 @@ describe('EnvironmentController', () => {
     );
   });
 
-  it('keeps the current environment until the next texture loads', async () => {
-    const harness = createHarness();
+  it('keeps the current environment until the next texture loads', async () => {    const harness = createHarness();
 
     const first = harness.controller.load(STUDIO);
     harness.callbacks.get(STUDIO.url)!.onLoad();
@@ -361,5 +370,39 @@ describe('EnvironmentController', () => {
     expect(harness.filter.prefilter).not.toHaveBeenCalledWith(
       harness.textures.get(PEPPERMINT.url),
     );
+  });
+
+  it('publishes a prefiltered .env without running the HDR filters', async () => {
+    const harness = createHarness();
+
+    const loaded = harness.controller.load(BAKED);
+    harness.callbacks.get(BAKED.url)!.onLoad();
+
+    await expect(loaded).resolves.toBe(true);
+    expect(harness.filter.prefilter).not.toHaveBeenCalled();
+    expect(harness.createIblFilter).not.toHaveBeenCalled();
+    expect(harness.scene.environmentTexture).toBe(
+      harness.textures.get(BAKED.url) as unknown as BaseTexture,
+    );
+    expect(harness.background.setTexture).toHaveBeenCalledWith(
+      harness.textures.get(BAKED.url),
+    );
+  });
+
+  it('passes the declared asset format to the texture factory', async () => {
+    const harness = createHarness();
+
+    harness.controller.load(BAKED);
+    harness.callbacks.get(BAKED.url)!.onLoad();
+    await flush();
+
+    expect(harness.createTexture).toHaveBeenCalledWith(
+      harness.scene,
+      BAKED.url,
+      'env',
+      expect.any(Function),
+      expect.any(Function),
+    );
+    expect(harness.textures.get(BAKED.url)!.format).toBe('env');
   });
 });

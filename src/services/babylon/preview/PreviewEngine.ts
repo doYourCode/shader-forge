@@ -37,6 +37,7 @@ export class PreviewEngine {
   private engine: Engine | null = null;
   private logRecorder: ShaderLogRecorder | null = null;
   private scene: Scene | null = null;
+  private renderLoopActive = false;
 
   constructor(reportError: (errors: ShaderError[]) => void) {
     this.reportError = reportError;
@@ -53,8 +54,11 @@ export class PreviewEngine {
    * can resolve without throwing.
    */
   create(canvas: HTMLCanvasElement): Engine | null {
+    // `preserveDrawingBuffer` forces an extra copy of the drawing buffer on
+    // every frame and is only needed to read the canvas back (screenshots).
+    // The preview never does that, so it stays off.
     const engine = new Engine(canvas, true, {
-      preserveDrawingBuffer: true,
+      preserveDrawingBuffer: false,
       stencil: true,
     });
     this.engine = engine;
@@ -92,14 +96,17 @@ export class PreviewEngine {
     if (!this.engine) return;
 
     if (on) {
-      this.engine.stopRenderLoop();
+      this.stopRenderLoop();
     } else {
       this.runRenderLoop();
     }
   }
 
   stopRenderLoop(): void {
-    this.engine?.stopRenderLoop();
+    if (!this.engine) return;
+
+    this.engine.stopRenderLoop();
+    this.renderLoopActive = false;
   }
 
   dispose(): void {
@@ -111,8 +118,19 @@ export class PreviewEngine {
     this.engine = null;
   }
 
+  /**
+   * Registers the render callback at most once.
+   *
+   * Both `setPaused(false)` (called while the mesh loads, to clear the canvas
+   * early) and `start()` (called once the scene is ready) land here. Registering
+   * two closures would render the scene twice per frame, so the loop is
+   * idempotent and `stopRenderLoop` clears the flag.
+   */
   private runRenderLoop(): void {
-    this.engine?.runRenderLoop(() => {
+    if (!this.engine || this.renderLoopActive) return;
+
+    this.renderLoopActive = true;
+    this.engine.runRenderLoop(() => {
       this.scene?.render();
     });
   }

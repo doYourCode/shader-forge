@@ -16,6 +16,7 @@ describe('previewHdris', () => {
       { id: 'mossy-forest', label: 'Mossy Forest' },
     ]);
     expect(previewHdris.every((hdri) => hdri.url.length > 0)).toBe(true);
+    expect(previewHdris.every((hdri) => hdri.format === 'env')).toBe(true);
   });
 
   it('uses the first asset as the default selection', () => {

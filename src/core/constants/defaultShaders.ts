@@ -12,32 +12,30 @@ export const defaultFragmentShader = defaultFragment;
 export const defaultUniformsDoc = `
 // Uniform input (from the engine)
 
-mat4 worldViewProjection    // Final clip-space transform;
-mat4 normalMatrix           // Inverse-transpose world matrix;
-mat4 world                  // Mesh world matrix;
-mat4 worldView              // World * view;
-mat4 view                   // Camera view matrix;
-mat4 projection             // Camera projection matrix;
+uniform mat4 worldViewProjection    // Final clip-space transform;
+uniform mat4 normalMatrix           // Inverse-transpose world matrix;
+uniform mat4 world                  // Mesh world matrix;
+uniform mat4 worldView              // World * view;
+uniform mat4 view                   // Camera view matrix;
+uniform mat4 projection             // Camera projection matrix;
 
-vec3 cameraPos;             // Position of the camera in world-space;
-vec3 lightDir;              // Direction vector of the light in world-space.
-float time;                 // Used for animating effects based on a timescale;
+uniform vec3 cameraPos;             // Position of the camera in world-space;
+uniform vec3 lightDir;              // Direction vector of the light in world-space.
+uniform float time;                 // Used for animating effects based on a timescale;
 
-samplerCube environmentMap; // The environment map (used for IBL)
-
-samplerCube irradianceMap;              // Diffuse irradiance (cosine-convolved environment cubemap);
-samplerCube prefilteredEnvironmentMap;  // GGX-prefiltered specular cubemap (higher mip levels = rougher);
-sampler2D brdfLUT;                      // Split-sum LUT (R = bias, G = albedo); sample at (NdotV, roughness), then mix(R, G, F0).
+uniform samplerCube irradianceMap;              // Diffuse irradiance (cosine-convolved environment cubemap);
+uniform samplerCube prefilteredEnvironmentMap;  // GGX-prefiltered specular cubemap (higher mip levels = rougher);
+uniform sampler2D brdfLUT;                      // Split-sum LUT (R = bias, G = albedo); sample at (NdotV, roughness), then mix(R, G, F0).
 `.trim();
 
 export const defaultIoDoc = `
 // Vertex attribute (from mesh data)
 
-vec3 position   // Vertex position in object/local space;
-vec3 normal     // Surface normal direction;
-vec3 tangent    // Tangent direction for normal mapping;
-vec2 uv         // Primary texture coordinates;
-vec2 uv2        // Secondary texture coordinates;
-vec3 color      // Vertex color (RGB).
+uniform vec3 position   // Vertex position in object/local space;
+uniform vec3 normal     // Surface normal direction;
+uniform vec3 tangent    // Tangent direction for normal mapping;
+uniform vec2 uv         // Primary texture coordinates;
+uniform vec2 uv2        // Secondary texture coordinates;
+uniform vec3 color      // Vertex color (RGB).
 
 `.trim();

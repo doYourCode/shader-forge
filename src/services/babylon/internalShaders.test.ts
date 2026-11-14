@@ -39,9 +39,15 @@ describe('internal shaders', () => {
     expect(errorFragment).toMatch(output);
   });
 
-  it('declares the scene environment cubemap sampler in the default fragment', () => {
+  it('declares the IBL samplers used by the default fragment', () => {
     expect(defaultFragment).toContain(
-      `uniform samplerCube ${SHADER_SAMPLER_NAMES.environment};`,
+      `uniform samplerCube ${SHADER_SAMPLER_NAMES.irradiance};`,
+    );
+    expect(defaultFragment).toContain(
+      `uniform samplerCube ${SHADER_SAMPLER_NAMES.prefilteredEnvironment};`,
+    );
+    expect(defaultFragment).toContain(
+      `uniform sampler2D ${SHADER_SAMPLER_NAMES.brdfLut};`,
     );
   });
 

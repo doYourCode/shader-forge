@@ -20,16 +20,8 @@ import type {
   UserUniformValue,
 } from '@/core/models/userUniform';
 import { createEmptyUserDataDocument } from '@/core/models/userUniform';
-import {
-  defaultPreviewModel,
-  findPreviewModel,
-  previewModels,
-} from '@/core/constants/previewModels';
-import {
-  defaultPreviewHdri,
-  findPreviewHdri,
-  previewHdris,
-} from '@/core/constants/previewHdris';
+import { previewModels } from '@/core/constants/previewModels';
+import { previewHdris } from '@/core/constants/previewHdris';
 import {
   defaultVertexShader,
   defaultFragmentShader,
@@ -65,9 +57,9 @@ export function useShaderEditor() {
   const sceneManager = new SceneManager(undefined, undefined, loadProfiler);
 
   const activeTab = ref<EditorTabId>('vertex');
-  const activeModel = ref<PreviewModel>(defaultPreviewModel);
+  const activeModel = ref<PreviewModel>(previewModels.default);
   const activeModelId = computed(() => activeModel.value.id);
-  const activeHdri = ref<PreviewHdri>(defaultPreviewHdri);
+  const activeHdri = ref<PreviewHdri>(previewHdris.default);
   const activeHdriId = computed(() => activeHdri.value.id);
   const cursorLine = ref(1);
   const cursorCol = ref(1);
@@ -112,9 +104,9 @@ export function useShaderEditor() {
 
   let compileInFlight = false;
   let queuedCompile: MaterialBlueprint | 'current' | null = null;
-  let confirmedModel = defaultPreviewModel;
+  let confirmedModel = previewModels.default;
   let modelSelection = 0;
-  let confirmedHdri = defaultPreviewHdri;
+  let confirmedHdri = previewHdris.default;
   let hdriSelection = 0;
 
   sceneManager.onError = (shaderErrors) => {
@@ -225,7 +217,7 @@ export function useShaderEditor() {
   async function selectModel(id: string) {
     if (id === activeModel.value.id) return;
 
-    const model = findPreviewModel(id);
+    const model = previewModels.find(id);
     if (!model) return;
 
     const request = ++modelSelection;
@@ -255,7 +247,7 @@ export function useShaderEditor() {
   async function selectHdri(id: string) {
     if (id === activeHdri.value.id) return;
 
-    const hdri = findPreviewHdri(id);
+    const hdri = previewHdris.find(id);
     if (!hdri) return;
 
     const request = ++hdriSelection;
@@ -488,8 +480,8 @@ export function useShaderEditor() {
     activeTab,
     activeModelId,
     activeHdriId,
-    models: previewModels,
-    hdris: previewHdris,
+    models: previewModels.all,
+    hdris: previewHdris.all,
     cursorLine,
     cursorCol,
     status,

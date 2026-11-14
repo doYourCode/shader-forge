@@ -9,6 +9,26 @@
     "language": "Select language",
     "footer": "Project information, contact, sitemap, social media and GitHub."
   },
+  "assets": {
+    "models": {
+      "monkey": "Monkey",
+      "sphere": "Sphere",
+      "cube": "Cube",
+      "bunny": "Bunny",
+      "dragon": "Dragon"
+    },
+    "hdris": {
+      "wooden-studio-17": "Wooden Studio 17",
+      "peppermint-powerplant": "Peppermint Powerplant",
+      "pergola-walkway": "Pergola Walkway",
+      "qwantani-sunrise": "Qwantani Sunrise",
+      "mossy-forest": "Mossy Forest"
+    },
+    "textures": {
+      "uv-checker-01": "UV Checker 01",
+      "uv-checker-02": "UV Checker 02"
+    }
+  },
   "navigation": {
     "documentation": "Reference & Documentation"
   },

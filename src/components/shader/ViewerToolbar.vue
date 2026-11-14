@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+import { assetLabelKey } from '@/core/assets/labels';
 import type { PreviewHdri } from '@/core/models/previewHdri';
 import type { PreviewModel } from '@/core/models/previewModel';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   models: readonly PreviewModel[];
@@ -50,7 +55,7 @@ function handleHdriChange(event: Event): void {
             :key="model.id"
             :value="model.id"
           >
-            {{ model.label }}
+            {{ t(assetLabelKey('models', model.id)) }}
           </option>
         </select>
       </fieldset>
@@ -69,7 +74,7 @@ function handleHdriChange(event: Event): void {
             :key="hdri.id"
             :value="hdri.id"
           >
-            {{ hdri.label }}
+            {{ t(assetLabelKey('hdris', hdri.id)) }}
           </option>
         </select>
       </fieldset>

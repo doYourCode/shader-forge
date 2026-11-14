@@ -26,9 +26,10 @@ import {
 } from './preview/createPreviewScene';
 import { GlbMeshProvider } from './preview/mesh/GlbMeshProvider';
 import type { PreviewMeshProvider } from './preview/mesh/PreviewMeshProvider';
-import { defaultPreviewModel } from '@/core/constants/previewModels';
+import { previewModels } from '@/core/constants/previewModels';
+import { previewHdris } from '@/core/constants/previewHdris';
+import { previewTextureCatalog } from '@/core/constants/previewTextures';
 import type { PreviewModel } from '@/core/models/previewModel';
-import { defaultPreviewHdri } from '@/core/constants/previewHdris';
 import type { PreviewHdri } from '@/core/models/previewHdri';
 import {
   createDefaultEnvironmentController,
@@ -106,7 +107,8 @@ const defaultDeps: SceneManagerDeps = {
     new FragmentDiagnostics(compiler, internalShaders.validation.vertex),
   createEnvironmentController: (scene, timer) =>
     createDefaultEnvironmentController(scene, timer),
-  createTextureRegistry: (scene) => new TextureRegistry(scene),
+  createTextureRegistry: (scene) =>
+    new TextureRegistry(scene, previewTextureCatalog.find),
   createUniformBinder: (textures) => new UniformBinder(textures),
   createUniformBindingTarget: (material) =>
     new ShaderMaterialBindingTarget(material),
@@ -177,8 +179,8 @@ export class SceneManager {
   async init(
     canvas: HTMLCanvasElement,
     blueprint: MaterialBlueprint,
-    model: PreviewModel = defaultPreviewModel,
-    hdri: PreviewHdri = defaultPreviewHdri,
+    model: PreviewModel = previewModels.default,
+    hdri: PreviewHdri = previewHdris.default,
     userData: UserDataController | null = null,
   ): Promise<void> {
     this.dispose();

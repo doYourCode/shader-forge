@@ -1,30 +1,41 @@
-import bunnyUrl from '@/assets/meshes/Bunny.glb?url';
-import cubeUrl from '@/assets/meshes/Cube.glb?url';
-import monkeyUrl from '@/assets/meshes/monkey.glb?url';
-import sphereUrl from '@/assets/meshes/sphere.glb?url';
-import dragonUrl from '@/assets/meshes/Dragon.glb?url';
+import { resolveMeshUrl } from '@/core/assets/assetUrls';
+import { createCatalog, withDefault } from '@/core/assets/catalog';
+import type { DefaultedCatalog } from '@/core/assets/catalog';
+import { assetLabel } from '@/core/assets/labels';
 import type { PreviewModel } from '@/core/models/previewModel';
 
-const defaultModel: PreviewModel = {
-  id: 'monkey',
-  label: 'Monkey',
-  url: monkeyUrl,
-};
+/** Authored record: the filesystem path is the only source of the URL. */
+interface PreviewModelRecord {
+  readonly id: string;
+  /** Repo-relative path under `src/assets`. */
+  readonly path: string;
+}
 
 /**
- * Models available in the scene viewer. Adding another GLB is a one-line
- * change: import its URL and append an entry to this list.
+ * Adding a model means dropping a GLB under `src/assets/meshes`, adding one
+ * record here, and adding one `assets.models.<id>` key per locale. The resolver
+ * fails at module load if the file or label is missing.
  */
-export const previewModels: readonly PreviewModel[] = [
-  defaultModel,
-  { id: 'sphere', label: 'Sphere', url: sphereUrl },
-  { id: 'cube', label: 'Cube', url: cubeUrl },
-  { id: 'bunny', label: 'Bunny', url: bunnyUrl },
-  { id: 'dragon', label: 'Dragon', url: dragonUrl },
+const records: readonly PreviewModelRecord[] = [
+  { id: 'monkey', path: 'meshes/monkey.glb' },
+  { id: 'sphere', path: 'meshes/sphere.glb' },
+  { id: 'cube', path: 'meshes/Cube.glb' },
+  { id: 'bunny', path: 'meshes/Bunny.glb' },
+  { id: 'dragon', path: 'meshes/Dragon.glb' },
 ];
 
-export const defaultPreviewModel = defaultModel;
+const entries: readonly PreviewModel[] = records.map((record) => ({
+  id: record.id,
+  label: assetLabel('models', record.id),
+  url: resolveMeshUrl(record.path),
+}));
+
+/** Viewer models; `default` is the explicitly declared `model` role. */
+export const previewModels: DefaultedCatalog<PreviewModel> = withDefault(
+  'previewModels',
+  createCatalog('previewModels', entries, { model: 'monkey' }),
+);
 
 export function findPreviewModel(id: string): PreviewModel | undefined {
-  return previewModels.find((model) => model.id === id);
+  return previewModels.find(id);
 }

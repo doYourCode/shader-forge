@@ -1,41 +1,72 @@
-import checkerUrl from '@/assets/textures/Uv_checker_01.png?url';
-import checker2Url from '@/assets/textures/Uv_checker_02.png?url';
-
-import type { PreviewTexture } from '@/core/models/previewTexture';
+import { resolveTextureUrl } from '@/core/assets/assetUrls';
+import { createCatalog } from '@/core/assets/catalog';
+import { assetLabel } from '@/core/assets/labels';
+import type {
+  PreviewTexture,
+  PreviewTextureFormat,
+} from '@/core/models/previewTexture';
 import type { SamplerKind } from '@/core/models/userUniform';
 
+/** The sampler is the single authored fact; the format follows from it. */
+const FORMAT_BY_SAMPLER: Record<SamplerKind, PreviewTextureFormat> = {
+  sampler2D: 'image',
+  samplerCube: 'cubemap',
+};
+
+/** Authored record: the filesystem path is the only source of the URL. */
+interface PreviewTextureRecord {
+  readonly id: string;
+  /** Repo-relative path under `src/assets`. */
+  readonly path: string;
+  readonly sampler: SamplerKind;
+}
+
 /**
- * Repository textures available to user-data sampler uniforms. Adding another
- * 2D image (or, later, a cube asset) is a one-line change: import its URL and
- * append an entry here. Cube entries must not reuse the HDRI environment
- * assets; they belong to this catalog instead.
+ * Repository textures available to user-data sampler uniforms.
+ *
+ * Adding another image means dropping it under `src/assets/textures`, adding
+ * one record here, and adding one `assets.textures.<id>` key per locale. Cube
+ * entries must not reuse the HDRI environment assets; they belong here.
  */
-export const previewTextures: readonly PreviewTexture[] = [
+const records: readonly PreviewTextureRecord[] = [
   {
     id: 'uv-checker-01',
-    label: 'UV Checker 01',
-    url: checkerUrl,
+    path: 'textures/Uv_checker_01.png',
     sampler: 'sampler2D',
-    format: 'image',
   },
-    {
+  {
     id: 'uv-checker-02',
-    label: 'UV Checker 02',
-    url: checker2Url,
+    path: 'textures/Uv_checker_02.png',
     sampler: 'sampler2D',
-    format: 'image',
   },
 ];
 
+const entries: readonly PreviewTexture[] = records.map((record) => ({
+  id: record.id,
+  label: assetLabel('textures', record.id),
+  url: resolveTextureUrl(record.path),
+  sampler: record.sampler,
+  format: FORMAT_BY_SAMPLER[record.sampler],
+}));
+
+/**
+ * Frozen catalog backing the port below. Textures declare no default: the
+ * picker always asks the user for a selection.
+ */
+const catalog = createCatalog('previewTextures', entries);
+
+/** Every bundled texture, in authored order. */
+export const previewTextures: readonly PreviewTexture[] = catalog.all;
+
 export function findPreviewTexture(id: string): PreviewTexture | undefined {
-  return previewTextures.find((texture) => texture.id === id);
+  return catalog.find(id);
 }
 
 /** Catalog entries that a uniform of `sampler` kind can bind. */
 export function previewTexturesFor(
   sampler: SamplerKind,
 ): readonly PreviewTexture[] {
-  return previewTextures.filter((texture) => texture.sampler === sampler);
+  return catalog.by((texture) => texture.sampler === sampler);
 }
 
 /**

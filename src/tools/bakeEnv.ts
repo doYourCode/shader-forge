@@ -4,7 +4,11 @@ import {
   IBL_FILTERING_QUALITY,
   prefilterEnvironmentTexture,
 } from '@/services/babylon/preview/IblFiltering';
-import { envFileNameFor, hdriBakeSources } from './hdriSources';
+import {
+  envFileNameFor,
+  hdriBakeSources,
+} from '@/core/constants/previewHdris';
+import { resolveHdrSourceUrl } from './hdriSourceUrls';
 
 /**
  * Face size of the baked cubemap. Must stay in sync with the runtime
@@ -93,7 +97,10 @@ export async function bakeAll(options: BakeOptions = {}): Promise<BakeArtifact[]
       report(`Loading ${source.id}…`);
       const started = performance.now();
 
-      const texture = await loadHdrCubeTexture(scene, source.sourceUrl);
+      const texture = await loadHdrCubeTexture(
+        scene,
+        resolveHdrSourceUrl(source.sourcePath),
+      );
       const loadedAt = performance.now();
 
       try {
@@ -192,7 +199,7 @@ function mountUi(): void {
         row.append(label, button);
         results.appendChild(row);
       }
-      append('Done. Save the files next to the HDR catalog imports.');
+      append('Done. Save the files under src/assets/hdri/env/.');
     } catch (error) {
       append(`Failed: ${(error as Error).message}`);
     } finally {

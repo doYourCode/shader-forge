@@ -15,45 +15,42 @@ in vec4 vColor;
 uniform float time;
 uniform vec3 cameraPos;
 uniform vec3 lightDir;
-uniform samplerCube environmentMap;
+uniform samplerCube irradianceMap;
+uniform samplerCube prefilteredEnvironmentMap;
+uniform sampler2D brdfLUT;
 
 // Output
 layout(location = 0) out vec4 fragColor;
+
+vec3 acesFilm(vec3 x);
 
 void main(void)
 {
     // World-space vectors
     vec3 N = normalize(vWorldNormal);
     vec3 L = normalize(lightDir);
-
     vec3 V = normalize(cameraPos - vWorldPosition);
 
     // Fresnel
     float NdotV = max(dot(N, V), 0.0);
-
     float fresnel = pow(1.0 - NdotV, 3.0);
-
-    // Half lambert term
-    float NdotL = max(dot(N, L) * 0.5 + 0.5, 0.0);
-
-    // Colors
-    vec3 baseColor = vec3(0.05, 0.1, 0.2);
-    vec3 fresnelColor = vec3(0.0, 0.8, 1.0);
-
-    // Final composition
-    vec3 finalColor = mix(
-        baseColor,
-        fresnelColor,
-        max(NdotL, fresnel)
-    );
 
     // Subtle environment reflection from the selected HDRI
     vec3 reflectionDir = reflect(-V, N);
-    vec3 environmentColor = textureLod(environmentMap, reflectionDir, 7.5).rgb;
-    //environmentColor = environmentColor / (environmentColor + vec3(1.0));
+    vec3 reflectionTerm = textureLod(prefilteredEnvironmentMap, reflectionDir, 1.0).rgb;
+  
+    vec3 diffuseTerm = texture(irradianceMap, vWorldNormal).rgb;
 
-    float reflectionAmount = 0.1 + fresnel * 0.30;
-    finalColor = mix(finalColor, environmentColor, reflectionAmount);
+    vec3 finalColor = acesFilm(diffuseTerm + reflectionTerm * fresnel);
 
     fragColor = vec4(finalColor, 1.0);
+}
+
+vec3 acesFilm(vec3 x) {
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }

@@ -73,9 +73,9 @@ function createHarness() {
   );
   const registry = new TextureRegistry(
     scene,
+    lookup,
     createTexture,
     objectUrls,
-    lookup,
   );
 
   return {

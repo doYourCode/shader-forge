@@ -4,7 +4,6 @@ import {
   type BaseTexture,
   type Scene,
 } from '@babylonjs/core';
-import { findPreviewTexture } from '@/core/constants/previewTextures';
 import type { PreviewTexture } from '@/core/models/previewTexture';
 import type {
   SamplerKind,
@@ -109,16 +108,20 @@ export class TextureRegistry implements TextureRegistryPort {
   private readonly pending = new Map<string, PendingTexture>();
   private disposed = false;
 
+  /**
+   * `lookup` is required: the registry owns texture lifecycle, not the catalog
+   * of repository textures, so the composition root supplies the lookup.
+   */
   constructor(
     scene: Scene,
+    lookup: TextureLookup,
     createTexture: UserTextureFactory = createUserTexture,
     objectUrls: ObjectUrlProvider = browserObjectUrls,
-    lookup: TextureLookup = findPreviewTexture,
   ) {
     this.scene = scene;
+    this.lookup = lookup;
     this.createTexture = createTexture;
     this.objectUrls = objectUrls;
-    this.lookup = lookup;
   }
 
   load(

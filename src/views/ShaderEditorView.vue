@@ -23,6 +23,7 @@ import EditorToolbar from '@/components/shader/EditorToolbar.vue';
 import ViewerToolbar from '@/components/shader/ViewerToolbar.vue';
 import StatusBar from '@/components/shader/StatusBar.vue';
 import UserDataPanel from '@/components/shader/UserDataPanel.vue';
+import CopyShaderButton from '@/components/shader/CopyShaderButton.vue';
 
 const { t, locale } = useI18n();
 
@@ -79,6 +80,7 @@ const {
   changeUserUniformStages,
   setUserUniformValue,
   validateUserUniformName,
+  clipboardSource,
 } = useShaderEditor();
 
 const ERROR_KIND_LABELS: Record<ShaderErrorKind, string> = {
@@ -192,7 +194,9 @@ function togglePause() {
         v-show="activeTab !== 'user_data'"
         ref="editorHostRef"
         class="shader-editor__editor-host"
-      />
+      >
+        <CopyShaderButton :get-text="clipboardSource" />
+      </div>
       <UserDataPanel
         v-if="activeTab === 'user_data'"
         class="shader-editor__user-data"
@@ -314,6 +318,7 @@ function togglePause() {
 }
 
 .shader-editor__editor-host {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: hidden;

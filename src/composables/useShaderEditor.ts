@@ -29,7 +29,7 @@ import {
   defaultIoDoc,
 } from '@/core/constants/defaultShaders';
 import { findShaderExample } from '@/core/constants/shaderExamples';
-import { generateBlock } from '@/core/shader/uniformCodegen';
+import { assembleStage, generateBlock } from '@/core/shader/uniformCodegen';
 import {
   UserDataController,
   type AddUserUniformResult,
@@ -196,6 +196,26 @@ export function useShaderEditor() {
 
   function updateInjectedBlock(): void {
     editorManager.setInjectedBlock(injectedBlockFor(activeTab.value));
+  }
+
+  /**
+   * Exactly the source compiled for the open document: the editor text with the
+   * generated user-data block injected at the shared insertion point.
+   *
+   * Resolved on demand rather than cached so unflushed keystrokes and live value
+   * edits are included, and so the copy can never drift from what a compile of
+   * the active stage would use.
+   */
+  function clipboardSource(): string {
+    const tab = activeTab.value;
+
+    if (tab === 'user_data') return '';
+
+    storeActiveDocument();
+
+    if (!isEditableTab(tab)) return tabDocs[tab];
+
+    return assembleStage(tabDocs[tab], generateBlock(userDataDoc, tab)).source;
   }
 
   // Definitions and values change the generated declarations and the values
@@ -573,5 +593,6 @@ export function useShaderEditor() {
     changeUserUniformStages,
     setUserUniformValue,
     validateUserUniformName,
+    clipboardSource,
   };
 }

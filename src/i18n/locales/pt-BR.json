@@ -62,6 +62,14 @@
       }
     }
   },
+  "editor": {
+    "copy": {
+      "label": "Copiar código do shader",
+      "idle": "Copiar código com os dados de usuário gerados",
+      "copied": "Copiado",
+      "failed": "Falha ao copiar"
+    }
+  },
   "userData": {
     "title": "Dados do usuário",
     "description": "Declare seus próprios uniforms. Editar valores atualiza a prévia sem recompilar; adicionar, renomear ou alterar o destino reconstrói o shader.",

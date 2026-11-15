@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { assetLabelKey } from '@/core/assets/labels';
 import type { PreviewHdri } from '@/core/models/previewHdri';
 import type { PreviewModel } from '@/core/models/previewModel';
+import { Pause, Play, Settings } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
@@ -88,14 +89,19 @@ function handleHdriChange(event: Event): void {
       >
         Wireframe
       </button>
-      <button class="viewer-toolbar__btn">Cfg</button>
+      <button class="viewer-toolbar__btn">
+        <Settings :size="13" aria-hidden="true" />
+        <span>Cfg</span>
+      </button>
       <button class="viewer-toolbar__btn">Social</button>
       <button
         class="viewer-toolbar__btn"
         :class="{ 'viewer-toolbar__btn--active': props.paused }"
         @click="emit('toggle-pause')"
       >
-        {{ props.paused ? 'Resume' : 'Pause' }}
+        <Pause v-if="!props.paused" :size="13" aria-hidden="true" />
+        <Play v-else :size="13" aria-hidden="true" />
+        <span>{{ props.paused ? 'Resume' : 'Pause' }}</span>
       </button>
     </div>
   </div>
@@ -173,6 +179,9 @@ function handleHdriChange(event: Event): void {
 }
 
 .viewer-toolbar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 10px;
   background: var(--bg-raised);
   color: var(--fg);

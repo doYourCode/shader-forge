@@ -14,6 +14,7 @@ import type {
   EditorTabId,
 } from '@/core/models/editorTab';
 import type { ShaderExample } from '@/core/constants/shaderExamples';
+import { CirclePlay } from 'lucide-vue-next';
 import ExamplesMenu from './ExamplesMenu.vue';
 
 type MenuFocusTarget = 'selected' | 'last';
@@ -323,7 +324,8 @@ onBeforeUnmount(() => {
         class="editor-toolbar__compile"
         @click="emit('compile')"
       >
-        Compile
+        <CirclePlay :size="13" aria-hidden="true" />
+        <span>Compile</span>
       </button>
     </div>
   </div>
@@ -488,6 +490,9 @@ onBeforeUnmount(() => {
 }
 
 .editor-toolbar__compile {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 14px;
   background: #404754;
   color: var(--fg-strong);

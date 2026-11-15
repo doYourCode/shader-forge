@@ -62,6 +62,14 @@
       }
     }
   },
+  "editor": {
+    "copy": {
+      "label": "Copy shader source",
+      "idle": "Copy source with generated user data",
+      "copied": "Copied",
+      "failed": "Copy failed"
+    }
+  },
   "userData": {
     "title": "User data",
     "description": "Declare your own uniforms. Value edits update the preview without recompiling; adding, renaming or retargeting rebuilds the shader.",

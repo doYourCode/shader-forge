@@ -9,6 +9,7 @@ import {
 } from 'vue';
 
 import type { ShaderExample } from '@/core/constants/shaderExamples';
+import { Library } from 'lucide-vue-next';
 
 const props = defineProps<{
   examples: readonly ShaderExample[];
@@ -189,6 +190,7 @@ onBeforeUnmount(() => {
       @click="toggleMenu"
       @keydown="handleTriggerKeydown"
     >
+      <Library :size="13" aria-hidden="true" />
       <span>Examples</span>
       <svg class="examples-menu__chevron" viewBox="0 0 10 6" aria-hidden="true">
         <path

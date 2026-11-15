@@ -9,12 +9,14 @@ import {
   editableTabs,
   type EditorTabId,
 } from '@/core/models/editorTab';
+import { shaderExamples } from '@/core/constants/shaderExamples';
 
 function mountToolbar(active: EditorTabId = 'vertex') {
   return mount(EditorToolbar, {
     props: {
       tabs: editableTabs,
       builtIn: builtInTabGroup,
+      examples: shaderExamples,
       active,
     },
   });
@@ -57,5 +59,28 @@ describe('EditorToolbar', () => {
     expect(wrapper.find('.editor-toolbar__tab--builtin').text()).toContain(
       'Attributes',
     );
+  });
+
+  it('places the examples loader immediately before Compile', () => {
+    const wrapper = mountToolbar();
+
+    const loader = wrapper.find('.examples-menu').element;
+    const compile = wrapper.find('.editor-toolbar__compile').element;
+
+    const following =
+      loader.compareDocumentPosition(compile) &
+      Node.DOCUMENT_POSITION_FOLLOWING;
+
+    expect(following).toBeTruthy();
+  });
+
+  it('forwards the picked example to the editor', async () => {
+    const wrapper = mountToolbar();
+
+    await wrapper.find('.examples-menu__trigger').trigger('click');
+    await nextTick();
+    await wrapper.find('[data-example-id="blinn-phong"]').trigger('click');
+
+    expect(wrapper.emitted('load-example')?.[0]).toEqual(['blinn-phong']);
   });
 });

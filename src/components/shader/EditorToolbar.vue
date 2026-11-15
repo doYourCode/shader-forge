@@ -13,18 +13,22 @@ import type {
   EditorTabGroup,
   EditorTabId,
 } from '@/core/models/editorTab';
+import type { ShaderExample } from '@/core/constants/shaderExamples';
+import ExamplesMenu from './ExamplesMenu.vue';
 
 type MenuFocusTarget = 'selected' | 'last';
 
 const props = defineProps<{
   tabs: readonly EditorTab[];
   builtIn: EditorTabGroup;
+  examples: readonly ShaderExample[];
   active: EditorTabId;
 }>();
 
 const emit = defineEmits<{
   (e: 'switch', id: EditorTabId): void;
   (e: 'compile'): void;
+  (e: 'load-example', id: string): void;
 }>();
 
 const labelId = useId();
@@ -308,13 +312,20 @@ onBeforeUnmount(() => {
       </fieldset>
     </div>
 
-    <button
-      type="button"
-      class="editor-toolbar__compile"
-      @click="emit('compile')"
-    >
-      Compile
-    </button>
+    <div class="editor-toolbar__actions">
+      <ExamplesMenu
+        :examples="props.examples"
+        @load="emit('load-example', $event)"
+      />
+
+      <button
+        type="button"
+        class="editor-toolbar__compile"
+        @click="emit('compile')"
+      >
+        Compile
+      </button>
+    </div>
   </div>
 </template>
 
@@ -468,6 +479,12 @@ onBeforeUnmount(() => {
   color: var(--accent-blue);
   font-size: 11px;
   line-height: 1;
+}
+
+.editor-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .editor-toolbar__compile {

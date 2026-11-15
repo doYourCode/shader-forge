@@ -28,6 +28,7 @@ import {
   defaultUniformsDoc,
   defaultIoDoc,
 } from '@/core/constants/defaultShaders';
+import { findShaderExample } from '@/core/constants/shaderExamples';
 import {
   UserDataController,
   type AddUserUniformResult,
@@ -284,6 +285,35 @@ export function useShaderEditor() {
     statusMessage.value = `Switched to ${tab}`;
   }
 
+  /**
+   * Replaces both editable documents with one example and compiles the pair.
+   *
+   * Loading is deliberately destructive: the example is a new starting point,
+   * not a merge, so whatever was in the two buffers is discarded. The current
+   * editable tab is kept when it can show the source; a built-in reference or
+   * the user-data panel falls back to the vertex document.
+   */
+  function loadExample(exampleId: string): void {
+    const example = findShaderExample(exampleId);
+    if (!example) return;
+
+    tabDocs.vertex = example.vertex;
+    tabDocs.fragment = example.fragment;
+
+    // Diagnostics belong to the previous source; `applyTab` clears them from
+    // the editor and the compile below republishes them for the example.
+    errors.value = [];
+    highlightedUserRow.value = null;
+
+    applyTab(isEditableTab(activeTab.value) ? activeTab.value : 'vertex');
+
+    void compile().then(() => {
+      if (status.value === 'ready') {
+        statusMessage.value = `Loaded example: ${example.label}`;
+      }
+    });
+  }
+
   async function compile(blueprint?: MaterialBlueprint) {
     // A structural edit may land while a compile is in flight; the latest
     // request is replayed after the current one settles.
@@ -496,6 +526,7 @@ export function useShaderEditor() {
     mountEditor,
     mountCanvas,
     switchTab,
+    loadExample,
     selectModel,
     selectHdri,
     compile,

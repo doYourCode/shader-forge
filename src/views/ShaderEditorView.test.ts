@@ -5,6 +5,7 @@ import { nextTick } from 'vue';
 
 import { i18n } from '@/i18n';
 import UserColorPicker from '@/components/shader/UserColorPicker.vue';
+import { findShaderExample } from '@/core/constants/shaderExamples';
 import ShaderEditorView from './ShaderEditorView.vue';
 
 interface BlueprintLike {
@@ -191,6 +192,40 @@ describe('ShaderEditorView user data panel', () => {
 
     await vi.advanceTimersByTimeAsync(300);
     expect(sceneManager.compile).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+});
+
+describe('ShaderEditorView example loader', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('replaces both documents and recompiles the picked example', async () => {
+    editorManager.setValue.mockClear();
+    sceneManager.compile.mockClear();
+
+    const wrapper = await mountView();
+    const phong = findShaderExample('phong');
+    if (!phong) throw new Error('missing phong example');
+
+    await wrapper.find('.examples-menu__trigger').trigger('click');
+    await nextTick();
+    await wrapper.find('[data-example-id="phong"]').trigger('click');
+    await flushPromises();
+
+    // The vertex buffer is loaded into the editor...
+    expect(editorManager.setValue).toHaveBeenCalledWith(phong.vertex);
+
+    // ...and the pair is compiled as one blueprint.
+    expect(sceneManager.compile).toHaveBeenCalledTimes(1);
+    const blueprint = sceneManager.compile.mock.calls[0]![0];
+    expect(blueprint.fragment).toBe(phong.fragment);
+
+    expect(wrapper.find('.status-bar__message').text()).toContain(
+      'Loaded example: Phong',
+    );
 
     wrapper.unmount();
   });

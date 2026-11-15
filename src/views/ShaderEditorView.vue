@@ -12,6 +12,7 @@ import {
   userDataTab,
   type EditorTab,
 } from '@/core/models/editorTab';
+import { shaderExamples } from '@/core/constants/shaderExamples';
 import type { ShaderError, ShaderErrorKind } from '@/core/models/shaderError';
 import type {
   UserUniformKind,
@@ -63,6 +64,7 @@ const {
   mountEditor,
   mountCanvas,
   switchTab,
+  loadExample,
   selectModel,
   selectHdri,
   compile,
@@ -180,9 +182,11 @@ function togglePause() {
       <EditorToolbar
         :tabs="editorTabs"
         :built-in="builtInTabGroup"
+        :examples="shaderExamples"
         :active="activeTab"
         @switch="switchTab"
         @compile="compile"
+        @load-example="loadExample"
       />
       <div
         v-show="activeTab !== 'user_data'"

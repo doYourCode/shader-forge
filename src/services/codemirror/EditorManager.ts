@@ -19,7 +19,7 @@ import {
   type Text,
 } from '@codemirror/state';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { cpp } from '@codemirror/lang-cpp';
+import { glsl } from 'codemirror-lang-glsl';
 import { oneDark } from '@codemirror/theme-one-dark';
 import {
   isShaderHeaderDirective,
@@ -288,7 +288,7 @@ export class EditorManager {
       highlightActiveLine(),
       history(),
       keymap.of([...defaultKeymap, ...historyKeymap]),
-      cpp(),
+      glsl(),
       oneDark,
       diagnosticsField,
       diagnosticsMarkersField,

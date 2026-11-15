@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  GLSL_RESERVED_WORDS,
+  UNIFORM_NAME_PATTERN,
+  isValueForKind,
+} from '@/core/models/userUniform';
 import { findShaderExample, shaderExamples } from './shaderExamples';
 
 /**
@@ -62,6 +67,7 @@ describe('shaderExamples', () => {
       expect(example.group.trim().length).toBeGreaterThan(0);
       expect(example.vertex.trim().length).toBeGreaterThan(0);
       expect(example.fragment.trim().length).toBeGreaterThan(0);
+      expect(example.uniforms.length).toBeGreaterThan(0);
     }
   });
 
@@ -92,6 +98,33 @@ describe('shaderExamples', () => {
             name,
           );
         }
+      }
+    }
+  });
+
+  it('exposes seedable, referenced and undeclared user uniforms', () => {
+    for (const example of shaderExamples) {
+      const names = example.uniforms.map((uniform) => uniform.name);
+      expect(new Set(names).size).toBe(names.length);
+
+      const declared = new Set([
+        ...declaredNames(example.vertex, 'uniform'),
+        ...declaredNames(example.fragment, 'uniform'),
+      ]);
+      const source = `${example.vertex}\n${example.fragment}`;
+
+      for (const uniform of example.uniforms) {
+        // The same rules the User data tab enforces before it accepts a row.
+        expect(UNIFORM_NAME_PATTERN.test(uniform.name)).toBe(true);
+        expect(GLSL_RESERVED_WORDS).not.toContain(uniform.name);
+        expect(BOUND_ATTRIBUTES).not.toContain(uniform.name);
+        expect(BOUND_UNIFORMS).not.toContain(uniform.name);
+
+        expect(isValueForKind(uniform.kind, uniform.value)).toBe(true);
+
+        // The generated block declares it, so the example must only use it.
+        expect(declared.has(uniform.name)).toBe(false);
+        expect(new RegExp(`\\b${uniform.name}\\b`).test(source)).toBe(true);
       }
     }
   });

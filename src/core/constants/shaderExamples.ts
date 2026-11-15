@@ -1,3 +1,10 @@
+import type {
+  UserColor3Value,
+  UserUniformKind,
+  UserUniformStage,
+  UserUniformValue,
+} from '@/core/models/userUniform';
+
 import lambertVertex from '@/assets/examples/lambert.vert?raw';
 import lambertFragment from '@/assets/examples/lambert.frag?raw';
 import phongVertex from '@/assets/examples/phong.vert?raw';
@@ -14,9 +21,27 @@ import iblSpecularGlossinessVertex from '@/assets/examples/ibl-specular-glossine
 import iblSpecularGlossinessFragment from '@/assets/examples/ibl-specular-glossiness.frag?raw';
 
 /**
+ * A parameter an example expects the User data tab to own.
+ *
+ * The shader body only *uses* these names: the declaration is generated from
+ * the document, so an example must never declare them itself — that would
+ * duplicate the generated block and fail to link.
+ */
+export interface ShaderExampleUniform {
+  /** GLSL identifier; must be free of reserved words and engine bindings. */
+  readonly name: string;
+  /** Kind decides the generated type and the value widget. */
+  readonly kind: UserUniformKind;
+  /** Stage that receives the generated declaration. */
+  readonly stages: UserUniformStage;
+  /** Value seeded into the document when the example loads. */
+  readonly value: UserUniformValue;
+}
+
+/**
  * One loadable example: a vertex/fragment pair that only uses the attributes
- * and uniforms the preview already binds, so selecting it never has to extend
- * the material.
+ * and uniforms the preview already binds, plus the material parameters it
+ * hands to the User data tab.
  */
 export interface ShaderExample {
   /** Stable id; also the base name of the paired `.vert`/`.frag` files. */
@@ -29,15 +54,34 @@ export interface ShaderExample {
   readonly group: string;
   readonly vertex: string;
   readonly fragment: string;
+  /** Editable parameters, in User data row order. */
+  readonly uniforms: readonly ShaderExampleUniform[];
+}
+
+/** Material parameters are read by the fragment stage only. */
+const MATERIAL_STAGE: UserUniformStage = 'fragment';
+
+/** Colour parameters are `vec3` in the generated declaration. */
+function colorUniform(
+  name: string,
+  value: UserColor3Value,
+): ShaderExampleUniform {
+  return { name, kind: 'color', stages: MATERIAL_STAGE, value };
+}
+
+function floatUniform(name: string, value: number): ShaderExampleUniform {
+  return { name, kind: 'float', stages: MATERIAL_STAGE, value };
 }
 
 /**
  * Shader examples offered by the editor's loader, in menu order.
  *
  * Adding an example means dropping `<id>.vert` and `<id>.frag` into
- * `src/assets/examples` and appending one record here. The loader, the menu and
- * the coverage test all read this list, so nothing else has to know about the
- * new pair.
+ * `src/assets/examples` and appending one record here. Its material parameters
+ * are listed in `uniforms` and referenced (never declared) by the shaders: the
+ * loader seeds them into the User data document, which generates the
+ * declarations at compile time. The menu, the loader and the coverage test all
+ * read this list, so nothing else has to know about the new pair.
  */
 const examples: readonly ShaderExample[] = [
   {
@@ -47,6 +91,7 @@ const examples: readonly ShaderExample[] = [
     group: 'Lighting',
     vertex: lambertVertex,
     fragment: lambertFragment,
+    uniforms: [colorUniform('albedo', { r: 0.72, g: 0.31, b: 0.22 })],
   },
   {
     id: 'phong',
@@ -55,6 +100,11 @@ const examples: readonly ShaderExample[] = [
     group: 'Lighting',
     vertex: phongVertex,
     fragment: phongFragment,
+    uniforms: [
+      colorUniform('albedo', { r: 0.72, g: 0.31, b: 0.22 }),
+      colorUniform('specularColor', { r: 0.35, g: 0.35, b: 0.35 }),
+      floatUniform('shininess', 48),
+    ],
   },
   {
     id: 'blinn-phong',
@@ -63,6 +113,11 @@ const examples: readonly ShaderExample[] = [
     group: 'Lighting',
     vertex: blinnPhongVertex,
     fragment: blinnPhongFragment,
+    uniforms: [
+      colorUniform('albedo', { r: 0.72, g: 0.31, b: 0.22 }),
+      colorUniform('specularColor', { r: 0.35, g: 0.35, b: 0.35 }),
+      floatUniform('shininess', 48),
+    ],
   },
   {
     id: 'oren-nayar',
@@ -71,6 +126,10 @@ const examples: readonly ShaderExample[] = [
     group: 'Lighting',
     vertex: orenNayarVertex,
     fragment: orenNayarFragment,
+    uniforms: [
+      colorUniform('albedo', { r: 0.72, g: 0.31, b: 0.22 }),
+      floatUniform('sigma', 0.7),
+    ],
   },
   {
     id: 'cook-torrance',
@@ -79,6 +138,11 @@ const examples: readonly ShaderExample[] = [
     group: 'Lighting',
     vertex: cookTorranceVertex,
     fragment: cookTorranceFragment,
+    uniforms: [
+      colorUniform('baseColor', { r: 0.72, g: 0.31, b: 0.22 }),
+      floatUniform('roughness', 0.35),
+      floatUniform('metallic', 0),
+    ],
   },
   {
     id: 'ibl-metalness-roughness',
@@ -87,6 +151,11 @@ const examples: readonly ShaderExample[] = [
     group: 'Image-based lighting',
     vertex: iblMetalnessRoughnessVertex,
     fragment: iblMetalnessRoughnessFragment,
+    uniforms: [
+      colorUniform('baseColor', { r: 0.85, g: 0.36, b: 0.24 }),
+      floatUniform('metallic', 1),
+      floatUniform('roughness', 0.25),
+    ],
   },
   {
     id: 'ibl-specular-glossiness',
@@ -95,6 +164,11 @@ const examples: readonly ShaderExample[] = [
     group: 'Image-based lighting',
     vertex: iblSpecularGlossinessVertex,
     fragment: iblSpecularGlossinessFragment,
+    uniforms: [
+      colorUniform('diffuseColor', { r: 0.16, g: 0.38, b: 0.62 }),
+      colorUniform('specularColor', { r: 0.6, g: 0.6, b: 0.6 }),
+      floatUniform('glossiness', 0.75),
+    ],
   },
 ];
 

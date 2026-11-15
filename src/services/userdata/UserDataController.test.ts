@@ -4,6 +4,7 @@ import type { BaseTexture } from '@babylonjs/core';
 import {
   UserDataController,
   type UserDataControllerDeps,
+  type UserUniformInit,
 } from './UserDataController';
 import type { UniformBindingTarget } from './UniformBinder';
 
@@ -271,6 +272,119 @@ describe('UserDataController structural commands', () => {
     expect(harness.onCompileRequested).toHaveBeenCalledTimes(1);
     const blueprint = harness.onCompileRequested.mock.calls[0]![0];
     expect(blueprint.extraUniforms).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('UserDataController replaceAll', () => {
+  const SEED: readonly UserUniformInit[] = [
+    {
+      name: 'albedo',
+      kind: 'color',
+      stages: 'fragment',
+      value: { r: 0.72, g: 0.31, b: 0.22 },
+    },
+    {
+      name: 'roughness',
+      kind: 'float',
+      stages: 'fragment',
+      value: 0.35,
+    },
+  ];
+
+  it('replaces the document in one edit and leaves the compile to the caller', () => {
+    const harness = createHarness();
+    addColor(harness.controller, 'old');
+    harness.scheduler.flush();
+    harness.scheduler.schedule.mockClear();
+    harness.onCompileRequested.mockClear();
+
+    harness.controller.replaceAll(SEED);
+
+    expect(
+      harness.controller.doc.definitions.map((definition) => definition.name),
+    ).toEqual(['albedo', 'roughness']);
+    expect(harness.controller.doc.definitions[0]?.kind).toBe('color');
+    expect(harness.controller.doc.definitions[1]?.stages).toBe('fragment');
+    expect(harness.controller.doc.revision).toBe(2);
+
+    const blueprint = harness.controller.buildBlueprint();
+    expect(blueprint.extraUniforms).toEqual(['albedo', 'roughness']);
+    expect(blueprint.fragment).toContain('uniform vec3 albedo; // color (RGB)');
+    expect(blueprint.fragment).toContain(
+      'uniform float roughness; // float',
+    );
+
+    // The loader compiles immediately; a debounced pass would run it twice.
+    expect(harness.scheduler.schedule).not.toHaveBeenCalled();
+    expect(harness.onCompileRequested).not.toHaveBeenCalled();
+  });
+
+  it('assigns fresh ids and clones values so the seed stays intact', () => {
+    const harness = createHarness();
+    const oldId = addColor(harness.controller, 'old');
+    harness.scheduler.flush();
+
+    harness.controller.replaceAll(SEED);
+
+    const ids = harness.controller.doc.definitions.map(({ id }) => id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).not.toContain(oldId);
+
+    const albedo = harness.controller.doc.definitions[0]!;
+    harness.controller.setValue(albedo.id, { r: 0, g: 1, b: 0 });
+
+    expect(SEED[0]!.value).toEqual({ r: 0.72, g: 0.31, b: 0.22 });
+  });
+
+  it('releases sampler textures the replace abandoned', () => {
+    const harness = createHarness();
+    const added = harness.controller.add({ name: 'map', kind: 'sampler2D' });
+    if (!added.ok) throw new Error('expected add to succeed');
+    const samplerId = added.definition.id;
+    harness.scheduler.flush();
+    harness.textures.release.mockClear();
+
+    harness.controller.replaceAll(SEED);
+
+    // The live material still samples the old texture, so disposal waits for
+    // the rebuilt material, exactly like remove().
+    expect(harness.textures.release).not.toHaveBeenCalled();
+
+    harness.controller.onMaterialApplied({} as UniformBindingTarget);
+    expect(harness.textures.release).toHaveBeenCalledWith(samplerId);
+  });
+
+  it('drops a debounced compile that was still pending', () => {
+    const harness = createHarness();
+    addColor(harness.controller, 'pending');
+
+    harness.controller.replaceAll(SEED);
+    harness.scheduler.flush();
+
+    expect(harness.onCompileRequested).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid names before touching the document', () => {
+    const harness = createHarness();
+    addColor(harness.controller, 'kept');
+    harness.scheduler.flush();
+
+    expect(() =>
+      harness.controller.replaceAll([
+        { name: 'time', kind: 'float', stages: 'fragment', value: 1 },
+      ]),
+    ).toThrow();
+
+    expect(() =>
+      harness.controller.replaceAll([
+        { name: 'twice', kind: 'float', stages: 'fragment', value: 1 },
+        { name: 'twice', kind: 'float', stages: 'fragment', value: 2 },
+      ]),
+    ).toThrow();
+
+    expect(
+      harness.controller.doc.definitions.map((definition) => definition.name),
+    ).toEqual(['kept']);
   });
 });
 

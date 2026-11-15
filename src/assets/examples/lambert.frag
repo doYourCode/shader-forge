@@ -6,6 +6,9 @@ precision highp float;
 // The oldest diffuse model: reflected radiance is proportional to N dot L
 // only. It ignores the viewer, so the surface looks the same from every angle,
 // which makes it the baseline the other lighting models are compared against.
+//
+// Editable parameters (User data tab):
+//   albedo - color (vec3)
 
 in vec3 vWorldPosition;
 in vec3 vWorldNormal;
@@ -14,8 +17,6 @@ uniform vec3 lightDir;
 
 layout(location = 0) out vec4 fragColor;
 
-// Material
-const vec3 ALBEDO = vec3(0.72, 0.31, 0.22);
 // A little fill so the unlit side keeps its silhouette instead of going black.
 const float AMBIENT = 0.03;
 
@@ -41,9 +42,9 @@ void main(void)
 
     // A unit-radiance light supplies PI at normal incidence, cancelling the
     // 1/PI of the Lambert BRDF: the brightest diffuse value is the albedo.
-    vec3 diffuse = ALBEDO * NdotL;
+    vec3 diffuse = albedo * NdotL;
 
-    vec3 color = diffuse + ALBEDO * AMBIENT;
+    vec3 color = diffuse + albedo * AMBIENT;
 
     fragColor = vec4(acesFilm(color), 1.0);
 }

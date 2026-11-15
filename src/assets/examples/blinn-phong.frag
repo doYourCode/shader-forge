@@ -8,6 +8,11 @@ precision highp float;
 // The half vector never leaves the hemisphere, so the highlight stays stable at
 // grazing angles and reaches the edge of an object, which the Phong lobe does
 // not.
+//
+// Editable parameters (User data tab):
+//   albedo        - color (vec3)
+//   specularColor - color (vec3)
+//   shininess     - float
 
 in vec3 vWorldPosition;
 in vec3 vWorldNormal;
@@ -17,10 +22,7 @@ uniform vec3 lightDir;
 
 layout(location = 0) out vec4 fragColor;
 
-// Material
-const vec3 ALBEDO = vec3(0.72, 0.31, 0.22);
-const vec3 SPECULAR_COLOR = vec3(0.35);
-const float SHININESS = 48.0;
+// A little fill so the unlit side keeps its silhouette instead of going black.
 const float AMBIENT = 0.03;
 
 // Narkowicz's ACES fit, the same curve the built-in preview shader uses, so
@@ -46,12 +48,12 @@ void main(void)
 
     // Half vector: the normal an ideal microfacet needs to mirror L into V.
     vec3 H = normalize(L + V);
-    float specular = pow(max(dot(N, H), 0.0), SHININESS);
+    float specular = pow(max(dot(N, H), 0.0), shininess);
 
-    vec3 diffuse = ALBEDO * NdotL;
-    vec3 highlight = SPECULAR_COLOR * specular * NdotL;
+    vec3 diffuse = albedo * NdotL;
+    vec3 highlight = specularColor * specular * NdotL;
 
-    vec3 color = diffuse + highlight + ALBEDO * AMBIENT;
+    vec3 color = diffuse + highlight + albedo * AMBIENT;
 
     fragColor = vec4(acesFilm(color), 1.0);
 }

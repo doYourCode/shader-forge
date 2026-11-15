@@ -218,14 +218,38 @@ describe('ShaderEditorView example loader', () => {
     // The vertex buffer is loaded into the editor...
     expect(editorManager.setValue).toHaveBeenCalledWith(phong.vertex);
 
-    // ...and the pair is compiled as one blueprint.
+    // ...and the pair is compiled as one blueprint, with the generated block
+    // prepended to the fragment stage.
     expect(sceneManager.compile).toHaveBeenCalledTimes(1);
     const blueprint = sceneManager.compile.mock.calls[0]![0];
-    expect(blueprint.fragment).toBe(phong.fragment);
+    expect(blueprint.fragment).toContain('vec3 diffuse = albedo * NdotL;');
+
+    // Its parameters are seeded into the User data document, so the blueprint
+    // carries both the generated declarations and their values.
+    expect(blueprint.extraUniforms).toEqual([
+      'albedo',
+      'specularColor',
+      'shininess',
+    ]);
+    expect(blueprint.fragment).toContain('uniform vec3 albedo; // color (RGB)');
+    expect(blueprint.fragment).toContain(
+      '// current values: albedo = (0.72, 0.31, 0.22)',
+    );
 
     expect(wrapper.find('.status-bar__message').text()).toContain(
       'Loaded example: Phong',
     );
+
+    // The User data tab lists the example's parameters.
+    await tab(wrapper, 'User data').trigger('click');
+    await nextTick();
+
+    expect(wrapper.findAll('.user-data__row')).toHaveLength(3);
+    expect(
+      wrapper
+        .findAll('.user-data__name')
+        .map((input) => (input.element as HTMLInputElement).value),
+    ).toEqual(['albedo', 'specularColor', 'shininess']);
 
     wrapper.unmount();
   });

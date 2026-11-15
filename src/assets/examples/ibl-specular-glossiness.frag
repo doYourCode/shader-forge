@@ -6,8 +6,13 @@ precision highp float;
 // The same split-sum environment lighting as the metalness example, but with
 // the older specular workflow: the diffuse and the specular colour are authored
 // independently instead of being derived from one albedo plus a metalness mask.
-// GLOSSINESS is the inverse of roughness, so it selects the sharp end of the
+// Glossiness is the inverse of roughness, so it selects the sharp end of the
 // prefiltered cubemap.
+//
+// Editable parameters (User data tab):
+//   diffuseColor  - color (vec3)
+//   specularColor - color (vec3), used as F0
+//   glossiness    - float, 0 = fully rough, 1 = mirror
 
 in vec3 vWorldPosition;
 in vec3 vWorldNormal;
@@ -21,12 +26,6 @@ layout(location = 0) out vec4 fragColor;
 
 const float ENV_MAX_LOD = 9.0;
 const float MIN_ROUGHNESS = 0.02;
-
-// Material
-const vec3 DIFFUSE_COLOR = vec3(0.16, 0.38, 0.62);
-// In this workflow the specular colour is F0.
-const vec3 SPECULAR_COLOR = vec3(0.6);
-const float GLOSSINESS = 0.75;
 
 // Narkowicz's ACES fit, the same curve the built-in preview shader uses, so
 // every example lands in the same display range.
@@ -47,9 +46,9 @@ void main(void)
     vec3 R = reflect(-V, N);
 
     float NdotV = max(dot(N, V), 1e-3);
-    float roughness = clamp(1.0 - GLOSSINESS, MIN_ROUGHNESS, 1.0);
+    float roughness = clamp(1.0 - glossiness, MIN_ROUGHNESS, 1.0);
 
-    vec3 F0 = SPECULAR_COLOR;
+    vec3 F0 = specularColor;
     // Whatever is not reflected at the surface is still available to diffuse.
     vec3 kD = vec3(1.0) - F0;
 
@@ -65,7 +64,7 @@ void main(void)
     vec2 brdf = texture(brdfLUT, vec2(NdotV, roughness)).rg;
     vec3 specular = radiance * mix(vec3(brdf.r), vec3(brdf.g), F0);
 
-    vec3 diffuse = kD * DIFFUSE_COLOR * irradiance;
+    vec3 diffuse = kD * diffuseColor * irradiance;
 
     fragColor = vec4(acesFilm(diffuse + specular), 1.0);
 }

@@ -289,9 +289,10 @@ export function useShaderEditor() {
    * Replaces both editable documents with one example and compiles the pair.
    *
    * Loading is deliberately destructive: the example is a new starting point,
-   * not a merge, so whatever was in the two buffers is discarded. The current
-   * editable tab is kept when it can show the source; a built-in reference or
-   * the user-data panel falls back to the vertex document.
+   * not a merge, so the outgoing sources and user-data definitions are
+   * discarded. The current editable tab is kept when it can show the source; a
+   * built-in reference or the user-data panel falls back to the vertex
+   * document.
    */
   function loadExample(exampleId: string): void {
     const example = findShaderExample(exampleId);
@@ -299,6 +300,12 @@ export function useShaderEditor() {
 
     tabDocs.vertex = example.vertex;
     tabDocs.fragment = example.fragment;
+
+    // The example's editable parameters live in the User data document, which
+    // generates the declarations its source references and binds the seeded
+    // values. Replacing the document (rather than merging) keeps a load
+    // deterministic; it is part of the same destructive load as the sources.
+    userData.replaceAll(example.uniforms);
 
     // Diagnostics belong to the previous source; `applyTab` clears them from
     // the editor and the compile below republishes them for the example.

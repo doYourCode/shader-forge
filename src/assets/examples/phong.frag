@@ -5,7 +5,12 @@ precision highp float;
 //
 // Phong adds a specular lobe on top of Lambert: the light is mirrored around
 // the normal and the highlight is a power of the angle between that reflection
-// vector and the eye. A larger SHININESS gives a tighter, dimmer highlight.
+// vector and the eye. A larger shininess gives a tighter, dimmer highlight.
+//
+// Editable parameters (User data tab):
+//   albedo        - color (vec3)
+//   specularColor - color (vec3)
+//   shininess     - float
 
 in vec3 vWorldPosition;
 in vec3 vWorldNormal;
@@ -15,10 +20,7 @@ uniform vec3 lightDir;
 
 layout(location = 0) out vec4 fragColor;
 
-// Material
-const vec3 ALBEDO = vec3(0.72, 0.31, 0.22);
-const vec3 SPECULAR_COLOR = vec3(0.35);
-const float SHININESS = 48.0;
+// A little fill so the unlit side keeps its silhouette instead of going black.
 const float AMBIENT = 0.03;
 
 // Narkowicz's ACES fit, the same curve the built-in preview shader uses, so
@@ -44,12 +46,12 @@ void main(void)
 
     // Mirror the light around the normal, then compare it with the eye.
     vec3 R = reflect(-L, N);
-    float specular = pow(max(dot(R, V), 0.0), SHININESS);
+    float specular = pow(max(dot(R, V), 0.0), shininess);
 
-    vec3 diffuse = ALBEDO * NdotL;
-    vec3 highlight = SPECULAR_COLOR * specular * NdotL;
+    vec3 diffuse = albedo * NdotL;
+    vec3 highlight = specularColor * specular * NdotL;
 
-    vec3 color = diffuse + highlight + ALBEDO * AMBIENT;
+    vec3 color = diffuse + highlight + albedo * AMBIENT;
 
     fragColor = vec4(acesFilm(color), 1.0);
 }

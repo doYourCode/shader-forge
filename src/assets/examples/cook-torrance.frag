@@ -9,6 +9,11 @@ precision highp float;
 //   F  Schlick               - how much is reflected rather than refracted.
 // Scaled by what is not reflected (kD = 1 - F) it gives an energy-conserving
 // direct light on top of the Lambert diffuse.
+//
+// Editable parameters (User data tab):
+//   baseColor - color (vec3)
+//   roughness - float, 0 = mirror, 1 = fully rough
+//   metallic  - float, 0 = dielectric, 1 = metal
 
 in vec3 vWorldPosition;
 in vec3 vWorldNormal;
@@ -20,15 +25,12 @@ layout(location = 0) out vec4 fragColor;
 
 const float PI = 3.14159265359;
 
-// Material
-const vec3 BASE_COLOR = vec3(0.72, 0.31, 0.22);
-const float ROUGHNESS = 0.35;
-const float METALLIC = 0.0;
 // Fresnel reflectance of a dielectric at normal incidence.
 const float DIELECTRIC_F0 = 0.04;
 // Radiance of the directional light. Values above 1 push the highlight into
 // the ACES shoulder, the way a real light source does.
 const float LIGHT_RADIANCE = 3.0;
+// A little fill so the unlit side keeps its silhouette instead of going black.
 const float AMBIENT = 0.03;
 
 // Narkowicz's ACES fit, the same curve the built-in preview shader uses, so
@@ -44,9 +46,9 @@ vec3 acesFilm(vec3 x)
 }
 
 // GGX normal distribution: D.
-float distributionGGX(float NdotH, float roughness)
+float distributionGGX(float NdotH, float perceptualRoughness)
 {
-    float alpha = roughness * roughness;
+    float alpha = perceptualRoughness * perceptualRoughness;
     float alpha2 = alpha * alpha;
     float denominator = NdotH * NdotH * (alpha2 - 1.0) + 1.0;
     return alpha2 / max(PI * denominator * denominator, 1e-4);
@@ -59,9 +61,10 @@ float geometrySchlickGGX(float NdotX, float k)
 }
 
 // Combined Smith geometry: G.
-float geometrySmith(float NdotV, float NdotL, float roughness)
+float geometrySmith(float NdotV, float NdotL, float perceptualRoughness)
 {
-    float k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+    float k =
+        (perceptualRoughness + 1.0) * (perceptualRoughness + 1.0) / 8.0;
     return geometrySchlickGGX(NdotV, k) * geometrySchlickGGX(NdotL, k);
 }
 
@@ -86,20 +89,20 @@ void main(void)
     float VdotH = max(dot(V, H), 0.0);
 
     // Metals tint their reflection with the base colour; dielectrics do not.
-    vec3 F0 = mix(vec3(DIELECTRIC_F0), BASE_COLOR, METALLIC);
+    vec3 F0 = mix(vec3(DIELECTRIC_F0), baseColor, metallic);
 
     vec3 F = fresnelSchlick(VdotH, F0);
-    float D = distributionGGX(NdotH, ROUGHNESS);
-    float G = geometrySmith(NdotV, NdotL, ROUGHNESS);
+    float D = distributionGGX(NdotH, roughness);
+    float G = geometrySmith(NdotV, NdotL, roughness);
 
     // The 4 * NdotL * NdotV denominator is the microfacet BRDF normalisation.
     vec3 specular = D * G * F / (4.0 * NdotL * NdotV + 1e-3);
 
-    vec3 kD = (vec3(1.0) - F) * (1.0 - METALLIC);
-    vec3 diffuse = kD * BASE_COLOR / PI;
+    vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
+    vec3 diffuse = kD * baseColor / PI;
 
     vec3 color = (diffuse + specular) * LIGHT_RADIANCE * NdotL;
-    color += BASE_COLOR * AMBIENT;
+    color += baseColor * AMBIENT;
 
     fragColor = vec4(acesFilm(color), 1.0);
 }

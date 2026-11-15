@@ -80,14 +80,25 @@ export type AddUserUniformResult =
   | { readonly ok: true; readonly definition: UserUniformDefinition }
   | { readonly ok: false; readonly reason: UserDataCommandReason };
 
+/**
+ * A definition without an identity yet. `replaceAll` owns id assignment so a
+ * whole set can be seeded from data (a shader example) in one edit.
+ */
+export interface UserUniformInit {
+  readonly name: string;
+  readonly kind: UserUniformKind;
+  readonly stages: UserUniformStage;
+  readonly value: UserUniformValue;
+}
+
 const NOT_FOUND: UserDataCommandResult = { ok: false, reason: 'not-found' };
 
 /**
  * Orchestrates the two user-data command paths:
  *
  * - value edits mutate the document and bind live, never recompiling;
- * - structural edits (add/remove/rename/re-kind/retarget) mutate the document,
- *   sync the texture registry and request a debounced recompile.
+ * - structural edits (add/remove/replace/rename/re-kind/retarget) mutate the
+ *   document, sync the texture registry and request a debounced recompile.
  *
  * It owns the document but knows nothing about Babylon: the scene supplies
  * `UserDataGpuPort` implementations and the composable supplies the sources
@@ -199,6 +210,51 @@ export class UserDataController {
     return { ok: true, definition };
   }
 
+  /**
+   * Replaces the whole document with `uniforms` in a single structural edit.
+   *
+   * The shader-example loader seeds an example's parameters this way, right
+   * before it compiles: the caller already owns the recompile, so no debounced
+   * request is made here (it would queue a second pass). Removed sampler
+   * definitions release their textures once the rebuilt material is applied,
+   * exactly like `remove`.
+   */
+  replaceAll(uniforms: readonly UserUniformInit[]): void {
+    if (this.disposed) return;
+
+    this.assertCanReplace(uniforms);
+
+    // A structural edit still waiting would compile the replaced document a
+    // second time; the caller compiles it once, right after this returns.
+    this.cancelScheduledCompile?.();
+    this.cancelScheduledCompile = null;
+
+    for (const definition of this.document.definitions) {
+      if (isSamplerKind(definition.kind)) {
+        this.queueTextureRelease(definition.id);
+      }
+    }
+
+    this.document.definitions.splice(0, this.document.definitions.length);
+
+    for (const init of uniforms) {
+      const definition: UserUniformDefinition = {
+        id: `user-${this.nextId++}`,
+        name: init.name,
+        kind: init.kind,
+        stages: init.stages,
+        // A fresh value per definition: the seed must not share its (mutable)
+        // value object with the data that authored it.
+        value: structuredClone(init.value),
+      };
+
+      this.document.definitions.push(definition);
+      this.syncTexture(definition);
+    }
+
+    this.bumpRevision();
+  }
+
   remove(id: string): UserDataCommandResult {
     const index = this.document.definitions.findIndex(
       (definition) => definition.id === id,
@@ -290,6 +346,40 @@ export class UserDataController {
     return this.document.definitions.find(
       (definition) => definition.id === id,
     );
+  }
+
+  /**
+   * Dev-only guard for authored data: an invalid name or a value of the wrong
+   * shape would otherwise surface as a shader compile error far from its
+   * source. The document is left untouched when this throws.
+   */
+  private assertCanReplace(uniforms: readonly UserUniformInit[]): void {
+    if (!import.meta.env.DEV) return;
+
+    const taken = new Set<string>();
+
+    for (const init of uniforms) {
+      const validation = validateUniformName(
+        init.name,
+        taken,
+        RESERVED_UNIFORM_NAMES,
+      );
+
+      if (!validation.ok) {
+        throw new Error(
+          `Cannot seed user uniform "${init.name}": ${validation.reason}.`,
+        );
+      }
+
+      if (!isValueForKind(init.kind, init.value)) {
+        throw new Error(
+          `Cannot seed user uniform "${init.name}": the value does not match ` +
+            `kind "${init.kind}".`,
+        );
+      }
+
+      taken.add(init.name);
+    }
   }
 
   private bumpRevision(): void {

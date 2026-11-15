@@ -6,7 +6,11 @@ precision highp float;
 // A rough-diffuse model: the surface is treated as V-shaped microfacets, so the
 // reflected energy also depends on the view angle (retro-reflection) and the
 // material does not flatten out at grazing angles the way Lambert does.
-// SIGMA is the facet slope in radians; 0 degenerates back into Lambert.
+// A sigma of 0 degenerates back into Lambert.
+//
+// Editable parameters (User data tab):
+//   albedo - color (vec3)
+//   sigma  - float, facet slope in radians, within [0, PI/2]
 
 in vec3 vWorldPosition;
 in vec3 vWorldNormal;
@@ -16,10 +20,7 @@ uniform vec3 lightDir;
 
 layout(location = 0) out vec4 fragColor;
 
-// Material
-const vec3 ALBEDO = vec3(0.72, 0.31, 0.22);
-// Roughness in radians, within [0, PI/2].
-const float SIGMA = 0.7;
+// A little fill so the unlit side keeps its silhouette instead of going black.
 const float AMBIENT = 0.03;
 
 // Narkowicz's ACES fit, the same curve the built-in preview shader uses, so
@@ -44,7 +45,7 @@ void main(void)
     float NdotL = max(dot(N, L), 0.0);
     float NdotV = max(dot(N, V), 0.0);
 
-    float sigma2 = SIGMA * SIGMA;
+    float sigma2 = sigma * sigma;
     float A = 1.0 - 0.5 * sigma2 / (sigma2 + 0.33);
     float B = 0.45 * sigma2 / (sigma2 + 0.09);
 
@@ -62,15 +63,15 @@ void main(void)
     float thetaR = acos(clamp(NdotV, 0.0, 1.0));
     float alpha = max(thetaI, thetaR);
     // tan() explodes as the smaller angle approaches PI/2; the term is already
-    // multiplied by a vanishing NdotL there, so clamping only removes the spike.
+    // multiplied by a vanishing NdotL, so clamping only removes the spike.
     float beta = min(min(thetaI, thetaR), 1.4);
 
     float orenNayar = A + B * cosPhiDiff * sin(alpha) * tan(beta);
 
     // Unit-radiance light: the PI that cancels the Lambert 1/PI lives here.
-    vec3 diffuse = ALBEDO * orenNayar * NdotL;
+    vec3 diffuse = albedo * orenNayar * NdotL;
 
-    vec3 color = diffuse + ALBEDO * AMBIENT;
+    vec3 color = diffuse + albedo * AMBIENT;
 
     fragColor = vec4(acesFilm(color), 1.0);
 }

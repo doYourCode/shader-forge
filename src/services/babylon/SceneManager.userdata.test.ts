@@ -19,6 +19,10 @@ const MODEL: PreviewModel = {
 const BLUEPRINT: MaterialBlueprint = {
   vertex: '#version 300 es\nvoid main() {}',
   fragment: '#version 300 es\nvoid main() {}',
+  editorSource: {
+    vertex: '#version 300 es\nvoid main() {}',
+    fragment: '#version 300 es\nvoid main() {}',
+  },
   extraUniforms: ['tint'],
   extraSamplers: [],
 };

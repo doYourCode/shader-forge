@@ -88,9 +88,14 @@ describe('buildShaderMaterial user data extras', () => {
     extraUniforms: readonly string[] = [],
     extraSamplers: readonly string[] = [],
   ): MaterialBlueprint {
-    return {
+    const editorSource = {
       vertex: 'void main() {}',
       fragment: 'void main() {}',
+    };
+
+    return {
+      ...editorSource,
+      editorSource,
       extraUniforms,
       extraSamplers,
     };
@@ -163,6 +168,10 @@ describe('ShaderCompiler user data pass-through', () => {
     const source = {
       vertex: 'void main() {}',
       fragment: 'void main() {}',
+      editorSource: {
+        vertex: 'void main() {}',
+        fragment: 'void main() {}',
+      },
       extraUniforms: ['tint'],
       extraSamplers: ['map'],
     } satisfies MaterialBlueprint;

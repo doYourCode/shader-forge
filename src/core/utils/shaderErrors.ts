@@ -9,8 +9,20 @@ import { isGlslStackFrame, parseGlslInfoLog } from './glslLogParser';
 import { ShaderLineMap } from './shaderLineMap';
 
 export interface ShaderSourcePair {
+  /** The source handed to the driver, generated user-data blocks included. */
   vertex: string;
   fragment: string;
+  /**
+   * The sources as they appear in the editor, before any generated block was
+   * injected. Driver lines are mapped back through these so a diagnostic lands
+   * on the line the user can actually see and edit.
+   *
+   * When omitted, the stages above are assumed to be the editor sources.
+   */
+  editorSource?: {
+    readonly vertex: string;
+    readonly fragment: string;
+  };
   /**
    * Injected user-data block metadata, when the source is a material
    * blueprint. Errors inside a block are attributed to a table row instead of
@@ -49,6 +61,10 @@ export function detectGlslVersion(
 /**
  * Turns the raw GLSL info logs reported by the driver into editor-friendly
  * diagnostics: mapped line/column, a category, and plain-English advice.
+ *
+ * Line numbers are translated to the editor source (`editorSource` when the
+ * stage sources carry a generated user-data block) so decorations land on the
+ * lines the user sees.
  *
  * `fallbackLog` is the string Babylon handed to `onError`. It is only used
  * when no raw GL log could be captured (for example a context-loss error).
@@ -172,7 +188,7 @@ function declarationRowAt(
 }
 
 /**
- * Picks the version used for advice. Stage diagnostics use that stage's
+ * Picks the version used for advice. Stage diagnostics use that stage's editor
  * source; program diagnostics are 3.00 as soon as either stage opted in,
  * because the linked program can only be one version.
  */
@@ -180,10 +196,12 @@ function detectStageVersion(
   stage: ShaderErrorStage,
   source: ShaderSourcePair,
 ): GlslVersion {
-  const vertexVersion = detectGlslVersion(source.vertex);
+  const vertexVersion = detectGlslVersion(editorSourceFor(source, 'vertex'));
   if (stage === 'vertex') return vertexVersion;
 
-  const fragmentVersion = detectGlslVersion(source.fragment);
+  const fragmentVersion = detectGlslVersion(
+    editorSourceFor(source, 'fragment'),
+  );
   if (stage === 'fragment') return fragmentVersion;
 
   return vertexVersion === '300 es' || fragmentVersion === '300 es'
@@ -197,12 +215,30 @@ function createLineMap(
 ): ShaderLineMap | null {
   if (!record.source) return null;
   if (record.stage === 'vertex') {
-    return ShaderLineMap.between(record.source, source.vertex);
+    return ShaderLineMap.between(
+      record.source,
+      editorSourceFor(source, 'vertex'),
+    );
   }
   if (record.stage === 'fragment') {
-    return ShaderLineMap.between(record.source, source.fragment);
+    return ShaderLineMap.between(
+      record.source,
+      editorSourceFor(source, 'fragment'),
+    );
   }
   return null;
+}
+
+/**
+ * The editor text for a stage. The compiled source contains the generated
+ * user-data block, whose lines have no counterpart in the editor; mapping
+ * against it would offset every diagnostic below the block.
+ */
+function editorSourceFor(
+  source: ShaderSourcePair,
+  stage: 'vertex' | 'fragment',
+): string {
+  return source.editorSource?.[stage] ?? source[stage];
 }
 
 /**

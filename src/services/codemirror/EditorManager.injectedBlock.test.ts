@@ -103,4 +103,31 @@ describe('EditorManager injected block', () => {
         Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
   });
+
+  it('keeps diagnostics anchored to document lines while the preview is shown', () => {
+    const { manager, host } = mountEditor();
+
+    // The preview is a block widget: it adds visual height but no document
+    // lines, so a diagnostic on line 4 must stay on line 4.
+    manager.setInjectedBlock([
+      '// >>> ShaderForge user data',
+      'uniform vec3 tint;',
+      '// current values: tint = (1, 1, 1)',
+      '// <<< end ShaderForge user data >>>',
+    ]);
+    manager.setDiagnostics([
+      { line: 4, column: null, message: 'undeclared identifier' },
+    ]);
+
+    const content = contentOf(host);
+    const lines = [...content.querySelectorAll('.cm-line')];
+    const decorated = lines.findIndex((line) =>
+      line.classList.contains('cm-shader-error-line'),
+    );
+
+    expect(lines).toHaveLength(6);
+    expect(decorated).toBe(3);
+    expect(lines[decorated]?.textContent).toContain('in vec3 position;');
+    expect(host.querySelectorAll('.cm-shader-error-gutter')).toHaveLength(1);
+  });
 });

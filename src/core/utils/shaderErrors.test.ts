@@ -46,6 +46,29 @@ void main() {
   glFragColor = vec4(vNormal, 1.0);
 }`;
 
+/** Mimics Babylon's upgrade of an arbitrary 1.00 fragment source. */
+function driverSource100(source: string): string {
+  const upgraded = source
+    .replace(/\bvarying\b/g, 'in')
+    .replace(/\bgl_FragColor\b/g, 'glFragColor');
+
+  return `#version 300 es\n#define WEBGL2 \n${upgraded.replace(
+    /(\n\s*void main)/,
+    '\nlayout(location = 0) out vec4 glFragColor;$1',
+  )}`;
+}
+
+/** 1-based line containing `needle`; fails loudly when the fixture drifts. */
+function lineOf(source: string, needle: string): number {
+  const index = source
+    .replace(/\r/g, '')
+    .split('\n')
+    .findIndex((line) => line.includes(needle));
+
+  if (index < 0) throw new Error(`No line containing "${needle}"`);
+  return index + 1;
+}
+
 describe('detectGlslVersion', () => {
   it('detects an explicit 300 es declaration', () => {
     expect(detectGlslVersion('#version 300 es\nprecision highp float;')).toBe(
@@ -192,6 +215,28 @@ describe('parseShaderCompileErrors user-data attribution', () => {
     ],
   };
 
+  const USER_300_VERTEX = `#version 300 es
+precision highp float;
+
+in vec3 position;
+
+void main() {
+  gl_Position = vec4(position, 1.0);
+}`;
+
+  const VERTEX_DATA: UserDataDocument = {
+    revision: 1,
+    definitions: [
+      {
+        id: 'v1',
+        name: 'sunDir',
+        kind: 'direction',
+        stages: 'vertex',
+        value: { x: 0, y: 1, z: 0 },
+      },
+    ],
+  };
+
   function compileFragment() {
     const assembly = assembleUserData(USER_DATA, '', USER_300_FRAGMENT);
     const driverSource = driverSource300(assembly.fragment);
@@ -223,6 +268,7 @@ describe('parseShaderCompileErrors user-data attribution', () => {
     const errors = parseShaderCompileErrors(records, {
       vertex: '',
       fragment: assembly.fragment,
+      editorSource: { vertex: '', fragment: USER_300_FRAGMENT },
       userData: assembly.record,
     });
 
@@ -237,35 +283,224 @@ describe('parseShaderCompileErrors user-data attribution', () => {
     expect(errors[1].row).toBe(0);
   });
 
-  it('keeps editor line mapping for errors outside the block', () => {
+  it('maps a fragment error after the block to the editor line', () => {
     const { assembly, driverSource, block } = compileFragment();
-    const mainLine =
-      driverSource
-        .split('\n')
-        .findIndex((line) => line.includes('fragColor')) + 1;
-    const assembledLine =
-      assembly.fragment
-        .split('\n')
-        .findIndex((line) => line.includes('layout')) + 1;
+    const needle = 'fragColor = vec4(1.0);';
+    const driverLine = lineOf(driverSource, needle);
+    const editorLine = lineOf(USER_300_FRAGMENT, needle);
 
-    const records: ShaderCompileRecord[] = [
+    const errors = parseShaderCompileErrors(
+      [
+        {
+          stage: 'fragment',
+          log: `ERROR: 0:${driverLine}: 'gl_FragColor' : undeclared identifier`,
+          source: driverSource,
+        },
+      ],
       {
-        stage: 'fragment',
-        log: `ERROR: 0:${mainLine}: 'gl_FragColor' : undeclared identifier`,
-        source: driverSource,
+        vertex: '',
+        fragment: assembly.fragment,
+        editorSource: { vertex: '', fragment: USER_300_FRAGMENT },
+        userData: assembly.record,
       },
-    ];
+    );
 
-    const errors = parseShaderCompileErrors(records, {
-      vertex: '',
-      fragment: assembly.fragment,
-      userData: assembly.record,
-    });
-
-    expect(block.endLine).toBeLessThan(mainLine);
+    expect(block.endLine).toBeLessThan(driverLine);
+    expect(errors).toHaveLength(1);
     expect(errors[0].stage).toBe('fragment');
-    expect(errors[0].line).toBe(assembledLine);
+    expect(errors[0].line).toBe(editorLine);
+    expect(errors[0].line).not.toBe(driverLine);
     expect(errors[0].row).toBeUndefined();
+  });
+
+  it('maps the first declaration after the block to the editor line', () => {
+    const { assembly, driverSource } = compileFragment();
+    const needle = 'layout(location = 0) out vec4 fragColor;';
+    const driverLine = lineOf(driverSource, needle);
+    const editorLine = lineOf(USER_300_FRAGMENT, needle);
+
+    const errors = parseShaderCompileErrors(
+      [
+        {
+          stage: 'fragment',
+          log: `ERROR: 0:${driverLine}: 'fragColor' : syntax error`,
+          source: driverSource,
+        },
+      ],
+      {
+        vertex: '',
+        fragment: assembly.fragment,
+        editorSource: { vertex: '', fragment: USER_300_FRAGMENT },
+        userData: assembly.record,
+      },
+    );
+
+    expect(errors[0].line).toBe(editorLine);
+    expect(editorLine).toBe(4);
+  });
+
+  it('maps a vertex error after its block to the editor line', () => {
+    const assembly = assembleUserData(VERTEX_DATA, USER_300_VERTEX, '');
+    const driverSource = driverSource300(assembly.vertex);
+    const needle = 'gl_Position = vec4(position, 1.0);';
+
+    const errors = parseShaderCompileErrors(
+      [
+        {
+          stage: 'vertex',
+          log: `ERROR: 0:${lineOf(driverSource, needle)}: 'position' : undeclared identifier`,
+          source: driverSource,
+        },
+      ],
+      {
+        vertex: assembly.vertex,
+        fragment: '',
+        editorSource: { vertex: USER_300_VERTEX, fragment: '' },
+        userData: assembly.record,
+      },
+    );
+
+    expect(errors[0].stage).toBe('vertex');
+    expect(errors[0].line).toBe(lineOf(USER_300_VERTEX, needle));
+    expect(errors[0].line).toBe(7);
+  });
+
+  it('maps both stages independently when both carry a block', () => {
+    const document: UserDataDocument = {
+      revision: 1,
+      definitions: [
+        ...USER_DATA.definitions,
+        ...VERTEX_DATA.definitions,
+      ],
+    };
+    const assembly = assembleUserData(
+      document,
+      USER_300_VERTEX,
+      USER_300_FRAGMENT,
+    );
+    const vertexDriver = driverSource300(assembly.vertex);
+    const fragmentDriver = driverSource300(assembly.fragment);
+    const vertexNeedle = 'gl_Position = vec4(position, 1.0);';
+    const fragmentNeedle = 'fragColor = vec4(1.0);';
+
+    const errors = parseShaderCompileErrors(
+      [
+        {
+          stage: 'vertex',
+          log: `ERROR: 0:${lineOf(vertexDriver, vertexNeedle)}: 'position' : undeclared identifier`,
+          source: vertexDriver,
+        },
+        {
+          stage: 'fragment',
+          log: `ERROR: 0:${lineOf(fragmentDriver, fragmentNeedle)}: 'fragColor' : undeclared identifier`,
+          source: fragmentDriver,
+        },
+      ],
+      {
+        vertex: assembly.vertex,
+        fragment: assembly.fragment,
+        editorSource: {
+          vertex: USER_300_VERTEX,
+          fragment: USER_300_FRAGMENT,
+        },
+        userData: assembly.record,
+      },
+    );
+
+    expect(errors.map((error) => error.line)).toEqual([
+      lineOf(USER_300_VERTEX, vertexNeedle),
+      lineOf(USER_300_FRAGMENT, fragmentNeedle),
+    ]);
+  });
+
+  it('maps an error after a block injected at the top of a headerless source', () => {
+    const headerless = `void main() {
+  gl_FragColor = vec4(1.0);
+}`;
+    const assembly = assembleUserData(USER_DATA, '', headerless);
+    const driverSource = driverSource300(assembly.fragment);
+    const needle = 'gl_FragColor = vec4(1.0);';
+
+    const block = locateInjectedBlock(driverSource);
+    expect(block).not.toBeNull();
+    expect(block!.startLine).toBe(3);
+
+    const errors = parseShaderCompileErrors(
+      [
+        {
+          stage: 'fragment',
+          log: `ERROR: 0:${lineOf(driverSource, needle)}: 'gl_FragColor' : undeclared identifier`,
+          source: driverSource,
+        },
+      ],
+      {
+        vertex: '',
+        fragment: assembly.fragment,
+        editorSource: { vertex: '', fragment: headerless },
+        userData: assembly.record,
+      },
+    );
+
+    expect(errors[0].line).toBe(lineOf(headerless, needle));
+    expect(errors[0].line).toBe(2);
+  });
+
+  it('maps an error after a block when the header contains blank lines', () => {
+    const spaced = `#version 300 es
+
+precision highp float;
+void main() {
+  gl_FragColor = vec4(1.0);
+}`;
+    const assembly = assembleUserData(USER_DATA, '', spaced);
+    const driverSource = driverSource300(assembly.fragment);
+    const needle = 'gl_FragColor = vec4(1.0);';
+
+    const errors = parseShaderCompileErrors(
+      [
+        {
+          stage: 'fragment',
+          log: `ERROR: 0:${lineOf(driverSource, needle)}: 'gl_FragColor' : undeclared identifier`,
+          source: driverSource,
+        },
+      ],
+      {
+        vertex: '',
+        fragment: assembly.fragment,
+        editorSource: { vertex: '', fragment: spaced },
+        userData: assembly.record,
+      },
+    );
+
+    expect(errors[0].line).toBe(lineOf(spaced, needle));
+    expect(errors[0].line).toBe(5);
+  });
+
+  it('maps an upgraded 1.00 fragment error back to the editor', () => {
+    const assembly = assembleUserData(USER_DATA, '', USER_100_FRAGMENT);
+    const driverSource = driverSource100(assembly.fragment);
+    const needle = 'glFragColor = vec4(vNormal, 1.0);';
+
+    const errors = parseShaderCompileErrors(
+      [
+        {
+          stage: 'fragment',
+          log: `ERROR: 0:${lineOf(driverSource, needle)}: 'glFragColor' : undeclared identifier`,
+          source: driverSource,
+        },
+      ],
+      {
+        vertex: '',
+        fragment: assembly.fragment,
+        editorSource: { vertex: '', fragment: USER_100_FRAGMENT },
+        userData: assembly.record,
+      },
+    );
+
+    expect(errors[0].line).toBe(
+      lineOf(USER_100_FRAGMENT, 'gl_FragColor = vec4(vNormal, 1.0);'),
+    );
+    expect(errors[0].line).toBe(5);
   });
 
   it('attributes the row even without the assembly record', () => {

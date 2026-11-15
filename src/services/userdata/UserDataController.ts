@@ -176,6 +176,13 @@ export class UserDataController {
     return {
       vertex: assembly.vertex,
       fragment: assembly.fragment,
+      // Keep the authoring pair on the blueprint: the assembled stages above
+      // contain generated lines the editor never shows, and diagnostics must
+      // be translated back to this exact text.
+      editorSource: {
+        vertex: sources.vertex,
+        fragment: sources.fragment,
+      },
       extraUniforms: this.document.definitions
         .filter((definition) => !isSamplerKind(definition.kind))
         .map((definition) => definition.name),

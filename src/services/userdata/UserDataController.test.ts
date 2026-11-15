@@ -114,6 +114,24 @@ describe('UserDataController structural commands', () => {
     expect(blueprint.fragment).toContain('// current values: tint = (1, 1, 1)');
   });
 
+  it('keeps the authoring sources alongside the assembled stages', () => {
+    const harness = createHarness();
+    addColor(harness.controller, 'tint');
+
+    const blueprint = harness.controller.buildBlueprint();
+
+    // The compiled stages carry the generated block...
+    expect(blueprint.fragment).not.toBe(harness.sources.fragment);
+    expect(blueprint.fragment).toContain('uniform vec3 tint;');
+    expect(blueprint.vertex).toBe(harness.sources.vertex);
+
+    // ...while diagnostics still have the exact editor text to map back to.
+    expect(blueprint.editorSource).toEqual(harness.sources);
+    expect(blueprint.editorSource.fragment).not.toContain(
+      'uniform vec3 tint;',
+    );
+  });
+
   it('rejects invalid, reserved and duplicate names before touching the GPU', () => {
     const harness = createHarness();
     addColor(harness.controller, 'existing');

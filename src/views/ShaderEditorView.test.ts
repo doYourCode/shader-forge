@@ -11,6 +11,10 @@ import ShaderEditorView from './ShaderEditorView.vue';
 interface BlueprintLike {
   readonly vertex: string;
   readonly fragment: string;
+  readonly editorSource: {
+    readonly vertex: string;
+    readonly fragment: string;
+  };
   readonly extraUniforms: readonly string[];
   readonly extraSamplers: readonly string[];
 }
@@ -141,6 +145,11 @@ describe('ShaderEditorView user data panel', () => {
       '// <<< end ShaderForge user data >>>',
     );
 
+    // Diagnostics still get the untouched editor text, not the assembled one.
+    expect(blueprint.editorSource.fragment).not.toContain(
+      'uniform vec3 tint;',
+    );
+
     wrapper.unmount();
   });
 
@@ -236,6 +245,9 @@ describe('ShaderEditorView example loader', () => {
     expect(blueprint.fragment).toContain(
       '// current values: albedo = (0.72, 0.31, 0.22)',
     );
+    // The fragment editor document is carried untouched for diagnostics; the
+    // active vertex tab is overwritten by the mocked editor's empty buffer.
+    expect(blueprint.editorSource.fragment).toBe(phong.fragment);
 
     expect(wrapper.find('.status-bar__message').text()).toContain(
       'Loaded example: Phong',

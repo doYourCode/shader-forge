@@ -109,6 +109,7 @@ function createHarness() {
 const BLUEPRINT = {
   vertex: '',
   fragment: '',
+  editorSource: { vertex: '', fragment: '' },
   extraUniforms: [],
   extraSamplers: [],
 };

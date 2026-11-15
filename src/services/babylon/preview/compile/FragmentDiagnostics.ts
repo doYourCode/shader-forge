@@ -1,6 +1,6 @@
 import type { Mesh } from '@babylonjs/core';
 import type { ShaderError } from '@/core/models/shaderError';
-import type { ShaderSource } from '../PreviewTypes';
+import type { MaterialBlueprint } from '../PreviewTypes';
 import type { ShaderCompiler } from './ShaderCompiler';
 
 /**
@@ -16,12 +16,12 @@ export class FragmentDiagnostics {
     this.validationVertex = validationVertex;
   }
 
-  async collect(source: ShaderSource, mesh: Mesh): Promise<ShaderError[]> {
+  async collect(source: MaterialBlueprint, mesh: Mesh): Promise<ShaderError[]> {
+    // Keep the blueprint's editor sources and assembly record: the recompiled
+    // fragment still has to map driver lines back to the editor, and errors
+    // inside its generated block still belong to a User data row.
     const attempt = await this.compiler.tryCompile(
-      {
-        vertex: this.validationVertex,
-        fragment: source.fragment,
-      },
+      { ...source, vertex: this.validationVertex },
       mesh,
     );
 

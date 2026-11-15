@@ -26,6 +26,12 @@ export interface MaterialExtras {
 export interface MaterialBlueprint extends ShaderSource, MaterialExtras {
   readonly extraUniforms: readonly string[];
   readonly extraSamplers: readonly string[];
+  /**
+   * The documents exactly as the editor holds them. The compiled `vertex` and
+   * `fragment` above carry the generated block, so diagnostics must be mapped
+   * against these sources to point at editor lines rather than compiled ones.
+   */
+  readonly editorSource: ShaderSource;
   /** Line ranges of the injected blocks, per stage. */
   readonly userData?: UserDataAssemblyRecord;
 }

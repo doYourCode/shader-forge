@@ -1,4 +1,5 @@
 import { uniformKindMeta } from '@/core/constants/userUniformKinds';
+import { findInjectionLine } from './injectionPoint';
 import {
   isSamplerKind,
   type UserDataDocument,
@@ -112,7 +113,7 @@ export function assembleStage(
   }
 
   const lines = splitLines(source);
-  const insertionIndex = findInsertionIndex(lines);
+  const insertionIndex = findInjectionLine(lines);
   const before = lines.slice(0, insertionIndex);
   const after = lines.slice(insertionIndex);
 
@@ -197,31 +198,6 @@ function toRecord(assembly: StageAssembly): StageAssemblyRecord | null {
 
 function targetsStage(stage: UserUniformStage, target: InjectedStage): boolean {
   return stage === 'both' || stage === target;
-}
-
-function findInsertionIndex(lines: readonly string[]): number {
-  let insertionIndex = 0;
-
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index].trim();
-
-    if (line === '' || line.startsWith('//')) continue;
-
-    // `#extension` must also precede any declaration, so it belongs to the
-    // header run even though the contract only names #version/precision.
-    if (
-      /^#version\b/i.test(line) ||
-      /^precision\b/i.test(line) ||
-      /^#extension\b/i.test(line)
-    ) {
-      insertionIndex = index + 1;
-      continue;
-    }
-
-    break;
-  }
-
-  return insertionIndex;
 }
 
 function splitLines(source: string): string[] {

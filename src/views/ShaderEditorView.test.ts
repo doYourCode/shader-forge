@@ -37,6 +37,7 @@ const { sceneManager, editorManager } = vi.hoisted(() => {
     setValue: vi.fn(),
     setReadOnly: vi.fn(),
     setDiagnostics: vi.fn(),
+    setInjectedBlock: vi.fn(),
     revealPosition: vi.fn(),
     focus: vi.fn(),
     dispose: vi.fn(),
@@ -239,6 +240,23 @@ describe('ShaderEditorView example loader', () => {
     expect(wrapper.find('.status-bar__message').text()).toContain(
       'Loaded example: Phong',
     );
+
+    // The declarations are previewed read-only next to the fragment source; the
+    // document itself only ever holds the example's text.
+    await tab(wrapper, 'Fragment').trigger('click');
+    await nextTick();
+
+    const blockCalls = editorManager.setInjectedBlock.mock.calls;
+    const fragmentBlock = blockCalls[blockCalls.length - 1]?.[0] as
+      | readonly string[]
+      | null;
+    const fragmentBlockText = fragmentBlock?.join('\n') ?? '';
+
+    expect(fragmentBlockText).toContain('uniform vec3 albedo; // color (RGB)');
+    expect(fragmentBlockText).toContain(
+      '// current values: albedo = (0.72, 0.31, 0.22)',
+    );
+    expect(editorManager.setValue).toHaveBeenCalledWith(phong.fragment);
 
     // The User data tab lists the example's parameters.
     await tab(wrapper, 'User data').trigger('click');

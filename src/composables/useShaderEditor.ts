@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import {
   EditorManager,
   type EditorDiagnostic,
@@ -29,6 +29,7 @@ import {
   defaultIoDoc,
 } from '@/core/constants/defaultShaders';
 import { findShaderExample } from '@/core/constants/shaderExamples';
+import { generateBlock } from '@/core/shader/uniformCodegen';
 import {
   UserDataController,
   type AddUserUniformResult,
@@ -166,6 +167,7 @@ export function useShaderEditor() {
       // The structured panel replaces the text editor. Leaving the editor
       // buffer alone keeps the exact document when switching back.
       editorManager.setReadOnly(true);
+      editorManager.setInjectedBlock(null);
       return;
     }
 
@@ -173,11 +175,32 @@ export function useShaderEditor() {
     editorManager.setValue(tabDocs[tab]);
     editorManager.setReadOnly(readOnly);
     editorManager.setDiagnostics(diagnosticsFor(tab));
+    editorManager.setInjectedBlock(injectedBlockFor(tab));
 
     if (!readOnly) {
       source.value = tabDocs[tab];
     }
   }
+
+  /**
+   * Lines the editor previews above the source for a stage: the same generated
+   * block the compiler injects. It is read from the live document rather than
+   * the last compile, so value edits that bind without a recompile (and the
+   * values comment) stay truthful.
+   */
+  function injectedBlockFor(tab: EditorTabId): readonly string[] | null {
+    if (!isEditableTab(tab)) return null;
+
+    return generateBlock(userDataDoc, tab)?.lines ?? null;
+  }
+
+  function updateInjectedBlock(): void {
+    editorManager.setInjectedBlock(injectedBlockFor(activeTab.value));
+  }
+
+  // Definitions and values change the generated declarations and the values
+  // comment; the preview follows them immediately.
+  watch(() => userDataDoc.revision, updateInjectedBlock);
 
   function mountEditor(host: HTMLElement) {
     editorManager.mount(
@@ -189,6 +212,8 @@ export function useShaderEditor() {
       },
       false,
     );
+
+    updateInjectedBlock();
 
     status.value = 'ready';
     statusMessage.value = 'Editor ready';

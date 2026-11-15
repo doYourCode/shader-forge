@@ -5,6 +5,7 @@ import {
   highlightActiveLine,
   Decoration,
   GutterMarker,
+  WidgetType,
   lineNumberMarkers,
   type DecorationSet,
 } from '@codemirror/view';
@@ -20,6 +21,10 @@ import {
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { cpp } from '@codemirror/lang-cpp';
 import { oneDark } from '@codemirror/theme-one-dark';
+import {
+  isShaderHeaderDirective,
+  isShaderHeaderLine,
+} from '@/core/shader/injectionPoint';
 
 export interface CursorPos {
   line: number;
@@ -108,6 +113,164 @@ const errorHighlightTheme = EditorView.theme({
   },
 });
 
+const setInjectedBlockEffect = StateEffect.define<readonly string[] | null>();
+
+/**
+ * Read-only preview of the generated user-data block.
+ *
+ * It is a widget rather than document text: the compiler injects its own copy,
+ * so a copy in the buffer would declare everything twice — and keeping the
+ * buffer byte-for-byte what the user wrote is what the line mapping and
+ * `getValue()` rely on. Being outside the document also makes it non-editable
+ * by construction, with no transaction filtering.
+ */
+class InjectedBlockWidget extends WidgetType {
+  private readonly lines: readonly string[];
+
+  constructor(lines: readonly string[]) {
+    super();
+    this.lines = lines;
+  }
+
+  eq(other: WidgetType): boolean {
+    return (
+      other instanceof InjectedBlockWidget &&
+      other.lines.length === this.lines.length &&
+      other.lines.every((line, index) => line === this.lines[index])
+    );
+  }
+
+  toDOM(): HTMLElement {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'cm-injected-block';
+    wrapper.setAttribute('role', 'group');
+    wrapper.setAttribute(
+      'aria-label',
+      'Generated user data uniforms, read only',
+    );
+
+    const badge = document.createElement('div');
+    badge.className = 'cm-injected-block__badge';
+    badge.textContent = 'read-only · user data';
+
+    const code = document.createElement('pre');
+    code.className = 'cm-injected-block__code';
+    code.textContent = this.lines.join('\n');
+
+    wrapper.append(badge, code);
+    return wrapper;
+  }
+
+  /** Clicks and drags inside the preview never reach the editor. */
+  ignoreEvent(): boolean {
+    return true;
+  }
+}
+
+interface InjectedBlockState {
+  readonly lines: readonly string[] | null;
+  readonly decorations: DecorationSet;
+}
+
+const injectedBlockField = StateField.define<InjectedBlockState>({
+  create: () => ({ lines: null, decorations: Decoration.none }),
+
+  update(current, transaction) {
+    let lines = current.lines;
+
+    for (const effect of transaction.effects) {
+      if (effect.is(setInjectedBlockEffect)) lines = effect.value;
+    }
+
+    const next = lines && lines.length > 0 ? lines : null;
+
+    if (next === current.lines && !transaction.docChanged) {
+      return {
+        lines: current.lines,
+        decorations: current.decorations.map(transaction.changes),
+      };
+    }
+
+    // The block content may be unchanged while the document moved its anchor
+    // (the header run can be edited), so a doc change always re-anchors.
+    return {
+      lines: next,
+      decorations: injectedBlockDecorations(transaction.state.doc, next),
+    };
+  },
+
+  provide: (field) =>
+    EditorView.decorations.from(field, (value) => value.decorations),
+});
+
+function injectedBlockDecorations(
+  doc: Text,
+  lines: readonly string[] | null,
+): DecorationSet {
+  if (!lines || lines.length === 0) return Decoration.none;
+
+  return Decoration.set([
+    Decoration.widget({
+      widget: new InjectedBlockWidget(lines),
+      block: true,
+      side: 1,
+    }).range(injectionOffset(doc)),
+  ]);
+}
+
+/** Character offset the preview is inserted at, per the shared codegen rule. */
+function injectionOffset(doc: Text): number {
+  let insertionLine = 0;
+
+  for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber++) {
+    const text = doc.line(lineNumber).text;
+
+    if (!isShaderHeaderLine(text)) break;
+    if (isShaderHeaderDirective(text)) insertionLine = lineNumber;
+  }
+
+  return insertionLine >= doc.lines
+    ? doc.length
+    : doc.line(insertionLine + 1).from;
+}
+
+const injectedBlockTheme = EditorView.theme({
+  '.cm-injected-block': {
+    margin: '4px 0 8px',
+    background: 'rgba(97, 175, 239, 0.08)',
+    border: '1px solid rgba(97, 175, 239, 0.35)',
+    borderLeft: '3px solid var(--accent-blue)',
+    borderRadius: '3px',
+    // The preview is not part of the document: clicks fall through to the
+    // editor (so the caret lands next to it, not inside it) and its text can
+    // never be selected.
+    pointerEvents: 'none',
+    userSelect: 'none',
+  },
+  '.cm-injected-block__badge': {
+    padding: '3px 8px 0',
+    color: 'var(--accent-blue)',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '9px',
+    fontWeight: '700',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    userSelect: 'none',
+  },
+  '.cm-injected-block__code': {
+    margin: '0',
+    padding: '2px 8px 6px',
+    color: 'var(--fg-muted)',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '12px',
+    lineHeight: '1.5',
+    // Wrapped instead of scrolled: the block cannot receive pointer events to
+    // drag a scrollbar. Long value comments wrap rather than disappear.
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+  },
+});
+
 export class EditorManager {
   private view: EditorView | null = null;
   private readonlyCompartment = new Compartment();
@@ -130,6 +293,8 @@ export class EditorManager {
       diagnosticsField,
       diagnosticsMarkersField,
       errorHighlightTheme,
+      injectedBlockField,
+      injectedBlockTheme,
       this.readonlyCompartment.of([
         EditorState.readOnly.of(readOnly),
         EditorView.editable.of(!readOnly),
@@ -184,6 +349,18 @@ export class EditorManager {
     if (!this.view) return;
     this.view.dispatch({
       effects: setDiagnosticsEffect.of(diagnostics),
+    });
+  }
+
+  /**
+   * Shows the generated user-data block as a read-only preview above the source
+   * (pass null to clear it). The lines never enter the document, so the editor
+   * value and every diagnostic line mapping stay exactly as they were.
+   */
+  setInjectedBlock(lines: readonly string[] | null): void {
+    if (!this.view) return;
+    this.view.dispatch({
+      effects: setInjectedBlockEffect.of(lines),
     });
   }
 

@@ -35,8 +35,9 @@ export function createPreviewScene(
     scene,
   );
   camera.attachControl(canvas, true);
-  camera.lowerRadiusLimit = 2.0;
-  camera.upperRadiusLimit = 6;
+  camera.lowerRadiusLimit = 2.5;
+  camera.upperRadiusLimit = 5;
+  camera.wheelDeltaPercentage = 0.01;
   scene.activeCamera = camera;
 
   new HemisphericLight('hemi', new Vector3(0, 1, 0), scene);

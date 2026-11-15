@@ -5,19 +5,14 @@ import type {
   UserUniformValue,
 } from '@/core/models/userUniform';
 
-import lambertVertex from '@/assets/examples/lambert.vert?raw';
+import iblCommonVertex from '@/assets/examples/ibl-common.vert?raw';
+import basiclmCommonVertex from '@/assets/examples/basiclm-common.vert?raw';
 import lambertFragment from '@/assets/examples/lambert.frag?raw';
-import phongVertex from '@/assets/examples/phong.vert?raw';
 import phongFragment from '@/assets/examples/phong.frag?raw';
-import blinnPhongVertex from '@/assets/examples/blinn-phong.vert?raw';
 import blinnPhongFragment from '@/assets/examples/blinn-phong.frag?raw';
-import orenNayarVertex from '@/assets/examples/oren-nayar.vert?raw';
 import orenNayarFragment from '@/assets/examples/oren-nayar.frag?raw';
-import cookTorranceVertex from '@/assets/examples/cook-torrance.vert?raw';
 import cookTorranceFragment from '@/assets/examples/cook-torrance.frag?raw';
-import iblMetalnessRoughnessVertex from '@/assets/examples/ibl-metalness-roughness.vert?raw';
 import iblMetalnessRoughnessFragment from '@/assets/examples/ibl-metalness-roughness.frag?raw';
-import iblSpecularGlossinessVertex from '@/assets/examples/ibl-specular-glossiness.vert?raw';
 import iblSpecularGlossinessFragment from '@/assets/examples/ibl-specular-glossiness.frag?raw';
 
 /**
@@ -89,7 +84,7 @@ const examples: readonly ShaderExample[] = [
     label: 'Lambert',
     description: 'Diffuse: N dot L only',
     group: 'Lighting',
-    vertex: lambertVertex,
+    vertex: basiclmCommonVertex,
     fragment: lambertFragment,
     uniforms: [colorUniform('albedo', { r: 0.72, g: 0.31, b: 0.22 })],
   },
@@ -98,7 +93,7 @@ const examples: readonly ShaderExample[] = [
     label: 'Phong',
     description: 'Specular: reflection vector',
     group: 'Lighting',
-    vertex: phongVertex,
+    vertex: basiclmCommonVertex,
     fragment: phongFragment,
     uniforms: [
       colorUniform('albedo', { r: 0.72, g: 0.31, b: 0.22 }),
@@ -111,7 +106,7 @@ const examples: readonly ShaderExample[] = [
     label: 'Blinn-Phong',
     description: 'Specular: half vector',
     group: 'Lighting',
-    vertex: blinnPhongVertex,
+    vertex: basiclmCommonVertex,
     fragment: blinnPhongFragment,
     uniforms: [
       colorUniform('albedo', { r: 0.72, g: 0.31, b: 0.22 }),
@@ -124,7 +119,7 @@ const examples: readonly ShaderExample[] = [
     label: 'Oren-Nayar',
     description: 'Rough diffuse: facet slope',
     group: 'Lighting',
-    vertex: orenNayarVertex,
+    vertex: basiclmCommonVertex,
     fragment: orenNayarFragment,
     uniforms: [
       colorUniform('albedo', { r: 0.72, g: 0.31, b: 0.22 }),
@@ -136,7 +131,7 @@ const examples: readonly ShaderExample[] = [
     label: 'Cook-Torrance',
     description: 'Specular: GGX microfacets',
     group: 'Lighting',
-    vertex: cookTorranceVertex,
+    vertex: basiclmCommonVertex,
     fragment: cookTorranceFragment,
     uniforms: [
       colorUniform('baseColor', { r: 0.72, g: 0.31, b: 0.22 }),
@@ -149,7 +144,7 @@ const examples: readonly ShaderExample[] = [
     label: 'IBL Metalness / Roughness',
     description: 'Image-based: metallic workflow',
     group: 'Image-based lighting',
-    vertex: iblMetalnessRoughnessVertex,
+    vertex: iblCommonVertex,
     fragment: iblMetalnessRoughnessFragment,
     uniforms: [
       colorUniform('baseColor', { r: 0.85, g: 0.36, b: 0.24 }),
@@ -162,7 +157,7 @@ const examples: readonly ShaderExample[] = [
     label: 'IBL Specular / Glossiness',
     description: 'Image-based: specular workflow',
     group: 'Image-based lighting',
-    vertex: iblSpecularGlossinessVertex,
+    vertex: iblCommonVertex,
     fragment: iblSpecularGlossinessFragment,
     uniforms: [
       colorUniform('diffuseColor', { r: 0.16, g: 0.38, b: 0.62 }),

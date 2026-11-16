@@ -1,20 +1,6 @@
 #version 300 es
 precision highp float;
 
-// Cook-Torrance example - fragment stage.
-//
-// The microfacet specular model used by every modern renderer:
-//   D  GGX/Trowbridge-Reitz  - how many microfacets face the half vector;
-//   G  Schlick-GGX Smith     - how much of the light survives shadowing;
-//   F  Schlick               - how much is reflected rather than refracted.
-// Scaled by what is not reflected (kD = 1 - F) it gives an energy-conserving
-// direct light on top of the Lambert diffuse.
-//
-// Editable parameters (User data tab):
-//   baseColor - color (vec3)
-//   roughness - float, 0 = mirror, 1 = fully rough
-//   metallic  - float, 0 = dielectric, 1 = metal
-
 in vec3 vWorldPosition;
 in vec3 vWorldNormal;
 
@@ -30,8 +16,6 @@ const float DIELECTRIC_F0 = 0.04;
 // Radiance of the directional light. Values above 1 push the highlight into
 // the ACES shoulder, the way a real light source does.
 const float LIGHT_RADIANCE = 3.0;
-// A little fill so the unlit side keeps its silhouette instead of going black.
-const float AMBIENT = 0.03;
 
 // Narkowicz's ACES fit, the same curve the built-in preview shader uses, so
 // every example lands in the same display range.
@@ -78,7 +62,6 @@ vec3 fresnelSchlick(float VdotH, vec3 F0)
 void main(void)
 {
     vec3 N = normalize(vWorldNormal);
-    // `lightDir` points from the surface toward the light, in world space.
     vec3 L = normalize(lightDir);
     vec3 V = normalize(cameraPos - vWorldPosition);
     vec3 H = normalize(L + V);
@@ -91,6 +74,13 @@ void main(void)
     // Metals tint their reflection with the base colour; dielectrics do not.
     vec3 F0 = mix(vec3(DIELECTRIC_F0), baseColor, metallic);
 
+    // The microfacet specular model used by every modern renderer:
+    //   D  GGX/Trowbridge-Reitz  - how many microfacets face the half vector;
+    //   G  Schlick-GGX Smith     - how much of the light survives shadowing;
+    //   F  Schlick               - how much is reflected rather than refracted.
+    // Scaled by what is not reflected (kD = 1 - F) it gives an energy-conserving
+    // direct light on top of the Lambert diffuse.
+
     vec3 F = fresnelSchlick(VdotH, F0);
     float D = distributionGGX(NdotH, roughness);
     float G = geometrySmith(NdotV, NdotL, roughness);
@@ -101,8 +91,7 @@ void main(void)
     vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
     vec3 diffuse = kD * baseColor / PI;
 
-    vec3 color = (diffuse + specular) * LIGHT_RADIANCE * NdotL;
-    color += baseColor * AMBIENT;
+    vec3 finalColor = (diffuse + specular) * LIGHT_RADIANCE * NdotL;
 
-    fragColor = vec4(acesFilm(color), 1.0);
+    fragColor = vec4(acesFilm(finalColor), 1.0);
 }

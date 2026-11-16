@@ -1,12 +1,6 @@
 #version 300 es
 precision highp float;
 
-// IBL common example - vertex stage.
-//
-// Passes the two world-space vectors the split-sum lighting term needs.
-// `normalMatrix` is the inverse-transpose world matrix, so the normal survives
-// non-uniform mesh scaling.
-
 in vec3 position;
 in vec3 normal;
 

@@ -3,3 +3,7 @@
 *.env binary
 *.glb binary
 *.hdr binary
+
+# patch-package applies these byte-for-byte with `git apply`; a CRLF checkout
+# (core.autocrlf=true on Windows) would change the context lines it matches.
+patches/*.patch text eol=lf

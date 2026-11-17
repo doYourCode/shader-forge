@@ -5,6 +5,7 @@ import type {
   Scene,
   ShaderMaterial,
 } from '@babylonjs/core';
+import { CreateScreenshotUsingRenderTargetAsync } from '@babylonjs/core/Misc/screenshotTools';
 import type { ShaderError } from '@/core/models/shaderError';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
@@ -402,6 +403,40 @@ export class SceneManager {
     return { ok: false, message, errors };
   }
 
+  /**
+   * Renders the current scene to an image and returns it as a data URL.
+   *
+   * Used by the example thumbnail baker (`npm run bake:examples`), so a baked
+   * preview comes from the exact pipeline the editor renders instead of a
+   * second Babylon setup that could drift.
+   */
+  async snapshot(
+    width: number,
+    height: number,
+    mimeType = 'image/webp',
+  ): Promise<string | null> {
+    const scene = this.scene;
+    const mesh = this.mesh;
+    const material = this.materials?.activeMaterial ?? null;
+    const camera = scene?.activeCamera ?? null;
+
+    if (!scene || !mesh || !material || !camera) return null;
+
+    // A screenshot taken before the effect compiled would capture the blank
+    // scene (or the error material), which is worse than reporting no image.
+    const ready = await waitForMaterial(material, mesh);
+    if (!ready) return null;
+
+    return CreateScreenshotUsingRenderTargetAsync(
+      scene.getEngine(),
+      camera,
+      { width, height, precision: 1 },
+      mimeType,
+      4,
+      true,
+    );
+  }
+
   setWireframe(on: boolean): void {
     this.wireframe = on;
     this.materials?.setWireframe(on);
@@ -478,4 +513,38 @@ export class SceneManager {
       ),
     );
   }
+}
+
+/** Upper bound for the shader warm-up; a broken effect must not hang a bake. */
+const MAX_SNAPSHOT_WARMUP_FRAMES = 120;
+
+/**
+ * Waits for the active effect to compile, resolving `false` when the warm-up
+ * budget is exhausted. The render loop keeps drawing, but a screenshot taken
+ * before the effect is ready would capture the blank scene.
+ */
+function waitForMaterial(
+  material: ShaderMaterial,
+  mesh: Mesh,
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    let frame = 0;
+
+    const check = (): void => {
+      if (material.isReady(mesh)) {
+        resolve(true);
+        return;
+      }
+
+      if (frame >= MAX_SNAPSHOT_WARMUP_FRAMES) {
+        resolve(false);
+        return;
+      }
+
+      frame += 1;
+      requestAnimationFrame(check);
+    };
+
+    check();
+  });
 }

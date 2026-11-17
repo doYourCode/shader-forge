@@ -5,7 +5,12 @@ import {
   UNIFORM_NAME_PATTERN,
   isValueForKind,
 } from '@/core/models/userUniform';
-import { findShaderExample, shaderExamples } from './shaderExamples';
+import {
+  findShaderExample,
+  shaderExampleCatalog,
+  shaderExampleGroups,
+  shaderExamples,
+} from './shaderExamples';
 
 /**
  * The bindings the preview material already registers. Kept as literals because
@@ -42,6 +47,16 @@ const EXAMPLE_FILES = import.meta.glob('/src/assets/examples/*.{vert,frag}', {
   eager: true,
   import: 'default',
 });
+
+/** Baked previews; absent until `npm run bake:examples` has run once. */
+const EXAMPLE_THUMBNAILS = import.meta.glob(
+  '/src/assets/examples/thumbs/*.webp',
+  {
+    query: '?url&no-inline',
+    eager: true,
+    import: 'default',
+  },
+);
 
 function declaredNames(source: string, qualifier: string): string[] {
   const pattern = new RegExp(
@@ -129,16 +144,82 @@ describe('shaderExamples', () => {
     }
   });
 
-  it('pairs every example with its own .vert and .frag file', () => {
-    const bundled = Object.keys(EXAMPLE_FILES);
-    const claimed = shaderExamples.flatMap((example) => [
-      `/src/assets/examples/${example.id}.vert`,
-      `/src/assets/examples/${example.id}.frag`,
+  it('pairs every example with the stage files it claims', () => {
+    const files = EXAMPLE_FILES as Readonly<Record<string, string>>;
+    const vertexSources = new Set(
+      Object.entries(files)
+        .filter(([path]) => path.endsWith('.vert'))
+        .map(([, source]) => source),
+    );
+
+    for (const example of shaderExamples) {
+      // The fragment stage is per example and named after its id.
+      expect(files[`/src/assets/examples/${example.id}.frag`]).toBe(
+        example.fragment,
+      );
+      // Vertex stages may be shared helpers (basiclm-common, ibl-common).
+      expect(vertexSources).toContain(example.vertex);
+    }
+
+    // No orphan file: every bundled source belongs to some example.
+    const claimed = new Set(
+      shaderExamples.flatMap((example) => [example.vertex, example.fragment]),
+    );
+    for (const [path, source] of Object.entries(files)) {
+      expect(claimed, `${path} is not used by any example`).toContain(source);
+    }
+  });
+
+  it('groups examples into one folder per authored section', () => {
+    expect(shaderExampleGroups.map((group) => group.label)).toEqual([
+      'Lighting',
+      'Image-based lighting',
     ]);
 
-    // Both directions: no dead record and no orphan file in the folder.
-    expect(new Set(bundled)).toEqual(new Set(claimed));
-    expect(bundled).toHaveLength(claimed.length);
+    expect(shaderExampleGroups.flatMap((group) => group.examples)).toEqual([
+      ...shaderExamples,
+    ]);
+
+    for (const group of shaderExampleGroups) {
+      expect(group.id).toMatch(/^[a-z0-9-]+$/);
+      expect(group.examples.length).toBeGreaterThan(0);
+      expect(
+        group.examples.every((example) => example.group === group.label),
+      ).toBe(true);
+    }
+
+    const ids = shaderExampleGroups.map((group) => group.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('exposes every example through the catalog and its groups', () => {
+    expect(shaderExampleCatalog.all).toEqual([...shaderExamples]);
+
+    for (const group of shaderExampleGroups) {
+      for (const example of group.examples) {
+        expect(shaderExampleCatalog.find(example.id)).toBe(example);
+      }
+    }
+
+    expect(shaderExampleCatalog.find('nope')).toBeUndefined();
+  });
+
+  it('bakes either every example thumbnail or none of them', () => {
+    const baked = shaderExamples.filter(
+      (example) => example.thumbnailUrl !== undefined,
+    );
+
+    expect([0, shaderExamples.length]).toContain(baked.length);
+  });
+
+  it('maps every baked thumbnail to its example and claims every file', () => {
+    const bundled = Object.keys(EXAMPLE_THUMBNAILS);
+    const claimed = shaderExamples
+      .filter((example) => example.thumbnailUrl !== undefined)
+      .map((example) => `/src/assets/examples/thumbs/${example.id}.webp`);
+
+    // Both directions: no dead record and no orphan thumbnail on disk.
+    expect(new Set(claimed)).toEqual(new Set(bundled));
   });
 
   it('resolves examples by id', () => {

@@ -13,16 +13,14 @@ import type {
   EditorTabGroup,
   EditorTabId,
 } from '@/core/models/editorTab';
-import type { ShaderExample } from '@/core/constants/shaderExamples';
 import { CirclePlay } from 'lucide-vue-next';
-import ExamplesMenu from './ExamplesMenu.vue';
+import ShaderExamplePicker from './ShaderExamplePicker.vue';
 
 type MenuFocusTarget = 'selected' | 'last';
 
 const props = defineProps<{
   tabs: readonly EditorTab[];
   builtIn: EditorTabGroup;
-  examples: readonly ShaderExample[];
   active: EditorTabId;
 }>();
 
@@ -306,10 +304,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="editor-toolbar__actions">
-      <ExamplesMenu
-        :examples="props.examples"
-        @load="emit('load-example', $event)"
-      />
+      <ShaderExamplePicker @pick="emit('load-example', $event)" />
 
       <button
         type="button"

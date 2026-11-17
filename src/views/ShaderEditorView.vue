@@ -3,8 +3,10 @@ import { ref, onMounted, onBeforeUnmount, provide } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { AssetPickerTexturePicker } from '@/services/assetpicker/AssetPickerTexturePicker';
+import { AssetPickerExamplePicker } from '@/services/assetpicker/AssetPickerExamplePicker';
 import { toAssetPickerLanguage } from '@/services/assetpicker/assetPickerConfig';
 import { TEXTURE_PICKER } from '@/components/shader/texturePickerContext';
+import { EXAMPLE_PICKER } from '@/components/shader/examplePickerContext';
 import { useShaderEditor } from '@/composables/useShaderEditor';
 import {
   builtInTabGroup,
@@ -12,7 +14,6 @@ import {
   userDataTab,
   type EditorTab,
 } from '@/core/models/editorTab';
-import { shaderExamples } from '@/core/constants/shaderExamples';
 import type { ShaderError, ShaderErrorKind } from '@/core/models/shaderError';
 import type {
   UserUniformKind,
@@ -42,6 +43,20 @@ const texturePicker = new AssetPickerTexturePicker({
   language: () => toAssetPickerLanguage(locale.value),
 });
 provide(TEXTURE_PICKER, texturePicker);
+
+/**
+ * One example picker for the view's lifetime: it lazily imports the same
+ * AssetPicker module and owns every mounted session. The toolbar receives it
+ * through injection.
+ */
+const examplePicker = new AssetPickerExamplePicker({
+  labels: () => ({
+    title: t('editor.examples.dialog'),
+    storage: t('editor.examples.bundled'),
+  }),
+  language: () => toAssetPickerLanguage(locale.value),
+});
+provide(EXAMPLE_PICKER, examplePicker);
 
 /** The structured user-data tab lives beside the text documents. */
 const editorTabs: readonly EditorTab[] = [...editableTabs, userDataTab];
@@ -167,6 +182,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
   texturePicker.dispose();
+  examplePicker.dispose();
 });
 
 function toggleWireframe() {
@@ -184,7 +200,6 @@ function togglePause() {
       <EditorToolbar
         :tabs="editorTabs"
         :built-in="builtInTabGroup"
-        :examples="shaderExamples"
         :active="activeTab"
         @switch="switchTab"
         @compile="compile"

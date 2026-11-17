@@ -1,23 +1,52 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 
+import { i18n } from '@/i18n';
 import EditorToolbar from './EditorToolbar.vue';
+import { EXAMPLE_PICKER } from './examplePickerContext';
 import {
   builtInTabGroup,
   editableTabs,
   type EditorTabId,
 } from '@/core/models/editorTab';
-import { shaderExamples } from '@/core/constants/shaderExamples';
+import type {
+  ExamplePickerPort,
+  ExamplePickerSession,
+  ExamplePickResult,
+} from '@/services/examplepicker/ExamplePicker';
 
-function mountToolbar(active: EditorTabId = 'vertex') {
+const PICKED_PHONG: ExamplePickResult = {
+  status: 'picked',
+  exampleId: 'blinn-phong',
+};
+
+function createFakePicker(result: ExamplePickResult = PICKED_PHONG) {
+  const open = vi.fn((_host: HTMLElement): ExamplePickerSession => ({
+    result: Promise.resolve(result),
+    ready: Promise.resolve(),
+    dispose: vi.fn(),
+  }));
+
+  const port: ExamplePickerPort = { preload: vi.fn(), open };
+
+  return { port, open };
+}
+
+function mountToolbar(
+  active: EditorTabId = 'vertex',
+  picker: ExamplePickerPort = createFakePicker().port,
+) {
   return mount(EditorToolbar, {
     props: {
       tabs: editableTabs,
       builtIn: builtInTabGroup,
-      examples: shaderExamples,
       active,
+    },
+    global: {
+      plugins: [i18n],
+      provide: { [EXAMPLE_PICKER]: picker },
     },
   });
 }
@@ -61,25 +90,25 @@ describe('EditorToolbar', () => {
     );
   });
 
-  it('places the examples loader immediately before Compile', () => {
+  it('places the example picker immediately before Compile', () => {
     const wrapper = mountToolbar();
 
-    const loader = wrapper.find('.examples-menu').element;
+    const picker = wrapper.find('.example-picker__trigger').element;
     const compile = wrapper.find('.editor-toolbar__compile').element;
 
     const following =
-      loader.compareDocumentPosition(compile) &
+      picker.compareDocumentPosition(compile) &
       Node.DOCUMENT_POSITION_FOLLOWING;
 
     expect(following).toBeTruthy();
   });
 
   it('forwards the picked example to the editor', async () => {
-    const wrapper = mountToolbar();
+    const fake = createFakePicker();
+    const wrapper = mountToolbar('vertex', fake.port);
 
-    await wrapper.find('.examples-menu__trigger').trigger('click');
-    await nextTick();
-    await wrapper.find('[data-example-id="blinn-phong"]').trigger('click');
+    await wrapper.find('.example-picker__trigger').trigger('click');
+    await flushPromises();
 
     expect(wrapper.emitted('load-example')?.[0]).toEqual(['blinn-phong']);
   });

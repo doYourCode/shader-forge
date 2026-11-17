@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   resolveEnvUrl,
+  resolveExampleThumbnailUrl,
   resolveMeshUrl,
   resolveTextureThumbnailUrl,
   resolveTextureUrl,
@@ -30,6 +31,15 @@ const TEXTURES = import.meta.glob(
 
 const TEXTURE_THUMBNAILS = import.meta.glob(
   '/src/assets/textures/thumbs/*.webp',
+  {
+    query: '?url&no-inline',
+    import: 'default',
+    eager: true,
+  },
+) as Record<string, string>;
+
+const EXAMPLE_THUMBNAILS = import.meta.glob(
+  '/src/assets/examples/thumbs/*.webp',
   {
     query: '?url&no-inline',
     import: 'default',
@@ -68,6 +78,15 @@ describe('asset URL resolvers', () => {
     for (const [key, url] of Object.entries(TEXTURE_THUMBNAILS)) {
       expect(resolveTextureThumbnailUrl(pathOf(key))).toBe(url);
     }
+    for (const [key, url] of Object.entries(EXAMPLE_THUMBNAILS)) {
+      expect(resolveExampleThumbnailUrl(pathOf(key))).toBe(url);
+    }
+  });
+
+  it('treats an unbaked example thumbnail as absent instead of throwing', () => {
+    expect(
+      resolveExampleThumbnailUrl('examples/thumbs/not-baked.webp'),
+    ).toBeUndefined();
   });
 
   it('throws with the missing path and nearest keys instead of returning ""', () => {

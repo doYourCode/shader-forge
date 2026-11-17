@@ -430,3 +430,50 @@ index 790e8f6..8418bfe 100644
    });
  
    it('disables the pick button until something is picked', () => {
+diff --git a/node_modules/assetpicker/app/src/components/ItemCard.vue b/node_modules/assetpicker/app/src/components/ItemCard.vue
+--- a/node_modules/assetpicker/app/src/components/ItemCard.vue
++++ b/node_modules/assetpicker/app/src/components/ItemCard.vue
+@@ -4,7 +4,8 @@ import { PICKER } from '../use-picker.js';
+ 
+ // A single item tile. Interaction like a native file dialog:
+ //  - folder: single click opens it (navigates in)
+-//  - file:   single click selects/deselects it, double click confirms the pick
++//  - file:   single click selects/deselects it; the footer button confirms the
++//            pick. A double click must never confirm.
+ const props = defineProps({ item: { type: Object, required: true } });
+ const picker = inject(PICKER);
+ 
+@@ -12,19 +13,17 @@ const selected = computed(() => picker.store.pick.contains(props.item));
+ const mediaType = computed(() => String(props.item.mediaType));
+ const isDir = computed(() => props.item.type === 'dir');
+ 
+-function onClick() {
++function onClick(event) {
++  // The second press of a double click must not toggle the selection back off,
++  // and must not confirm it: only the footer button confirms.
++  if (event.detail > 1) return;
++
+   if (isDir.value) {
+     picker.openItem(props.item);
+   } else {
+     picker.togglePick(props.item);
+   }
+ }
+-
+-function onDblClick() {
+-  if (!isDir.value) {
+-    picker.openItem(props.item);
+-  }
+-}
+ </script>
+ 
+ <template>
+@@ -33,7 +32,6 @@ function onDblClick() {
+     :class="{ selected, 'is-dir': isDir }"
+     :title="isDir ? `Open ${item.name}` : item.name"
+     @click="onClick"
+-    @dblclick.prevent="onDblClick"
+   >
+     <div class="item-preview">
+       <div
+

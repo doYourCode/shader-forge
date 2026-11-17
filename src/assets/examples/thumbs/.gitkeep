@@ -1,0 +1,5 @@
+# Baked shader-example previews (320x200 WebP) live here.
+#
+# Generate them with `npm run bake:examples`, then save each downloaded file
+# under this directory. The picker falls back to the extension badge for any
+# example without a preview, so baking is optional but recommended.

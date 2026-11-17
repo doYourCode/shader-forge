@@ -1,3 +1,5 @@
+import { resolveExampleThumbnailUrl } from '@/core/assets/assetUrls';
+import { createCatalog } from '@/core/assets/catalog';
 import type {
   UserColor3Value,
   UserUniformKind,
@@ -39,18 +41,44 @@ export interface ShaderExampleUniform {
  * hands to the User data tab.
  */
 export interface ShaderExample {
-  /** Stable id; also the base name of the paired `.vert`/`.frag` files. */
+  /** Stable id; also the base name of the fragment stage file. */
   readonly id: string;
-  /** Name shown in the loader menu. */
+  /** Name shown in the picker grid. */
   readonly label: string;
-  /** One-line summary shown under the label. */
+  /** One-line summary of the technique. */
   readonly description: string;
-  /** Menu section the example is listed under; consecutive entries group. */
+  /** Picker folder; examples sharing a label share one folder. */
   readonly group: string;
+  /**
+   * Baked grid preview. `undefined` until `npm run bake:examples` produced
+   * `src/assets/examples/thumbs/<id>.webp`; the picker then shows the
+   * extension badge instead.
+   */
+  readonly thumbnailUrl?: string;
   readonly vertex: string;
   readonly fragment: string;
   /** Editable parameters, in User data row order. */
   readonly uniforms: readonly ShaderExampleUniform[];
+}
+
+/** One picker folder: every example sharing a group label. */
+export interface ShaderExampleGroup {
+  /** Stable folder id used by the picker's storage tree. */
+  readonly id: string;
+  /** Authored group label, used as the folder name. */
+  readonly label: string;
+  readonly examples: readonly ShaderExample[];
+}
+
+/**
+ * Read-only catalog port over the bundled examples. Consumers (the picker
+ * adapter) depend on this shape rather than on the module-level array, so the
+ * registry can grow without touching them.
+ */
+export interface ShaderExampleCatalog {
+  readonly all: readonly ShaderExample[];
+  readonly groups: readonly ShaderExampleGroup[];
+  find(id: string): ShaderExample | undefined;
 }
 
 /** Material parameters are read by the fragment stage only. */
@@ -69,14 +97,16 @@ function floatUniform(name: string, value: number): ShaderExampleUniform {
 }
 
 /**
- * Shader examples offered by the editor's loader, in menu order.
+ * Shader examples offered by the editor's loader, in picker order.
  *
- * Adding an example means dropping `<id>.vert` and `<id>.frag` into
- * `src/assets/examples` and appending one record here. Its material parameters
- * are listed in `uniforms` and referenced (never declared) by the shaders: the
- * loader seeds them into the User data document, which generates the
- * declarations at compile time. The menu, the loader and the coverage test all
- * read this list, so nothing else has to know about the new pair.
+ * Adding an example means dropping a fragment stage into
+ * `src/assets/examples` (reusing a shared vertex stage when the technique
+ * allows it), baking its preview with `npm run bake:examples`, and appending
+ * one record here. Its material parameters are listed in `uniforms` and
+ * referenced (never declared) by the shaders: the loader seeds them into the
+ * User data document, which generates the declarations at compile time. The
+ * picker, the loader and the coverage test all read this list, so nothing else
+ * has to know about the new pair.
  */
 const examples: readonly ShaderExample[] = [
   {
@@ -84,6 +114,7 @@ const examples: readonly ShaderExample[] = [
     label: 'Lambert',
     description: 'Diffuse: N dot L only',
     group: 'Lighting',
+    thumbnailUrl: resolveExampleThumbnailUrl('examples/thumbs/lambert.webp'),
     vertex: basiclmCommonVertex,
     fragment: lambertFragment,
     uniforms: [colorUniform('albedo', { r: 0.83, g: 0.39, b: 0.28 })],
@@ -93,6 +124,7 @@ const examples: readonly ShaderExample[] = [
     label: 'Phong',
     description: 'Specular: reflection vector',
     group: 'Lighting',
+    thumbnailUrl: resolveExampleThumbnailUrl('examples/thumbs/phong.webp'),
     vertex: basiclmCommonVertex,
     fragment: phongFragment,
     uniforms: [
@@ -106,6 +138,9 @@ const examples: readonly ShaderExample[] = [
     label: 'Blinn-Phong',
     description: 'Specular: half vector',
     group: 'Lighting',
+    thumbnailUrl: resolveExampleThumbnailUrl(
+      'examples/thumbs/blinn-phong.webp',
+    ),
     vertex: basiclmCommonVertex,
     fragment: blinnPhongFragment,
     uniforms: [
@@ -119,6 +154,7 @@ const examples: readonly ShaderExample[] = [
     label: 'Oren-Nayar',
     description: 'Rough diffuse: facet slope',
     group: 'Lighting',
+    thumbnailUrl: resolveExampleThumbnailUrl('examples/thumbs/oren-nayar.webp'),
     vertex: basiclmCommonVertex,
     fragment: orenNayarFragment,
     uniforms: [
@@ -131,6 +167,9 @@ const examples: readonly ShaderExample[] = [
     label: 'Cook-Torrance',
     description: 'Specular: GGX microfacets',
     group: 'Lighting',
+    thumbnailUrl: resolveExampleThumbnailUrl(
+      'examples/thumbs/cook-torrance.webp',
+    ),
     vertex: basiclmCommonVertex,
     fragment: cookTorranceFragment,
     uniforms: [
@@ -144,6 +183,9 @@ const examples: readonly ShaderExample[] = [
     label: 'IBL Metalness / Roughness',
     description: 'Image-based: metallic workflow',
     group: 'Image-based lighting',
+    thumbnailUrl: resolveExampleThumbnailUrl(
+      'examples/thumbs/ibl-metalness-roughness.webp',
+    ),
     vertex: iblCommonVertex,
     fragment: iblMetalnessRoughnessFragment,
     uniforms: [
@@ -157,6 +199,9 @@ const examples: readonly ShaderExample[] = [
     label: 'IBL Specular / Glossiness',
     description: 'Image-based: specular workflow',
     group: 'Image-based lighting',
+    thumbnailUrl: resolveExampleThumbnailUrl(
+      'examples/thumbs/ibl-specular-glossiness.webp',
+    ),
     vertex: iblCommonVertex,
     fragment: iblSpecularGlossinessFragment,
     uniforms: [
@@ -167,13 +212,58 @@ const examples: readonly ShaderExample[] = [
   },
 ];
 
-/** Every bundled example, frozen so the menu cannot reorder the source list. */
-export const shaderExamples: readonly ShaderExample[] = Object.freeze(examples);
+const catalog = createCatalog('shaderExamples', examples);
 
-const byId = new Map(
-  shaderExamples.map((example) => [example.id, example] as const),
-);
+/** Every bundled example, frozen so the picker cannot reorder the source list. */
+export const shaderExamples: readonly ShaderExample[] = catalog.all;
+
+/** Every picker folder, in first-seen order. */
+export const shaderExampleGroups: readonly ShaderExampleGroup[] =
+  groupExamples(shaderExamples);
+
+/** Catalog over the bundled examples, for the picker's adapter. */
+export const shaderExampleCatalog: ShaderExampleCatalog = Object.freeze({
+  all: shaderExamples,
+  groups: shaderExampleGroups,
+  find: (id: string) => catalog.find(id),
+});
 
 export function findShaderExample(id: string): ShaderExample | undefined {
-  return byId.get(id);
+  return catalog.find(id);
+}
+
+/** Consecutive examples sharing a group label become one picker folder. */
+function groupExamples(
+  entries: readonly ShaderExample[],
+): readonly ShaderExampleGroup[] {
+  const grouped = new Map<string, ShaderExample[]>();
+
+  for (const example of entries) {
+    const list = grouped.get(example.group);
+
+    if (list) {
+      list.push(example);
+    } else {
+      grouped.set(example.group, [example]);
+    }
+  }
+
+  return Object.freeze(
+    [...grouped].map(([label, groupedExamples]) =>
+      Object.freeze({
+        id: groupSlug(label),
+        label,
+        examples: Object.freeze(groupedExamples),
+      }),
+    ),
+  );
+}
+
+/** Folder id derived from the group label; stable as long as the label is. */
+function groupSlug(label: string): string {
+  return label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }

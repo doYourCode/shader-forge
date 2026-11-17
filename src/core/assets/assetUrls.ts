@@ -47,6 +47,15 @@ const TEXTURE_THUMBNAIL_URLS = import.meta.glob(
   },
 ) as Readonly<Record<string, string>>;
 
+const EXAMPLE_THUMBNAIL_URLS = import.meta.glob(
+  '/src/assets/examples/thumbs/*.webp',
+  {
+    query: '?url&no-inline',
+    import: 'default',
+    eager: true,
+  },
+) as Readonly<Record<string, string>>;
+
 /**
  * The resolved maps, exposed so catalog invariant tests can compare both
  * directions without restating glob patterns (a test that duplicates the
@@ -57,6 +66,7 @@ export const assetUrlMaps = Object.freeze({
   environments: Object.freeze(ENVIRONMENT_URLS),
   textures: Object.freeze(TEXTURE_URLS),
   textureThumbnails: Object.freeze(TEXTURE_THUMBNAIL_URLS),
+  exampleThumbnails: Object.freeze(EXAMPLE_THUMBNAIL_URLS),
 });
 
 /** Resolves a mesh path such as `meshes/monkey.glb`. */
@@ -77,6 +87,22 @@ export function resolveTextureUrl(path: string): string {
 /** Resolves a thumbnail path such as `textures/thumbs/Uv_checker_01.webp`. */
 export function resolveTextureThumbnailUrl(path: string): string {
   return resolveAssetUrl(TEXTURE_THUMBNAIL_URLS, path);
+}
+
+/**
+ * Resolves an example preview such as `examples/thumbs/phong.webp`.
+ *
+ * Example thumbnails are baked on demand (`npm run bake:examples`), so a
+ * missing file is a legitimate state: the picker falls back to the item's
+ * extension badge. Texture thumbnails stay strict because every texture
+ * record already ships its own preview.
+ */
+export function resolveExampleThumbnailUrl(path: string): string | undefined {
+  const key = `${ASSET_ROOT}/${path}`;
+  if (!Object.hasOwn(EXAMPLE_THUMBNAIL_URLS, key)) return undefined;
+
+  const url = EXAMPLE_THUMBNAIL_URLS[key];
+  return url.length > 0 ? url : undefined;
 }
 
 /**

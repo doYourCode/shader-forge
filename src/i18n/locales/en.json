@@ -67,6 +67,15 @@
       "idle": "Copy source with generated user data",
       "copied": "Copied",
       "failed": "Copy failed"
+    },
+    "examples": {
+      "open": "Examples",
+      "dialog": "Select a shader example",
+      "loading": "Loading examples…",
+      "close": "Close example picker",
+      "bundled": "Shader examples",
+      "rejected": "That item is not a shader example.",
+      "unavailable": "The example picker could not be loaded."
     }
   },
   "userData": {

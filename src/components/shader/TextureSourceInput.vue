@@ -3,6 +3,7 @@ import { computed, inject, nextTick, onBeforeUnmount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { previewTextureCatalog } from '@/core/constants/previewTextures';
+import { useModalDialog } from '@/composables/useModalDialog';
 import type { SamplerKind, UserTextureSource } from '@/core/models/userUniform';
 import type {
   TexturePickerPort,
@@ -41,11 +42,9 @@ const error = ref<'rejected' | 'unavailable' | null>(null);
 const hostRef = ref<HTMLElement | null>(null);
 const dialogRef = ref<HTMLElement | null>(null);
 const triggerRef = ref<HTMLButtonElement | null>(null);
+const modal = useModalDialog();
 
 let activeSession: TexturePickerSession | null = null;
-let previouslyFocused: HTMLElement | null = null;
-let previousBodyOverflow = '';
-let modalStateActive = false;
 let unmounted = false;
 
 const repositoryTexture = computed(() =>
@@ -107,7 +106,7 @@ function openPicker(): void {
 
   error.value = null;
   isPickerLoading.value = true;
-  enterModalState();
+  modal.enter();
   isOpen.value = true;
   void mountPicker();
 }
@@ -179,35 +178,7 @@ function closeModal(restoreFocus: boolean): void {
     session?.dispose();
   }
 
-  leaveModalState(restoreFocus);
-}
-
-function enterModalState(): void {
-  if (modalStateActive) return;
-  modalStateActive = true;
-
-  previouslyFocused =
-    document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
-  previousBodyOverflow = document.body.style.overflow;
-  document.body.style.overflow = 'hidden';
-  document.getElementById('app')?.setAttribute('inert', '');
-}
-
-function leaveModalState(restoreFocus: boolean): void {
-  if (!modalStateActive) return;
-  modalStateActive = false;
-
-  document.body.style.overflow = previousBodyOverflow;
-  document.getElementById('app')?.removeAttribute('inert');
-
-  if (restoreFocus) {
-    const target = triggerRef.value ?? previouslyFocused;
-    target?.focus({ preventScroll: true });
-  }
-
-  previouslyFocused = null;
+  modal.leave(restoreFocus, triggerRef.value);
 }
 
 function clearTexture(): void {
@@ -235,7 +206,7 @@ onBeforeUnmount(() => {
   activeSession = null;
   session?.dispose();
 
-  leaveModalState(false);
+  modal.leave(false);
 });
 </script>
 
@@ -357,7 +328,10 @@ onBeforeUnmount(() => {
           </header>
 
           <div class="texture-source__picker-body" :aria-busy="isPickerLoading">
-            <div ref="hostRef" class="texture-source__picker" />
+            <div
+              ref="hostRef"
+              class="texture-source__picker assetpicker-theme"
+            />
             <div
               v-if="isPickerLoading"
               class="texture-source__picker-loading"
@@ -639,53 +613,8 @@ onBeforeUnmount(() => {
 }
 
 .texture-source__picker {
-  /* AssetPicker theme contract: the patched package reads these --ap-* tokens.
-     Keep all picker theming here; do not target AssetPicker internals. */
-  --ap-font-sans: var(--font-sans);
-  --ap-font-mono: var(--font-mono);
-
-  --ap-surface: var(--bg-elevated);
-  --ap-card-surface: var(--bg-raised);
-  --ap-navbar-surface: var(--bg-elevated);
-  --ap-footer-surface: var(--bg-elevated);
-  --ap-input-surface: var(--bg-input);
-  --ap-hover-surface: var(--bg-raised);
-  --ap-resize-handle: var(--border-subtle);
-
-  --ap-border: var(--border);
-  --ap-border-subtle: var(--border-subtle);
-  --ap-border-strong: #4b5263;
-  --ap-border-hover: var(--accent-blue);
-
-  --ap-text: var(--fg);
-  --ap-text-strong: var(--fg-strong);
-  --ap-text-muted: var(--fg-muted);
-  --ap-text-subtle: var(--fg-subtle);
-
-  --ap-accent: var(--accent-blue);
-  --ap-accent-strong: #7fc4f7;
-  --ap-accent-contrast: var(--bg-input);
-  --ap-accent-soft: rgba(97, 175, 239, 0.28);
-
-  --ap-tree-selected-surface: var(--bg-selected);
-  --ap-tree-selected-text: var(--fg-strong);
-
-  --ap-button-surface: #404754;
-  --ap-button-border: #4b5263;
-  --ap-button-hover-surface: #4b5263;
-
-  --ap-warning-surface: rgba(229, 192, 123, 0.12);
-  --ap-warning-border: rgba(229, 192, 123, 0.4);
-  --ap-warning-text: var(--accent-yellow);
-
-  --ap-radius-sm: 3px;
-  --ap-radius: 4px;
-  --ap-radius-lg: 5px;
-
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  color-scheme: dark;
-  background: var(--ap-surface);
 }
 </style>

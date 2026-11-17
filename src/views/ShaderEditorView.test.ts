@@ -19,7 +19,7 @@ interface BlueprintLike {
   readonly extraSamplers: readonly string[];
 }
 
-const { sceneManager, editorManager } = vi.hoisted(() => {
+const { sceneManager, editorManager, examplePicker } = vi.hoisted(() => {
   const sceneManager = {
     onError: null as ((errors: unknown[]) => void) | null,
     init: vi.fn(),
@@ -46,9 +46,22 @@ const { sceneManager, editorManager } = vi.hoisted(() => {
     focus: vi.fn(),
     dispose: vi.fn(),
   };
+  const examplePicker = {
+    open: vi.fn(),
+    preload: vi.fn(),
+    dispose: vi.fn(),
+  };
 
-  return { sceneManager, editorManager };
+  return { sceneManager, editorManager, examplePicker };
 });
+
+vi.mock('@/services/assetpicker/AssetPickerExamplePicker', () => ({
+  AssetPickerExamplePicker: class {
+    constructor() {
+      return examplePicker;
+    }
+  },
+}));
 
 vi.mock('@/services/babylon/SceneManager', () => ({
   SceneManager: class {
@@ -212,14 +225,23 @@ describe('ShaderEditorView example loader', () => {
     editorManager.setValue.mockClear();
     sceneManager.compile.mockClear();
 
+    const dispose = vi.fn();
+    examplePicker.open.mockReturnValue({
+      result: Promise.resolve({ status: 'picked', exampleId: 'phong' }),
+      ready: Promise.resolve(),
+      dispose,
+    });
+
     const wrapper = await mountView();
     const phong = findShaderExample('phong');
     if (!phong) throw new Error('missing phong example');
 
-    await wrapper.find('.examples-menu__trigger').trigger('click');
-    await nextTick();
-    await wrapper.find('[data-example-id="phong"]').trigger('click');
+    await wrapper.find('.example-picker__trigger').trigger('click');
     await flushPromises();
+
+    // The picker session is released as soon as the example is handed over.
+    expect(examplePicker.open).toHaveBeenCalledTimes(1);
+    expect(dispose).toHaveBeenCalledTimes(1);
 
     // The vertex buffer is loaded into the editor...
     expect(editorManager.setValue).toHaveBeenCalledWith(phong.vertex);

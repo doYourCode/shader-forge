@@ -20,9 +20,9 @@ settings:
     merge: true
   commit:
     templates:
-      create: "content(create): {path}"
-      update: "content(update): {path}"
-      delete: "content(delete): {path}"
+      create: 'content(create): {path}'
+      update: 'content(update): {path}'
+      delete: 'content(delete): {path}'
 
 content:
   - name: docs_en
@@ -30,7 +30,7 @@ content:
     type: collection
     path: content/en/docs
     format: yaml-frontmatter
-    filename: "{primary}.md"
+    filename: '{primary}.md'
     subfolders: false
     view:
       fields: [title, section, order, draft]
@@ -79,7 +79,7 @@ content:
     type: collection
     path: content/pt-BR/docs
     format: yaml-frontmatter
-    filename: "{primary}.md"
+    filename: '{primary}.md'
     subfolders: false
     view:
       fields: [title, section, order, draft]
@@ -128,7 +128,7 @@ content:
     type: collection
     path: content/en/knowledge
     format: yaml-frontmatter
-    filename: "{primary}.md"
+    filename: '{primary}.md'
     subfolders: false
     view:
       fields: [title, section, order, draft]
@@ -157,7 +157,7 @@ content:
             - name: glsl
               label: GLSL
             - name: webgl
-              label: "WebGL & WebGPU"
+              label: 'WebGL & WebGPU'
       - name: order
         label: Order in section
         type: number
@@ -179,7 +179,7 @@ content:
     type: collection
     path: content/pt-BR/knowledge
     format: yaml-frontmatter
-    filename: "{primary}.md"
+    filename: '{primary}.md'
     subfolders: false
     view:
       fields: [title, section, order, draft]
@@ -208,7 +208,7 @@ content:
             - name: glsl
               label: GLSL
             - name: webgl
-              label: "WebGL & WebGPU"
+              label: 'WebGL & WebGPU'
       - name: order
         label: Order in section
         type: number

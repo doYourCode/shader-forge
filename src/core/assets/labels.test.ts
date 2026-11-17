@@ -47,9 +47,10 @@ describe('asset labels in the locale files', () => {
 
         expect(readMessage(en, key), `en: ${key}`).toBeTypeOf('string');
         expect(readMessage(ptBR, key), `pt-BR: ${key}`).toBeTypeOf('string');
-        expect(readMessage(en, key)?.trim().length, `en: ${key}`).toBeGreaterThan(
-          0,
-        );
+        expect(
+          readMessage(en, key)?.trim().length,
+          `en: ${key}`,
+        ).toBeGreaterThan(0);
         expect(
           readMessage(ptBR, key)?.trim().length,
           `pt-BR: ${key}`,

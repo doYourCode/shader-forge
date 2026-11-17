@@ -77,9 +77,7 @@ const RULES: readonly DiagnosticRule[] = [
       /['"`]\s*(?:attribute|varying)\s*['"`]|\b(?:attribute|varying)\b[^\n]*(?:syntax error|reserved|not (?:available|supported)|undeclared)/i,
     glslVersion: '300 es',
     describe: (message) => {
-      const keyword = /\battribute\b/i.test(message)
-        ? 'attribute'
-        : 'varying';
+      const keyword = /\battribute\b/i.test(message) ? 'attribute' : 'varying';
 
       return {
         kind: 'syntax',
@@ -171,12 +169,15 @@ const RULES: readonly DiagnosticRule[] = [
     },
   },
   {
-    pattern: /no matching (?:overloaded )?function|no matching overload|overload resolution/i,
+    pattern:
+      /no matching (?:overloaded )?function|no matching overload|overload resolution/i,
     describe: (message, version) => {
       const name = quotedName(message);
       return {
         kind: 'logic',
-        title: name ? `No matching function for '${name}'` : 'No matching function',
+        title: name
+          ? `No matching function for '${name}'`
+          : 'No matching function',
         advice:
           version === '300 es'
             ? 'This function exists, but not with these argument types. Check the number and types of the arguments. GLSL ES 3.00 uses texture(sampler, vec2) instead of texture2D(), and in/out instead of attribute/varying.'
@@ -215,7 +216,8 @@ const RULES: readonly DiagnosticRule[] = [
     }),
   },
   {
-    pattern: /link|mismatch.*vary|vary.*mismatch|interface block|input.*output/i,
+    pattern:
+      /link|mismatch.*vary|vary.*mismatch|interface block|input.*output/i,
     describe: () => ({
       kind: 'link',
       title: 'Shaders do not match',
@@ -241,12 +243,14 @@ const RULES: readonly DiagnosticRule[] = [
       return {
         kind: 'logic',
         title: name ? `'${name}' is a reserved word` : 'Reserved word',
-        advice: 'GLSL reserves this word. Choose a different name for the variable or function.',
+        advice:
+          'GLSL reserves this word. Choose a different name for the variable or function.',
       };
     },
   },
   {
-    pattern: /too many|exceeds?.*limit|out of (?:memory|resources)|too complex/i,
+    pattern:
+      /too many|exceeds?.*limit|out of (?:memory|resources)|too complex/i,
     describe: () => ({
       kind: 'program',
       title: 'Shader is too complex',

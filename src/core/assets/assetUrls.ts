@@ -114,8 +114,7 @@ function nearestKeys(keys: readonly string[], missing: string): string {
     .sort(
       (left, right) =>
         commonPrefixLength(right, missing) -
-          commonPrefixLength(left, missing) ||
-        left.localeCompare(right),
+          commonPrefixLength(left, missing) || left.localeCompare(right),
     )
     .slice(0, 3)
     .join(', ');

@@ -195,7 +195,9 @@ describe('TextureRegistry', () => {
     });
 
     await expect(first).resolves.toBeNull();
-    expect(harness.textures.get('/first.png')!.dispose).toHaveBeenCalledTimes(1);
+    expect(harness.textures.get('/first.png')!.dispose).toHaveBeenCalledTimes(
+      1,
+    );
 
     // A stale callback must not override the newer registration.
     harness.callbacks.get('/first.png')!.onLoad();
@@ -280,9 +282,9 @@ describe('TextureRegistry', () => {
 
     harness.registry.release('u1');
 
-    expect(harness.textures.get('blob:user-file')!.dispose).toHaveBeenCalledTimes(
-      1,
-    );
+    expect(
+      harness.textures.get('blob:user-file')!.dispose,
+    ).toHaveBeenCalledTimes(1);
     expect(harness.objectUrls.revokeObjectUrl).toHaveBeenCalledTimes(1);
     expect(harness.objectUrls.revokeObjectUrl).toHaveBeenCalledWith(
       'blob:user-file',

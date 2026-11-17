@@ -1,9 +1,6 @@
 import type { ITreeNode } from '@/core/models/treeNode';
 
-export function findNodeById(
-  nodes: ITreeNode[],
-  id: string,
-): ITreeNode | null {
+export function findNodeById(nodes: ITreeNode[], id: string): ITreeNode | null {
   for (const node of nodes) {
     if (node.id === id) return node;
     if (node.children) {

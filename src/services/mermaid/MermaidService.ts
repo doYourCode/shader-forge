@@ -103,8 +103,7 @@ export class MermaidService {
     const placeholders = Array.from(
       root.querySelectorAll<HTMLElement>(`[${MERMAID_SOURCE_ATTRIBUTE}]`),
     ).filter(
-      (node) =>
-        node.isConnected && !node.getAttribute(MERMAID_STATE_ATTRIBUTE),
+      (node) => node.isConnected && !node.getAttribute(MERMAID_STATE_ATTRIBUTE),
     );
 
     if (placeholders.length === 0) return;

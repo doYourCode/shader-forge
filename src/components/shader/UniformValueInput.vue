@@ -45,8 +45,8 @@ const components = computed<readonly string[]>(() => {
   }
 });
 
-const vectorRecord = computed<Record<string, number>>(() =>
-  props.value as unknown as Record<string, number>,
+const vectorRecord = computed<Record<string, number>>(
+  () => props.value as unknown as Record<string, number>,
 );
 
 const numberValue = computed(() =>

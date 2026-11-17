@@ -4,7 +4,8 @@ import FeatureCard from '@/components/landing/FeatureCard.vue';
 import { landingCards } from '@/core/constants/landingCards';
 import { useWebGpuAvailability } from '@/composables/useWebGpuAvailability';
 
-const { supported: webGpuSupported, reason: webGpuReason } = useWebGpuAvailability();
+const { supported: webGpuSupported, reason: webGpuReason } =
+  useWebGpuAvailability();
 
 /**
  * For each card, decide its tri-state enablement.

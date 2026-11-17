@@ -5,10 +5,7 @@ import {
   type Scene,
 } from '@babylonjs/core';
 import type { PreviewTexture } from '@/core/models/previewTexture';
-import type {
-  SamplerKind,
-  UserTextureSource,
-} from '@/core/models/userUniform';
+import type { SamplerKind, UserTextureSource } from '@/core/models/userUniform';
 
 /** Creates a Babylon texture and reports its asynchronous load outcome. */
 export type UserTextureFactory = (

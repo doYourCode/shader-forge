@@ -1,4 +1,5 @@
-export type EditorTabId = 'vertex' | 'fragment' | 'user_data' | 'uniforms' | 'io';
+export type EditorTabId =
+  'vertex' | 'fragment' | 'user_data' | 'uniforms' | 'io';
 
 export interface EditorTab {
   id: EditorTabId;

@@ -112,9 +112,7 @@ export function parseShaderCompileErrors(
         title: description.title,
         message: diagnostic.message,
         advice: description.advice,
-        ...(attribution.stage === 'user_data'
-          ? { row: attribution.row }
-          : {}),
+        ...(attribution.stage === 'user_data' ? { row: attribution.row } : {}),
       });
 
       if (errors.length >= MAX_ERRORS) return errors;
@@ -326,7 +324,9 @@ function firstUsefulLine(raw: string): string | null {
 
     if (
       cleaned &&
-      !/^shader (?:compilation failed|program failed to link)\.?$/i.test(cleaned)
+      !/^shader (?:compilation failed|program failed to link)\.?$/i.test(
+        cleaned,
+      )
     ) {
       return cleaned;
     }

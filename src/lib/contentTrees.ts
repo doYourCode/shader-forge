@@ -16,7 +16,10 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
   docs: [
     {
       id: 'api',
-      labels: { [DEFAULT_LOCALE]: 'API Reference', [PT_BR_LOCALE]: 'Referência da API' },
+      labels: {
+        [DEFAULT_LOCALE]: 'API Reference',
+        [PT_BR_LOCALE]: 'Referência da API',
+      },
     },
     {
       id: 'guides',
@@ -26,7 +29,10 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
   knowledge: [
     {
       id: 'basics',
-      labels: { [DEFAULT_LOCALE]: 'Shader Basics', [PT_BR_LOCALE]: 'Fundamentos de Shader' },
+      labels: {
+        [DEFAULT_LOCALE]: 'Shader Basics',
+        [PT_BR_LOCALE]: 'Fundamentos de Shader',
+      },
     },
     {
       id: 'glsl',
@@ -34,7 +40,10 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
     },
     {
       id: 'webgl',
-      labels: { [DEFAULT_LOCALE]: 'WebGL & WebGPU', [PT_BR_LOCALE]: 'WebGL e WebGPU' },
+      labels: {
+        [DEFAULT_LOCALE]: 'WebGL & WebGPU',
+        [PT_BR_LOCALE]: 'WebGL e WebGPU',
+      },
     },
   ],
 };

@@ -70,11 +70,7 @@ describe('mapAssetPickerItem', () => {
 
   it('rejects items from a storage other than the bundled repository', () => {
     expect(
-      mapAssetPickerItem(
-        item({ storage: 'github' }),
-        'sampler2D',
-        CATALOG,
-      ),
+      mapAssetPickerItem(item({ storage: 'github' }), 'sampler2D', CATALOG),
     ).toEqual({ status: 'rejected', reason: 'unsupported-asset' });
   });
 

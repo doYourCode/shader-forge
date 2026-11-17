@@ -283,7 +283,9 @@ export function isSamplerKind(kind: UserUniformKind): kind is SamplerKind {
   return kind === 'sampler2D' || kind === 'samplerCube';
 }
 
-export function isTextureSource(value: UserUniformValue): value is UserTextureSource {
+export function isTextureSource(
+  value: UserUniformValue,
+): value is UserTextureSource {
   if (typeof value !== 'object' || value === null) return false;
 
   const source = value as {

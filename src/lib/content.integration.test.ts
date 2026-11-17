@@ -13,7 +13,9 @@ import { DEFAULT_LOCALE } from './locales';
 const source = loadContentSource();
 const resolver = new ContentResolver(DEFAULT_LOCALE, source);
 
-function treeLabels(tree: Awaited<ReturnType<typeof buildContentTree>>): string[] {
+function treeLabels(
+  tree: Awaited<ReturnType<typeof buildContentTree>>,
+): string[] {
   return tree.flatMap((section) =>
     (section.children ?? []).map((child) => child.label),
   );
@@ -35,9 +37,9 @@ describe('migrated content trees', () => {
     expect(result.content?.title).toBe('Editor de Shader');
     expect(result.locale).toBe('pt-BR');
     expect(result.isFallback).toBe(false);
-    expect(await resolver.hasTranslation('docs/shader-editor.md', 'pt-BR')).toBe(
-      true,
-    );
+    expect(
+      await resolver.hasTranslation('docs/shader-editor.md', 'pt-BR'),
+    ).toBe(true);
   });
 
   it('serves the English original for an untranslated pt-BR page', async () => {

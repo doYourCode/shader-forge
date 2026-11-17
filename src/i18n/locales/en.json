@@ -1,6 +1,5 @@
-
 {
-   "app": {
+  "app": {
     "title": "shaderForge™",
     "tagline": "Shaders Body of Knowledge",
     "run": "Run Shader",

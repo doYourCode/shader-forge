@@ -204,11 +204,12 @@ function splitLines(source: string): string[] {
   return source.replace(/\r/g, '').split('\n');
 }
 
-function describeValues(
-  definitions: readonly UserUniformDefinition[],
-): string {
+function describeValues(definitions: readonly UserUniformDefinition[]): string {
   return definitions
-    .map((definition) => `${definition.name} = ${formatValue(definition.kind, definition.value)}`)
+    .map(
+      (definition) =>
+        `${definition.name} = ${formatValue(definition.kind, definition.value)}`,
+    )
     .join('; ');
 }
 

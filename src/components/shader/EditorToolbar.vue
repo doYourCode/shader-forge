@@ -71,9 +71,7 @@ function getMenuItems(): HTMLButtonElement[] {
   if (!menuRef.value) return [];
 
   return Array.from(
-    menuRef.value.querySelectorAll<HTMLButtonElement>(
-      '[role="menuitemradio"]',
-    ),
+    menuRef.value.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]'),
   );
 }
 
@@ -86,9 +84,7 @@ function focusMenuItem(target: MenuFocusTarget): void {
   );
 
   const item =
-    target === 'last'
-      ? items[items.length - 1]
-      : (selected ?? items[0]);
+    target === 'last' ? items[items.length - 1] : (selected ?? items[0]);
 
   item?.focus();
 }
@@ -285,11 +281,7 @@ onBeforeUnmount(() => {
             :aria-labelledby="labelId"
             @keydown="handleMenuKeydown"
           >
-            <li
-              v-for="tab in props.builtIn.tabs"
-              :key="tab.id"
-              role="none"
-            >
+            <li v-for="tab in props.builtIn.tabs" :key="tab.id" role="none">
               <button
                 type="button"
                 role="menuitemradio"
@@ -356,7 +348,9 @@ onBeforeUnmount(() => {
   font-family: var(--font-mono);
   font-size: 12px;
   cursor: pointer;
-  transition: color 0.12s ease, background 0.12s ease,
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
     border-color 0.12s ease;
 }
 
@@ -501,7 +495,9 @@ onBeforeUnmount(() => {
   font-family: var(--font-mono);
   font-size: 12px;
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
 }
 
 .editor-toolbar__compile:hover {

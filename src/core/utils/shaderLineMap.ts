@@ -22,7 +22,10 @@ export class ShaderLineMap {
     this.userLineCount = userLineCount;
   }
 
-  static between(driverSource: string, userSource: string): ShaderLineMap | null {
+  static between(
+    driverSource: string,
+    userSource: string,
+  ): ShaderLineMap | null {
     const userLines = splitLines(userSource).map(normalizeShaderLine);
     const driverLines = splitLines(driverSource).map(normalizeShaderLine);
     const userCount = userLines.length;
@@ -56,8 +59,7 @@ export class ShaderLineMap {
         user++;
         driver++;
       } else if (
-        lcs[(user + 1) * width + driver] >=
-        lcs[user * width + driver + 1]
+        lcs[(user + 1) * width + driver] >= lcs[user * width + driver + 1]
       ) {
         user++;
       } else {

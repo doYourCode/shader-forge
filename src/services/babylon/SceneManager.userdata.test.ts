@@ -126,9 +126,7 @@ function createHarness() {
   };
 }
 
-function init(
-  harness: ReturnType<typeof createHarness>,
-): Promise<void> {
+function init(harness: ReturnType<typeof createHarness>): Promise<void> {
   return harness.manager.init(
     {} as HTMLCanvasElement,
     BLUEPRINT,

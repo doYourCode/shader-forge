@@ -30,9 +30,7 @@ function createDefinition(
   };
 }
 
-function createValidateName(
-  definitions: readonly UserUniformDefinition[],
-) {
+function createValidateName(definitions: readonly UserUniformDefinition[]) {
   return (name: string, exceptId?: string): NameValidationResult => {
     const taken = new Set(
       definitions
@@ -178,9 +176,7 @@ describe('UserDataPanel', () => {
     expect(wrapper.findComponent(UniformValueInput).props('label')).toBe(
       'tint',
     );
-    expect(wrapper.findComponent(UserColorPicker).props('label')).toBe(
-      'tint',
-    );
+    expect(wrapper.findComponent(UserColorPicker).props('label')).toBe('tint');
 
     wrapper.findComponent(UserColorPicker).vm.$emit('change', {
       r: 0,
@@ -209,9 +205,7 @@ describe('UserDataPanel', () => {
     });
 
     const rows = wrapper.findAll('.user-data__row');
-    expect(rows[0]!.classes()).not.toContain(
-      'user-data__row--highlighted',
-    );
+    expect(rows[0]!.classes()).not.toContain('user-data__row--highlighted');
     expect(rows[1]!.classes()).toContain('user-data__row--highlighted');
   });
 });
@@ -238,7 +232,9 @@ describe('UserDataPanel generated GLSL preview', () => {
     expect(text).toContain('// current values: tint = (1, 1, 1)');
     expect(text).toContain('// <<< end ShaderForge user data >>>');
     expect(
-      wrapper.findAll('.user-data__generated-stage').map((title) => title.text()),
+      wrapper
+        .findAll('.user-data__generated-stage')
+        .map((title) => title.text()),
     ).toEqual(['Fragment stage']);
   });
 
@@ -270,7 +266,9 @@ describe('UserDataPanel generated GLSL preview', () => {
       ],
     });
 
-    expect(previewText(wrapper)).toContain('// current values: tint = (0, 0.5, 0)');
+    expect(previewText(wrapper)).toContain(
+      '// current values: tint = (0, 0.5, 0)',
+    );
   });
 
   it('shows a vertex block only for vertex-targeted definitions', () => {
@@ -282,7 +280,9 @@ describe('UserDataPanel generated GLSL preview', () => {
     ]);
 
     expect(
-      wrapper.findAll('.user-data__generated-stage').map((title) => title.text()),
+      wrapper
+        .findAll('.user-data__generated-stage')
+        .map((title) => title.text()),
     ).toEqual(['Vertex stage']);
     expect(previewText(wrapper)).toContain(
       'uniform vec3 sunDir; // direction (normalized)',
@@ -295,7 +295,9 @@ describe('UserDataPanel generated GLSL preview', () => {
     ]);
 
     expect(
-      wrapper.findAll('.user-data__generated-stage').map((title) => title.text()),
+      wrapper
+        .findAll('.user-data__generated-stage')
+        .map((title) => title.text()),
     ).toEqual(['Fragment stage', 'Vertex stage']);
     expect(wrapper.findAll('.user-data__glsl')).toHaveLength(2);
   });

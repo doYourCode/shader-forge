@@ -19,9 +19,11 @@ export class WebGpuService {
     }
 
     try {
-      const adapter = await (navigator as Navigator & {
-        gpu: { requestAdapter: () => Promise<unknown | null> };
-      }).gpu.requestAdapter();
+      const adapter = await (
+        navigator as Navigator & {
+          gpu: { requestAdapter: () => Promise<unknown | null> };
+        }
+      ).gpu.requestAdapter();
 
       if (!adapter) {
         this.cached = {

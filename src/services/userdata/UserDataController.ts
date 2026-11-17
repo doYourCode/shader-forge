@@ -350,9 +350,7 @@ export class UserDataController {
   }
 
   private find(id: string): UserUniformDefinition | undefined {
-    return this.document.definitions.find(
-      (definition) => definition.id === id,
-    );
+    return this.document.definitions.find((definition) => definition.id === id);
   }
 
   /**
@@ -445,14 +443,12 @@ export class UserDataController {
     // stale and must not reach the new texture.
     this.pendingTextureReleases.delete(definition.id);
 
-    void gpu.textures
-      .load(definition.id, kind, source)
-      .then((texture) => {
-        if (!texture || this.disposed || this.gpu !== gpu) return;
-        if (definition.value !== source) return;
+    void gpu.textures.load(definition.id, kind, source).then((texture) => {
+      if (!texture || this.disposed || this.gpu !== gpu) return;
+      if (definition.value !== source) return;
 
-        gpu.binder.apply(toUniformBinding(definition));
-      });
+      gpu.binder.apply(toUniformBinding(definition));
+    });
   }
 
   /** Defers disposal until the rebuilt material stops using the texture. */

@@ -122,8 +122,7 @@ export class AssetPickerTexturePicker implements TexturePickerPort {
       settle(outcome);
     };
 
-    let session: TexturePickerSession;
-    session = {
+    const session: TexturePickerSession = {
       result,
       ready,
       dispose: () => complete({ status: 'cancelled' }),

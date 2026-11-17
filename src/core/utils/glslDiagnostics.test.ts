@@ -13,8 +13,10 @@ describe('describeGlslIssue', () => {
   });
 
   it('uses GLSL ES 3.00 terms for generic advice', () => {
-    const advice = describeGlslIssue('something the rules do not know', ES_300)
-      .advice;
+    const advice = describeGlslIssue(
+      'something the rules do not know',
+      ES_300,
+    ).advice;
 
     expect(advice).toContain('GLSL ES 3.00');
     expect(advice).toContain('in/out');

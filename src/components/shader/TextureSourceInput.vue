@@ -1,18 +1,9 @@
 <script setup lang="ts">
-import {
-  computed,
-  inject,
-  nextTick,
-  onBeforeUnmount,
-  ref,
-} from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { previewTextureCatalog } from '@/core/constants/previewTextures';
-import type {
-  SamplerKind,
-  UserTextureSource,
-} from '@/core/models/userUniform';
+import type { SamplerKind, UserTextureSource } from '@/core/models/userUniform';
 import type {
   TexturePickerPort,
   TexturePickerSession,
@@ -101,7 +92,9 @@ const errorMessage = computed(() =>
   error.value === null ? '' : t(`userData.texture.${error.value}`),
 );
 
-function rejectionKey(reason: TexturePickRejection): 'rejected' | 'unavailable' {
+function rejectionKey(
+  reason: TexturePickRejection,
+): 'rejected' | 'unavailable' {
   return reason === 'unsupported-asset' ? 'rejected' : 'unavailable';
 }
 
@@ -286,11 +279,7 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <p
-      v-if="!hasBundledTextures"
-      class="texture-source__hint"
-      role="note"
-    >
+    <p v-if="!hasBundledTextures" class="texture-source__hint" role="note">
       {{ t('userData.texture.noBundled') }}
     </p>
 
@@ -367,10 +356,7 @@ onBeforeUnmount(() => {
             </button>
           </header>
 
-          <div
-            class="texture-source__picker-body"
-            :aria-busy="isPickerLoading"
-          >
+          <div class="texture-source__picker-body" :aria-busy="isPickerLoading">
             <div ref="hostRef" class="texture-source__picker" />
             <div
               v-if="isPickerLoading"
@@ -378,10 +364,7 @@ onBeforeUnmount(() => {
               role="status"
               aria-live="polite"
             >
-              <span
-                class="texture-source__picker-spinner"
-                aria-hidden="true"
-              />
+              <span class="texture-source__picker-spinner" aria-hidden="true" />
               <span>{{ t('userData.texture.loading') }}</span>
             </div>
           </div>

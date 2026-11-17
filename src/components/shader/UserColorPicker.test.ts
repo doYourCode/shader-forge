@@ -38,12 +38,7 @@ interface FakeIroColor {
   readonly green: number;
   readonly blue: number;
   readonly alpha: number;
-  set(value: {
-    r?: number;
-    g?: number;
-    b?: number;
-    a?: number;
-  }): void;
+  set(value: { r?: number; g?: number; b?: number; a?: number }): void;
   readonly _state: PickerColorState;
 }
 
@@ -60,61 +55,59 @@ const iroMock = vi.hoisted(() => {
   const Wheel = 'iro-wheel';
   const Slider = 'iro-slider';
 
-  const ColorPicker = vi.fn(
-    function (
-      this: unknown,
-      host: HTMLElement,
-      options: PickerOptions,
-    ): FakeIroPicker {
-      const listeners = new Set<ColorChangeHandler>();
-      const state: PickerColorState = {
-        r: options.color?.r ?? 0,
-        g: options.color?.g ?? 0,
-        b: options.color?.b ?? 0,
-        a: options.color?.a ?? 1,
-      };
+  const ColorPicker = vi.fn(function (
+    this: unknown,
+    host: HTMLElement,
+    options: PickerOptions,
+  ): FakeIroPicker {
+    const listeners = new Set<ColorChangeHandler>();
+    const state: PickerColorState = {
+      r: options.color?.r ?? 0,
+      g: options.color?.g ?? 0,
+      b: options.color?.b ?? 0,
+      a: options.color?.a ?? 1,
+    };
 
-      const color: FakeIroColor = {
-        get red() {
-          return Math.round(state.r);
-        },
-        get green() {
-          return Math.round(state.g);
-        },
-        get blue() {
-          return Math.round(state.b);
-        },
-        get alpha() {
-          return state.a;
-        },
-        _state: state,
-        set(value) {
-          if (typeof value.r === 'number') state.r = value.r;
-          if (typeof value.g === 'number') state.g = value.g;
-          if (typeof value.b === 'number') state.b = value.b;
-          if (typeof value.a === 'number') state.a = value.a;
+    const color: FakeIroColor = {
+      get red() {
+        return Math.round(state.r);
+      },
+      get green() {
+        return Math.round(state.g);
+      },
+      get blue() {
+        return Math.round(state.b);
+      },
+      get alpha() {
+        return state.a;
+      },
+      _state: state,
+      set(value) {
+        if (typeof value.r === 'number') state.r = value.r;
+        if (typeof value.g === 'number') state.g = value.g;
+        if (typeof value.b === 'number') state.b = value.b;
+        if (typeof value.a === 'number') state.a = value.a;
 
-          for (const listener of listeners) listener(color);
-        },
-      };
+        for (const listener of listeners) listener(color);
+      },
+    };
 
-      const picker: FakeIroPicker = {
-        base: document.createElement('div'),
-        color,
-        options,
-        on: vi.fn((event: string, callback: ColorChangeHandler) => {
-          if (event === 'color:change') listeners.add(callback);
-        }),
-        off: vi.fn((event: string, callback: ColorChangeHandler) => {
-          if (event === 'color:change') listeners.delete(callback);
-        }),
-      };
+    const picker: FakeIroPicker = {
+      base: document.createElement('div'),
+      color,
+      options,
+      on: vi.fn((event: string, callback: ColorChangeHandler) => {
+        if (event === 'color:change') listeners.add(callback);
+      }),
+      off: vi.fn((event: string, callback: ColorChangeHandler) => {
+        if (event === 'color:change') listeners.delete(callback);
+      }),
+    };
 
-      host.appendChild(picker.base);
-      instances.push(picker);
-      return picker;
-    },
-  );
+    host.appendChild(picker.base);
+    instances.push(picker);
+    return picker;
+  });
 
   return { ColorPicker, instances, Wheel, Slider };
 });
@@ -448,9 +441,9 @@ describe('UserColorPicker', () => {
     expect(wrapper.emitted('change')).toBeUndefined();
     expect(hexInput().value).toBe('#ffffff');
     expect(hexInput().getAttribute('aria-invalid')).toBe('true');
-    expect(panel().querySelector('.user-color-picker__error')?.textContent).toContain(
-      'valid hex color',
-    );
+    expect(
+      panel().querySelector('.user-color-picker__error')?.textContent,
+    ).toContain('valid hex color');
   });
 
   it('rejects alpha digits for a plain color', async () => {
@@ -550,17 +543,13 @@ describe('UserColorPicker', () => {
 
     const dialog = panel();
     expect(dialog.getAttribute('role')).toBe('dialog');
-    expect(dialog.getAttribute('aria-label')).toBe(
-      'Color picker for tint',
-    );
+    expect(dialog.getAttribute('aria-label')).toBe('Color picker for tint');
     expect(
       dialog
         .querySelector('.user-color-picker__close')
         ?.getAttribute('aria-label'),
     ).toBe('Close color picker');
-    expect(
-      hexInput().closest('label')?.textContent,
-    ).toContain('Hex value');
+    expect(hexInput().closest('label')?.textContent).toContain('Hex value');
   });
 
   it('translates the labels into pt-BR', async () => {
@@ -578,9 +567,7 @@ describe('UserColorPicker', () => {
 
     await open(wrapper);
 
-    expect(panel().getAttribute('aria-label')).toBe(
-      'Seletor de cor para tint',
-    );
+    expect(panel().getAttribute('aria-label')).toBe('Seletor de cor para tint');
   });
 
   it('unbinds iro, removes its root and drops document listeners', async () => {
@@ -610,10 +597,7 @@ describe('UserColorPicker', () => {
       'pointerdown',
       expect.any(Function),
     );
-    expect(windowRemove).toHaveBeenCalledWith(
-      'resize',
-      expect.any(Function),
-    );
+    expect(windowRemove).toHaveBeenCalledWith('resize', expect.any(Function));
     expect(windowRemove).toHaveBeenCalledWith(
       'scroll',
       expect.any(Function),

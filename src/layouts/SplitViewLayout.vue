@@ -17,10 +17,7 @@ withDefaults(
 </script>
 
 <template>
-  <div
-    class="split-view"
-    :style="{ '--left-width': `${leftWidth}rem` }"
-  >
+  <div class="split-view" :style="{ '--left-width': `${leftWidth}rem` }">
     <!-- LEFT -->
     <aside class="split-view__pane split-view__pane--left">
       <header v-if="leftLabel" class="split-view__pane-label">

@@ -36,7 +36,7 @@ useMermaid(body, () => props.content);
 <style scoped>
 .content-pane {
   max-width: 100%;
-  padding-left: 1rem;  /* Evita que o texto cole na esquerda */
+  padding-left: 1rem; /* Evita que o texto cole na esquerda */
   padding-right: 1rem; /* Evita que o texto cole na direita */
   box-sizing: border-box;
   font-family: var(--font-mono);

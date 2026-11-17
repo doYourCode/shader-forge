@@ -144,7 +144,9 @@ export function isGlslStackFrame(line: string): boolean {
   );
 }
 
-function dedupe(diagnostics: readonly GlslLogDiagnostic[]): GlslLogDiagnostic[] {
+function dedupe(
+  diagnostics: readonly GlslLogDiagnostic[],
+): GlslLogDiagnostic[] {
   const seen = new Set<string>();
   const result: GlslLogDiagnostic[] = [];
 

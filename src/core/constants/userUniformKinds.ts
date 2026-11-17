@@ -105,14 +105,16 @@ export const USER_UNIFORM_KINDS: readonly UserUniformKindMeta[] = [
   },
 ];
 
-export const USER_UNIFORM_KIND_MAP: Record<UserUniformKind, UserUniformKindMeta> =
-  USER_UNIFORM_KINDS.reduce(
-    (map, meta) => {
-      map[meta.kind] = meta;
-      return map;
-    },
-    {} as Record<UserUniformKind, UserUniformKindMeta>,
-  );
+export const USER_UNIFORM_KIND_MAP: Record<
+  UserUniformKind,
+  UserUniformKindMeta
+> = USER_UNIFORM_KINDS.reduce(
+  (map, meta) => {
+    map[meta.kind] = meta;
+    return map;
+  },
+  {} as Record<UserUniformKind, UserUniformKindMeta>,
+);
 
 /** Components edited for each vector-like kind, in GLSL order. */
 export const USER_UNIFORM_VECTOR_COMPONENTS: Record<

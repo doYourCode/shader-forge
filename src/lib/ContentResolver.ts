@@ -218,6 +218,8 @@ function parseSafely(key: string, raw: string) {
     return parseFrontmatter<RawFrontmatter>(raw);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Invalid frontmatter in content/${key}: ${message}`);
+    throw new Error(`Invalid frontmatter in content/${key}: ${message}`, {
+      cause: error,
+    });
   }
 }

@@ -11,10 +11,14 @@ const props = defineProps<{
 
 const statusLabel = computed(() => {
   switch (props.status) {
-    case 'ready': return '🟢 Ready';
-    case 'error': return '🔴 Error';
-    case 'compiling': return '🟡 Compiling';
-    default: return '⚪ Idle';
+    case 'ready':
+      return '🟢 Ready';
+    case 'error':
+      return '🔴 Error';
+    case 'compiling':
+      return '🟡 Compiling';
+    default:
+      return '⚪ Idle';
   }
 });
 </script>

@@ -70,9 +70,7 @@ const panelId = useId();
 
 const hasAlpha = computed(() => props.alpha !== undefined);
 const alphaUnit = computed(() => clampUnit(props.alpha ?? 1));
-const uniformName = computed(
-  () => props.label ?? t('userData.kinds.color'),
-);
+const uniformName = computed(() => props.label ?? t('userData.kinds.color'));
 
 // The trigger stays compact with the RGB hex; the alpha is shown next to it
 // and the editable field carries the full #rrggbbaa form for color4.
@@ -96,9 +94,7 @@ hexDraft.value = currentHex.value;
 const swatchStyle = computed(() => ({
   backgroundColor: `rgba(${unitToByte(props.color.r)}, ${unitToByte(
     props.color.g,
-  )}, ${unitToByte(props.color.b)}, ${
-    hasAlpha.value ? alphaUnit.value : 1
-  })`,
+  )}, ${unitToByte(props.color.b)}, ${hasAlpha.value ? alphaUnit.value : 1})`,
 }));
 
 let picker: iro.ColorPicker | null = null;
@@ -153,9 +149,7 @@ function ensurePicker(): void {
 
   const instance = new ColorPicker(host, {
     width: 220,
-    color: hasAlpha.value
-      ? { r, g, b, a: alphaUnit.value }
-      : { r, g, b },
+    color: hasAlpha.value ? { r, g, b, a: alphaUnit.value } : { r, g, b },
     layout: [
       { component: iro.ui.Wheel },
       { component: iro.ui.Slider, options: { sliderType: 'value' } },
@@ -193,9 +187,7 @@ function syncPickerFromProps(): void {
   if (sameRgb && sameAlpha) return;
 
   instance.color.set(
-    hasAlpha.value
-      ? { r, g, b, a: alphaUnit.value }
-      : { r, g, b },
+    hasAlpha.value ? { r, g, b, a: alphaUnit.value } : { r, g, b },
   );
 }
 
@@ -226,10 +218,7 @@ function updatePosition(): void {
     top =
       above >= VIEWPORT_MARGIN
         ? above
-        : Math.max(
-            VIEWPORT_MARGIN,
-            viewportHeight - height - VIEWPORT_MARGIN,
-          );
+        : Math.max(VIEWPORT_MARGIN, viewportHeight - height - VIEWPORT_MARGIN);
   }
 
   panel.style.left = `${Math.round(left)}px`;
@@ -340,8 +329,7 @@ function onDocumentPointerDown(event: PointerEvent): void {
   const target = event.target;
   if (
     target instanceof Node &&
-    (panelRef.value?.contains(target) ||
-      triggerRef.value?.contains(target))
+    (panelRef.value?.contains(target) || triggerRef.value?.contains(target))
   ) {
     return;
   }
@@ -401,10 +389,7 @@ onBeforeUnmount(() => {
       @click="togglePicker"
     >
       <span class="user-color-picker__swatch" aria-hidden="true">
-        <span
-          class="user-color-picker__swatch-color"
-          :style="swatchStyle"
-        />
+        <span class="user-color-picker__swatch-color" :style="swatchStyle" />
       </span>
       <span class="user-color-picker__hex">{{ triggerHex }}</span>
       <span
@@ -458,11 +443,7 @@ onBeforeUnmount(() => {
           />
         </label>
 
-        <span
-          v-if="hexInvalid"
-          class="user-color-picker__error"
-          role="alert"
-        >
+        <span v-if="hexInvalid" class="user-color-picker__error" role="alert">
           {{ t('userData.color.invalidHex') }}
         </span>
       </div>

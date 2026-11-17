@@ -33,7 +33,8 @@ describe('internal shaders', () => {
   }
 
   it('declares a fragment output in both fragment shaders', () => {
-    const output = /layout\s*\(\s*location\s*=\s*0\s*\)\s*out\s+vec4\s+fragColor\s*;/;
+    const output =
+      /layout\s*\(\s*location\s*=\s*0\s*\)\s*out\s+vec4\s+fragColor\s*;/;
 
     expect(defaultFragment).toMatch(output);
     expect(errorFragment).toMatch(output);

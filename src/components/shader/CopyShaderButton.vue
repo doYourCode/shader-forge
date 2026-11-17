@@ -81,7 +81,10 @@ onBeforeUnmount(() => {
   border-radius: 4px;
   cursor: pointer;
   backdrop-filter: blur(2px);
-  transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease;
 }
 
 .copy-shader__button:hover,
@@ -119,7 +122,9 @@ onBeforeUnmount(() => {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-2px);
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
 .copy-shader:hover .copy-shader__tooltip,

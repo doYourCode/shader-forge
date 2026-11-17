@@ -498,10 +498,7 @@ export function useShaderEditor() {
     return userData.remove(id);
   }
 
-  function renameUserUniform(
-    id: string,
-    name: string,
-  ): UserDataCommandResult {
+  function renameUserUniform(id: string, name: string): UserDataCommandResult {
     return userData.rename(id, name);
   }
 

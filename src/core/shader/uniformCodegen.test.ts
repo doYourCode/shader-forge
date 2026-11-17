@@ -71,7 +71,10 @@ describe('generateBlock', () => {
   });
 
   it('never emits uniform initializers', () => {
-    const block = generateBlock(documentWith([COLOR, TIME, DIRECTION]), 'fragment');
+    const block = generateBlock(
+      documentWith([COLOR, TIME, DIRECTION]),
+      'fragment',
+    );
 
     for (const line of block!.lines) {
       if (!line.startsWith('uniform ')) continue;
@@ -184,7 +187,9 @@ void main() {}`;
     expect(lines[1]).toBe('#version 300 es');
     expect(lines[2]).toBe('precision highp float;');
     expect(lines[3]).toBe('');
-    expect(lines[4]).toBe(USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)');
+    expect(lines[4]).toBe(
+      USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)',
+    );
   });
 
   it('inserts at the top when the stage has no header directives', () => {
@@ -217,7 +222,9 @@ void main() {}`;
     expect(lines[1]).toBe('');
     expect(lines[2]).toBe('precision highp float;');
     expect(lines[3]).toBe('');
-    expect(lines[4]).toBe(USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)');
+    expect(lines[4]).toBe(
+      USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)',
+    );
   });
 
   it('keeps #extension directives before the injected declarations', () => {
@@ -234,14 +241,18 @@ void main() {}`;
     const lines = assembly.source.split('\n');
     expect(lines[1]).toBe('#extension GL_EXT_shader_texture_lod : enable');
     expect(lines[2]).toBe('precision highp float;');
-    expect(lines[4]).toBe(USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)');
+    expect(lines[4]).toBe(
+      USER_DATA_BLOCK_START + ' (managed block — edit it in the User data tab)',
+    );
   });
 });
 
 describe('assembleUserData', () => {
   it('assembles both stages and records the injected ranges', () => {
-    const vertexSource = '#version 300 es\nprecision highp float;\nvoid main() {}';
-    const fragmentSource = '#version 300 es\nprecision highp float;\nvoid main() {}';
+    const vertexSource =
+      '#version 300 es\nprecision highp float;\nvoid main() {}';
+    const fragmentSource =
+      '#version 300 es\nprecision highp float;\nvoid main() {}';
 
     const assembly = assembleUserData(
       documentWith([COLOR, TIME, DIRECTION]),
@@ -283,9 +294,7 @@ describe('locateInjectedBlock', () => {
 
     expect(range).not.toBeNull();
     const lines = driverSource.split('\n');
-    expect(lines[range!.startLine - 1]).toContain(
-      'ShaderForge user data',
-    );
+    expect(lines[range!.startLine - 1]).toContain('ShaderForge user data');
     expect(lines[range!.endLine - 1]).toBe(USER_DATA_BLOCK_END);
   });
 

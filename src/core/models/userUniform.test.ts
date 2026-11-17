@@ -26,7 +26,9 @@ describe('validateUniformName', () => {
     expect(validateUniformName('tintColor', NO_TAKEN, RESERVED)).toEqual({
       ok: true,
     });
-    expect(validateUniformName('_a1', NO_TAKEN, RESERVED)).toEqual({ ok: true });
+    expect(validateUniformName('_a1', NO_TAKEN, RESERVED)).toEqual({
+      ok: true,
+    });
   });
 
   it('rejects names that do not match the identifier grammar', () => {
@@ -135,7 +137,9 @@ describe('uniform values', () => {
       true,
     );
     expect(
-      isValueForKind('sampler2D', { kind: 'url' } as unknown as UserUniformValue),
+      isValueForKind('sampler2D', {
+        kind: 'url',
+      } as unknown as UserUniformValue),
     ).toBe(false);
     expect(
       isValueForKind('sampler2D', {
@@ -167,9 +171,11 @@ describe('uniform values', () => {
     expect(
       hasTextureContent({ kind: 'repository', textureId: 'uv-checker-01' }),
     ).toBe(true);
-    expect(hasTextureContent({ kind: 'repository', textureId: '' })).toBe(false);
-    expect(
-      hasTextureContent({ kind: 'repository', textureId: '   ' }),
-    ).toBe(false);
+    expect(hasTextureContent({ kind: 'repository', textureId: '' })).toBe(
+      false,
+    );
+    expect(hasTextureContent({ kind: 'repository', textureId: '   ' })).toBe(
+      false,
+    );
   });
 });

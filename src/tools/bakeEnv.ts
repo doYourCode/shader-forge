@@ -4,10 +4,7 @@ import {
   IBL_FILTERING_QUALITY,
   prefilterEnvironmentTexture,
 } from '@/services/babylon/preview/IblFiltering';
-import {
-  envFileNameFor,
-  hdriBakeSources,
-} from '@/core/constants/previewHdris';
+import { envFileNameFor, hdriBakeSources } from '@/core/constants/previewHdris';
 import { resolveHdrSourceUrl } from './hdriSourceUrls';
 
 /**
@@ -45,8 +42,7 @@ function loadHdrCubeTexture(
   url: string,
 ): Promise<HDRCubeTexture> {
   return new Promise((resolve, reject) => {
-    let texture: HDRCubeTexture;
-    texture = new HDRCubeTexture(
+    const texture = new HDRCubeTexture(
       url,
       scene,
       FACE_SIZE,
@@ -78,7 +74,9 @@ function toBase64(bytes: Uint8Array): string {
  * HDR fetch → RGBE decode → panorama→cubemap → irradiance convolution → GGX
  * radiance prefilter → RGBD/WebP encode → `.env` header + payload.
  */
-export async function bakeAll(options: BakeOptions = {}): Promise<BakeArtifact[]> {
+export async function bakeAll(
+  options: BakeOptions = {},
+): Promise<BakeArtifact[]> {
   const report = options.onProgress ?? (() => {});
   const canvas = document.createElement('canvas');
   canvas.width = 1;

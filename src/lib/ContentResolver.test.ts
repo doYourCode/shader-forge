@@ -133,7 +133,9 @@ describe('ContentResolver.resolve', () => {
       includeDrafts: true,
     });
 
-    expect((await production.resolve('docs/notes.md', 'en')).content).toBeNull();
+    expect(
+      (await production.resolve('docs/notes.md', 'en')).content,
+    ).toBeNull();
     expect(
       (await development.resolve('docs/notes.md', 'en')).content?.title,
     ).toBe('The Rendering Pipeline');
@@ -225,8 +227,6 @@ describe('ContentResolver.relativePaths', () => {
       'docs/editor.md',
       'docs/pipeline.md',
     ]);
-    expect(resolver.relativePaths('knowledge')).toEqual([
-      'knowledge/gpu.md',
-    ]);
+    expect(resolver.relativePaths('knowledge')).toEqual(['knowledge/gpu.md']);
   });
 });

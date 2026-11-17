@@ -12,8 +12,7 @@ export interface WebGl2EngineLike {
 }
 
 export type WebGl2GuardResult =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly error: ShaderError };
+  { readonly ok: true } | { readonly ok: false; readonly error: ShaderError };
 
 /**
  * WebGL 2 is a hard requirement: the internal shaders are GLSL ES 3.00 and

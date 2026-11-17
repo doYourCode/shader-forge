@@ -1,4 +1,3 @@
-
 import type { ILandingCard } from '@/core/models/landingCard';
 
 export const landingCards: ILandingCard[] = [

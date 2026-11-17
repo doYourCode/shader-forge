@@ -23,7 +23,7 @@ export const SHADER_UNIFORM_NAMES = {
   time: 'time',
   cameraPos: 'cameraPos',
   lightDir: 'lightDir',
-  normalMatrix: 'normalMatrix'
+  normalMatrix: 'normalMatrix',
 } as const;
 
 /**
@@ -53,7 +53,7 @@ export const SHADER_UNIFORMS: string[] = [
   SHADER_UNIFORM_NAMES.time,
   SHADER_UNIFORM_NAMES.cameraPos,
   SHADER_UNIFORM_NAMES.lightDir,
-  SHADER_UNIFORM_NAMES.normalMatrix
+  SHADER_UNIFORM_NAMES.normalMatrix,
 ];
 
 /**

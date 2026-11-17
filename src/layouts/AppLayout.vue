@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
@@ -30,37 +29,35 @@ const selectedLocale = computed<AppLocale>({
 });
 </script>
 
-
 <template>
   <div class="app-shell" :class="{ 'app-shell--fill': fillViewport }">
     <!-- HEADER -->
 
-  <header class="app-header">
-    <RouterLink to="/" class="app-header__brand" :aria-label="t('app.home')">
-      <img
-        src="@/assets/images/favicon.ico"
-        alt=""
-        class="app-header__logo"
-      />
-      <span class="app-header__name">{{ appTitle }}</span>
-    </RouterLink>
+    <header class="app-header">
+      <RouterLink to="/" class="app-header__brand" :aria-label="t('app.home')">
+        <img
+          src="@/assets/images/favicon.ico"
+          alt=""
+          class="app-header__logo"
+        />
+        <span class="app-header__name">{{ appTitle }}</span>
+      </RouterLink>
 
-    <div class="app-header__actions">
-      <span v-if="headerTitle" class="app-header__title">
-        {{ headerTitle }}
-      </span>
+      <div class="app-header__actions">
+        <span v-if="headerTitle" class="app-header__title">
+          {{ headerTitle }}
+        </span>
 
-      <select
-        v-model="selectedLocale"
-        class="app-header__language"
-        :aria-label="t('app.language')"
-      >
-        <option value="en">English</option>
-        <option value="pt-BR">Português</option>
-      </select>
-    </div>
-  </header>
-
+        <select
+          v-model="selectedLocale"
+          class="app-header__language"
+          :aria-label="t('app.language')"
+        >
+          <option value="en">English</option>
+          <option value="pt-BR">Português</option>
+        </select>
+      </div>
+    </header>
 
     <!-- BODY (routed view lives here) -->
     <main class="app-body" :class="{ 'app-body--fill': fillViewport }">
@@ -168,8 +165,8 @@ const selectedLocale = computed<AppLocale>({
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  min-height: 0;      /* critical: allow shrink */
-  overflow: hidden;   /* panes manage their own scroll */
+  min-height: 0; /* critical: allow shrink */
+  overflow: hidden; /* panes manage their own scroll */
   background: var(--bg);
 }
 
@@ -193,7 +190,7 @@ const selectedLocale = computed<AppLocale>({
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
   color: var(--fg-muted);
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   font-size: 0.8rem;
   padding: 1rem 1.5rem;
   white-space: pre-wrap;

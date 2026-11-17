@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -28,8 +27,10 @@ const noteText = computed(() => {
   if (isChecking.value) return t('landing.status.checking');
 
   if (isDisabled.value) {
-    return props.disabledReason
-      ?? (props.card.note ? t(props.card.note) : t('landing.status.unavailable'));
+    return (
+      props.disabledReason ??
+      (props.card.note ? t(props.card.note) : t('landing.status.unavailable'))
+    );
   }
 
   return props.card.note ? t(props.card.note) : null;
@@ -72,8 +73,11 @@ const noteText = computed(() => {
   text-decoration: none;
   padding: 1rem;
   font-family: var(--font-mono);
-  transition: transform 0.12s ease, box-shadow 0.12s ease,
-    border-color 0.12s ease, color 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .feature-card:not(.feature-card--static):not(.feature-card--disabled):hover {

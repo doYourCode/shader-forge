@@ -256,7 +256,9 @@ onBeforeUnmount(() => {
   font-family: var(--font-mono);
   font-size: 12px;
   cursor: pointer;
-  transition: color 0.12s ease, background 0.12s ease,
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
     border-color 0.12s ease;
 }
 

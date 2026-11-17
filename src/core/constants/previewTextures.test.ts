@@ -80,7 +80,9 @@ describe('previewTextures', () => {
     for (const sampler of ['sampler2D', 'samplerCube'] as const) {
       const entries = previewTexturesFor(sampler);
 
-      expect(entries.every((texture) => texture.sampler === sampler)).toBe(true);
+      expect(entries.every((texture) => texture.sampler === sampler)).toBe(
+        true,
+      );
     }
   });
 

@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-ssr
+coverage
+content
+docs
+public
+patches
+perf
+package-lock.json
+*.min.*
+*.glsl
+*.frag
+*.vert

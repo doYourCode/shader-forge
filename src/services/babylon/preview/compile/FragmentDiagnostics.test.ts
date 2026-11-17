@@ -19,7 +19,10 @@ const BLUEPRINT: MaterialBlueprint = {
   extraSamplers: [],
   userData: {
     vertex: null,
-    fragment: { injected: { startLine: 2, endLine: 4 }, declarationRowByLine: [] },
+    fragment: {
+      injected: { startLine: 2, endLine: 4 },
+      declarationRowByLine: [],
+    },
   },
 };
 

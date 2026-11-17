@@ -3,7 +3,7 @@ import type { ITreeNode } from '@/core/models/treeNode';
 
 defineOptions({ name: 'TreeView' });
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     nodes: ITreeNode[];
     /** Selected leaf id (controlled by parent) */
@@ -32,11 +32,7 @@ function onClick(node: ITreeNode): void {
 
 <template>
   <ul class="tree" :style="{ '--depth': depth }">
-    <li
-      v-for="node in nodes"
-      :key="node.id"
-      class="tree__item"
-    >
+    <li v-for="node in nodes" :key="node.id" class="tree__item">
       <!-- LEAF: clickable -->
       <button
         v-if="isLeaf(node)"

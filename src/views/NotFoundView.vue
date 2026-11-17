@@ -2,9 +2,7 @@
   <section class="not-found" role="alert">
     <p class="not-found__code">404</p>
     <h1 class="not-found__title">Page not found</h1>
-    <p class="not-found__text">
-      This document does not exist in any locale.
-    </p>
+    <p class="not-found__text">This document does not exist in any locale.</p>
     <RouterLink to="/" class="not-found__link">Back to home</RouterLink>
   </section>
 </template>

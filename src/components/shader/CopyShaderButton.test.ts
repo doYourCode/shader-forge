@@ -118,7 +118,9 @@ describe('CopyShaderButton', () => {
 
     expect(button.attributes('aria-label')).toBe('Copy shader source');
     expect(tooltip.attributes('role')).toBe('tooltip');
-    expect(button.attributes('aria-describedby')).toBe(tooltip.attributes('id'));
+    expect(button.attributes('aria-describedby')).toBe(
+      tooltip.attributes('id'),
+    );
     expect(tooltip.attributes('aria-live')).toBe('polite');
 
     wrapper.unmount();

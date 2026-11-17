@@ -3,7 +3,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import { i18n } from '@/i18n';
-import type { UserUniformKind, UserUniformValue } from '@/core/models/userUniform';
+import type {
+  UserUniformKind,
+  UserUniformValue,
+} from '@/core/models/userUniform';
 import type { TexturePickerPort } from '@/services/texturepicker/TexturePicker';
 import TextureSourceInput from './TextureSourceInput.vue';
 import UniformValueInput from './UniformValueInput.vue';
@@ -79,11 +82,13 @@ describe('UniformValueInput', () => {
   it('renders four components for vec4', () => {
     const wrapper = mountInput('vec4', { x: 0, y: 0, z: 0, w: 0 });
 
-    expect(wrapper.findAll('input.uniform-value__component-input')).toHaveLength(
-      4,
-    );
     expect(
-      wrapper.findAll('.uniform-value__component-label').map((label) => label.text()),
+      wrapper.findAll('input.uniform-value__component-input'),
+    ).toHaveLength(4);
+    expect(
+      wrapper
+        .findAll('.uniform-value__component-label')
+        .map((label) => label.text()),
     ).toEqual(['x', 'y', 'z', 'w']);
   });
 

@@ -3,10 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
 import { i18n } from '@/i18n';
-import type {
-  SamplerKind,
-  UserTextureSource,
-} from '@/core/models/userUniform';
+import type { SamplerKind, UserTextureSource } from '@/core/models/userUniform';
 import type {
   TexturePickerPort,
   TexturePickerSession,
@@ -69,11 +66,13 @@ function createFakePicker() {
   };
 }
 
-function mountInput(options: {
-  kind?: SamplerKind;
-  value?: UserTextureSource;
-  label?: string;
-} = {}) {
+function mountInput(
+  options: {
+    kind?: SamplerKind;
+    value?: UserTextureSource;
+    label?: string;
+  } = {},
+) {
   const fake = createFakePicker();
 
   const wrapper = mount(TextureSourceInput, {

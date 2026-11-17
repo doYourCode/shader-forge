@@ -115,12 +115,7 @@ const BLUEPRINT = {
 };
 
 function init(manager: SceneManager): Promise<void> {
-  return manager.init(
-    {} as HTMLCanvasElement,
-    BLUEPRINT,
-    MODEL,
-    STUDIO,
-  );
+  return manager.init({} as HTMLCanvasElement, BLUEPRINT, MODEL, STUDIO);
 }
 
 describe('SceneManager environment switching', () => {
@@ -137,9 +132,9 @@ describe('SceneManager environment switching', () => {
     await init(harness.manager);
 
     harness.environment.load.mockResolvedValueOnce(false);
-    await expect(
-      harness.manager.loadEnvironment(PEPPERMINT),
-    ).resolves.toBe(false);
+    await expect(harness.manager.loadEnvironment(PEPPERMINT)).resolves.toBe(
+      false,
+    );
     expect(harness.environment.load).toHaveBeenLastCalledWith(PEPPERMINT);
 
     harness.environment.load.mockResolvedValueOnce(true);
@@ -162,8 +157,8 @@ describe('SceneManager environment switching', () => {
   it('reports a failed environment load before initialization', async () => {
     const harness = createHarness();
 
-    await expect(
-      harness.manager.loadEnvironment(PEPPERMINT),
-    ).resolves.toBe(false);
+    await expect(harness.manager.loadEnvironment(PEPPERMINT)).resolves.toBe(
+      false,
+    );
   });
 });

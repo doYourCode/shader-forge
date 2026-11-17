@@ -12,7 +12,10 @@ import type { TextureCatalog } from '@/core/constants/previewTextures';
 import type { PreviewTexture } from '@/core/models/previewTexture';
 import type { SamplerKind } from '@/core/models/userUniform';
 
-import { REPOSITORY_ADAPTER_ID, REPOSITORY_STORAGE_ID } from './assetPickerConfig';
+import {
+  REPOSITORY_ADAPTER_ID,
+  REPOSITORY_STORAGE_ID,
+} from './assetPickerConfig';
 import { registerRepositoryAdapter } from './repositoryTextureAdapter';
 
 const CHECKER: PreviewTexture = {

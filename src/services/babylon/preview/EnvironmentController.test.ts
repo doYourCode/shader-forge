@@ -118,7 +118,8 @@ describe('EnvironmentController', () => {
     );
   });
 
-  it('keeps the current environment until the next texture loads', async () => {    const harness = createHarness();
+  it('keeps the current environment until the next texture loads', async () => {
+    const harness = createHarness();
 
     const first = harness.controller.load(STUDIO);
     harness.callbacks.get(STUDIO.url)!.onLoad();
@@ -196,7 +197,9 @@ describe('EnvironmentController', () => {
     expect(harness.scene.environmentTexture).toBe(
       harness.textures.get(PEPPERMINT.url),
     );
-    expect(harness.textures.get(PEPPERMINT.url)!.dispose).not.toHaveBeenCalled();
+    expect(
+      harness.textures.get(PEPPERMINT.url)!.dispose,
+    ).not.toHaveBeenCalled();
   });
 
   it('cancels a pending swap when the active environment is selected again', async () => {

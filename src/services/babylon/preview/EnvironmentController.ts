@@ -176,10 +176,8 @@ export class EnvironmentController {
   constructor(
     scene: Scene,
     createTexture: EnvironmentTextureFactory = createEnvironmentTexture,
-    createBackground: EnvironmentBackgroundFactory =
-      createEnvironmentBackground,
-    createIblFilter: EnvironmentIblFilterFactory =
-      createNativeEnvironmentIblFilter,
+    createBackground: EnvironmentBackgroundFactory = createEnvironmentBackground,
+    createIblFilter: EnvironmentIblFilterFactory = createNativeEnvironmentIblFilter,
     /**
      * Optional load-phase instrumentation. The controller owns the split
      * between fetching/decoding (`env:load`) and GPU filtering (`env:filter`),
@@ -265,10 +263,7 @@ export class EnvironmentController {
    * pending entry is processed, and a superseded one is released as soon as its
    * filtering settles, because GPU filtering itself cannot be cancelled.
    */
-  private onTextureLoaded(
-    entry: PendingEnvironment,
-    hdri: PreviewHdri,
-  ): void {
+  private onTextureLoaded(entry: PendingEnvironment, hdri: PreviewHdri): void {
     if (this.disposed || this.pending !== entry) {
       this.disposeTexture(entry);
       return;

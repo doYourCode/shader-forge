@@ -70,8 +70,9 @@ describe('PreviewAnimator', () => {
     harness.animator.start();
 
     const replacement = {} as BaseTexture;
-    (harness.scene as unknown as { environmentTexture: BaseTexture })
-      .environmentTexture = replacement;
+    (
+      harness.scene as unknown as { environmentTexture: BaseTexture }
+    ).environmentTexture = replacement;
     triggerRender(harness.scene);
 
     expect(harness.material.setTexture).toHaveBeenLastCalledWith(

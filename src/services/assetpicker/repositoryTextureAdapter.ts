@@ -43,7 +43,9 @@ function createRepositoryAdapter(
 ): AssetPickerAdapter {
   const sampler = samplerOf(storage);
 
-  function listTextures(textures: readonly PreviewTexture[]): AssetPickerListResult {
+  function listTextures(
+    textures: readonly PreviewTexture[],
+  ): AssetPickerListResult {
     const items = textures.map((texture) =>
       toAssetPickerItem(texture, storage.key, context, createItem),
     );

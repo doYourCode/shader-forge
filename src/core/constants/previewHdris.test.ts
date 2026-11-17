@@ -30,9 +30,7 @@ describe('previewHdris', () => {
   it('declares the expected default explicitly', () => {
     expect(previewHdris.default.id).toBe('wooden-studio-17');
     expect(previewHdris.defaults.hdri).toBe(previewHdris.default);
-    expect(previewHdris.default).toBe(
-      previewHdris.find('wooden-studio-17'),
-    );
+    expect(previewHdris.default).toBe(previewHdris.find('wooden-studio-17'));
   });
 
   it('maps every catalog URL to a bundled environment and claims every file', () => {

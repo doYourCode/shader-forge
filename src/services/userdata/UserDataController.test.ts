@@ -41,9 +41,7 @@ function createScheduler() {
   };
 }
 
-function createHarness(
-  overrides: Partial<UserDataControllerDeps> = {},
-) {
+function createHarness(overrides: Partial<UserDataControllerDeps> = {}) {
   const scheduler = createScheduler();
   const onCompileRequested = vi.fn();
   const texture = { dispose: vi.fn() } as unknown as BaseTexture;
@@ -127,9 +125,7 @@ describe('UserDataController structural commands', () => {
 
     // ...while diagnostics still have the exact editor text to map back to.
     expect(blueprint.editorSource).toEqual(harness.sources);
-    expect(blueprint.editorSource.fragment).not.toContain(
-      'uniform vec3 tint;',
-    );
+    expect(blueprint.editorSource.fragment).not.toContain('uniform vec3 tint;');
   });
 
   it('rejects invalid, reserved and duplicate names before touching the GPU', () => {
@@ -138,7 +134,14 @@ describe('UserDataController structural commands', () => {
     harness.scheduler.flush();
     harness.onCompileRequested.mockClear();
 
-    for (const name of ['', '1bad', 'has space', 'uniform', 'time', 'existing']) {
+    for (const name of [
+      '',
+      '1bad',
+      'has space',
+      'uniform',
+      'time',
+      'existing',
+    ]) {
       const result = harness.controller.add({ name, kind: 'float' });
       expect(result.ok).toBe(false);
     }
@@ -275,7 +278,9 @@ describe('UserDataController structural commands', () => {
     harness.scheduler.flush();
     const blueprint = harness.onCompileRequested.mock.calls[0]![0];
     expect(blueprint.vertex).toContain('uniform vec3 tint; // color (RGB)');
-    expect(blueprint.fragment).not.toContain('uniform vec3 tint; // color (RGB)');
+    expect(blueprint.fragment).not.toContain(
+      'uniform vec3 tint; // color (RGB)',
+    );
   });
 
   it('collapses several structural edits into one compile', () => {
@@ -328,9 +333,7 @@ describe('UserDataController replaceAll', () => {
     const blueprint = harness.controller.buildBlueprint();
     expect(blueprint.extraUniforms).toEqual(['albedo', 'roughness']);
     expect(blueprint.fragment).toContain('uniform vec3 albedo; // color (RGB)');
-    expect(blueprint.fragment).toContain(
-      'uniform float roughness; // float',
-    );
+    expect(blueprint.fragment).toContain('uniform float roughness; // float');
 
     // The loader compiles immediately; a debounced pass would run it twice.
     expect(harness.scheduler.schedule).not.toHaveBeenCalled();
@@ -414,9 +417,9 @@ describe('UserDataController value command', () => {
     harness.onCompileRequested.mockClear();
     harness.binder.apply.mockClear();
 
-    expect(
-      harness.controller.setValue(id, { r: 0, g: 0.5, b: 1 }).ok,
-    ).toBe(true);
+    expect(harness.controller.setValue(id, { r: 0, g: 0.5, b: 1 }).ok).toBe(
+      true,
+    );
 
     expect(harness.binder.apply).toHaveBeenCalledWith({
       id,
@@ -505,9 +508,7 @@ describe('UserDataController value command', () => {
     harness.controller.attachGpu(null);
     harness.binder.apply.mockClear();
 
-    expect(harness.controller.setValue(id, { r: 0, g: 0, b: 0 }).ok).toBe(
-      true,
-    );
+    expect(harness.controller.setValue(id, { r: 0, g: 0, b: 0 }).ok).toBe(true);
     expect(harness.binder.apply).not.toHaveBeenCalled();
   });
 });

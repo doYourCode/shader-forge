@@ -27,8 +27,9 @@ describe('createCatalog', () => {
   it('filters entries with by()', () => {
     const catalog = createCatalog('test', ENTRIES);
 
-    expect(catalog.by((entry) => entry.kind === 'mesh').map((entry) => entry.id))
-      .toEqual(['alpha', 'beta']);
+    expect(
+      catalog.by((entry) => entry.kind === 'mesh').map((entry) => entry.id),
+    ).toEqual(['alpha', 'beta']);
   });
 
   it('resolves declared defaults by id, not by position', () => {
@@ -87,8 +88,8 @@ describe('withDefault', () => {
   });
 
   it('throws when the catalog declares no default', () => {
-    expect(() =>
-      withDefault('test', createCatalog('test', ENTRIES)),
-    ).toThrow(/declares no default/);
+    expect(() => withDefault('test', createCatalog('test', ENTRIES))).toThrow(
+      /declares no default/,
+    );
   });
 });

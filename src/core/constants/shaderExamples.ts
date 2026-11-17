@@ -86,7 +86,7 @@ const examples: readonly ShaderExample[] = [
     group: 'Lighting',
     vertex: basiclmCommonVertex,
     fragment: lambertFragment,
-    uniforms: [colorUniform('albedo', { r:0.83, g:0.39, b:0.28 })],
+    uniforms: [colorUniform('albedo', { r: 0.83, g: 0.39, b: 0.28 })],
   },
   {
     id: 'phong',

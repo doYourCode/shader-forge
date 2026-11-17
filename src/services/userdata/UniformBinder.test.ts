@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BaseTexture } from '@babylonjs/core';
 
-import type { UserUniformKind, UserUniformValue } from '@/core/models/userUniform';
+import type {
+  UserUniformKind,
+  UserUniformValue,
+} from '@/core/models/userUniform';
 import {
   toUniformBinding,
   UniformBinder,

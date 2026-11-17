@@ -87,9 +87,9 @@ describe('detectGlslVersion', () => {
   });
 
   it('does not treat a commented directive as a declaration', () => {
-    expect(detectGlslVersion('// #version 300 es\nprecision highp float;')).toBe(
-      '100',
-    );
+    expect(
+      detectGlslVersion('// #version 300 es\nprecision highp float;'),
+    ).toBe('100');
   });
 
   it('accepts leading whitespace before the directive', () => {
@@ -114,7 +114,9 @@ describe('parseShaderCompileErrors version handling', () => {
 
     expect(errors).toHaveLength(1);
     expect(errors[0].line).toBe(7);
-    expect(errors[0].advice).toContain('layout(location = 0) out vec4 fragColor;');
+    expect(errors[0].advice).toContain(
+      'layout(location = 0) out vec4 fragColor;',
+    );
   });
 
   it('uses 1.00 advice when the user source omits #version', () => {
@@ -176,7 +178,10 @@ describe('parseShaderCompileErrors version handling', () => {
           source: null,
         },
       ],
-      { vertex: '#version 300 es\nvoid main() {}', fragment: USER_100_FRAGMENT },
+      {
+        vertex: '#version 300 es\nvoid main() {}',
+        fragment: USER_100_FRAGMENT,
+      },
     );
 
     expect(errors[0].advice).toContain('GLSL ES 3.00');
@@ -368,10 +373,7 @@ void main() {
   it('maps both stages independently when both carry a block', () => {
     const document: UserDataDocument = {
       revision: 1,
-      definitions: [
-        ...USER_DATA.definitions,
-        ...VERTEX_DATA.definitions,
-      ],
+      definitions: [...USER_DATA.definitions, ...VERTEX_DATA.definitions],
     };
     const assembly = assembleUserData(
       document,

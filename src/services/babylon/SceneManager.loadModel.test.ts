@@ -81,7 +81,9 @@ function createHarness() {
   } as unknown as SceneManagerDeps;
 
   const load = vi.fn(async () => pending.shift() as unknown as Mesh);
-  const factory = vi.fn(() => ({ load })) as unknown as PreviewMeshProviderFactory;
+  const factory = vi.fn(() => ({
+    load,
+  })) as unknown as PreviewMeshProviderFactory;
   const manager = new SceneManager(factory, deps);
 
   return { manager, first, second, materials, animator, environment, load };
@@ -96,11 +98,7 @@ const BLUEPRINT = {
 };
 
 function init(manager: SceneManager): Promise<void> {
-  return manager.init(
-    {} as HTMLCanvasElement,
-    BLUEPRINT,
-    MODELS[0]!,
-  );
+  return manager.init({} as HTMLCanvasElement, BLUEPRINT, MODELS[0]!);
 }
 
 describe('SceneManager model swapping', () => {

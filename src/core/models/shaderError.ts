@@ -17,13 +17,7 @@ export type ShaderErrorStage = 'vertex' | 'fragment' | 'program' | 'user_data';
  * - `internal` – ShaderForge/Babylon failed before reaching the driver.
  */
 export type ShaderErrorKind =
-  | 'syntax'
-  | 'type'
-  | 'logic'
-  | 'link'
-  | 'program'
-  | 'timeout'
-  | 'internal';
+  'syntax' | 'type' | 'logic' | 'link' | 'program' | 'timeout' | 'internal';
 
 export interface ShaderError {
   stage: ShaderErrorStage;

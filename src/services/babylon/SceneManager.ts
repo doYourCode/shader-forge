@@ -35,10 +35,7 @@ import {
   createDefaultEnvironmentController,
   type EnvironmentController,
 } from './preview/EnvironmentController';
-import {
-  noopLoadTimer,
-  type LoadTimer,
-} from '@/services/perf/LoadProfiler';
+import { noopLoadTimer, type LoadTimer } from '@/services/perf/LoadProfiler';
 import {
   TextureRegistry,
   type TextureRegistryPort,
@@ -82,7 +79,10 @@ export interface SceneManagerDeps {
     recorder: ShaderLogRecorder | null,
   ): ShaderCompiler;
   createDiagnostics(compiler: ShaderCompiler): FragmentDiagnostics;
-  createEnvironmentController(scene: Scene, timer: LoadTimer): EnvironmentController;
+  createEnvironmentController(
+    scene: Scene,
+    timer: LoadTimer,
+  ): EnvironmentController;
   createTextureRegistry(scene: Scene): TextureRegistryPort;
   createUniformBinder(textures: TextureRegistryPort): UniformBinderPort;
   createUniformBindingTarget(material: ShaderMaterial): UniformBindingTarget;
@@ -161,7 +161,8 @@ export class SceneManager {
         deps.createMaterialController ?? defaultDeps.createMaterialController,
       createAnimator: deps.createAnimator ?? defaultDeps.createAnimator,
       createCompiler: deps.createCompiler ?? defaultDeps.createCompiler,
-      createDiagnostics: deps.createDiagnostics ?? defaultDeps.createDiagnostics,
+      createDiagnostics:
+        deps.createDiagnostics ?? defaultDeps.createDiagnostics,
       createEnvironmentController:
         deps.createEnvironmentController ??
         defaultDeps.createEnvironmentController,
@@ -209,7 +210,10 @@ export class SceneManager {
     this.textures = textures;
     userData?.attachGpu({ textures, binder });
 
-    const environment = this.deps.createEnvironmentController(scene, this.timer);
+    const environment = this.deps.createEnvironmentController(
+      scene,
+      this.timer,
+    );
     this.environment = environment;
     // The environment loads in parallel with the mesh; the scene keeps using
     // its current environment until the texture is ready. Init only settles
@@ -458,9 +462,7 @@ export class SceneManager {
 
     if (!userData || !material) return;
 
-    userData.onMaterialApplied(
-      this.deps.createUniformBindingTarget(material),
-    );
+    userData.onMaterialApplied(this.deps.createUniformBindingTarget(material));
   }
 
   private reportCompileFailure(

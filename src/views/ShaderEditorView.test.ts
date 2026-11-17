@@ -146,9 +146,7 @@ describe('ShaderEditorView user data panel', () => {
     );
 
     // Diagnostics still get the untouched editor text, not the assembled one.
-    expect(blueprint.editorSource.fragment).not.toContain(
-      'uniform vec3 tint;',
-    );
+    expect(blueprint.editorSource.fragment).not.toContain('uniform vec3 tint;');
 
     wrapper.unmount();
   });
@@ -182,9 +180,7 @@ describe('ShaderEditorView user data panel', () => {
 
     const lastCall = sceneManager.compile.mock.calls[0]![0];
     expect(lastCall.extraUniforms).toEqual(['tint']);
-    expect(lastCall.fragment).toContain(
-      '// current values: tint = (0, 1, 0)',
-    );
+    expect(lastCall.fragment).toContain('// current values: tint = (0, 1, 0)');
 
     wrapper.unmount();
   });
@@ -260,8 +256,7 @@ describe('ShaderEditorView example loader', () => {
 
     const blockCalls = editorManager.setInjectedBlock.mock.calls;
     const fragmentBlock = blockCalls[blockCalls.length - 1]?.[0] as
-      | readonly string[]
-      | null;
+      readonly string[] | null;
     const fragmentBlockText = fragmentBlock?.join('\n') ?? '';
 
     expect(fragmentBlockText).toContain('uniform vec3 albedo; // color (RGB)');

@@ -9,9 +9,6 @@ export function relativePathFor(kind: ContentKind, slug: string): string {
  * Canonical URL for a document. Locale-neutral by design: the header language
  * selector decides which locale the resolver serves.
  */
-export function contentPath(
-  kind: ContentKind,
-  slug?: string | null,
-): string {
+export function contentPath(kind: ContentKind, slug?: string | null): string {
   return slug ? `/${kind}/${slug}` : `/${kind}`;
 }

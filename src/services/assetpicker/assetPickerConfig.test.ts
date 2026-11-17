@@ -14,7 +14,11 @@ const LABELS = {
 
 describe('buildAssetPickerConfig', () => {
   it('configures exactly one storage bound to the requested sampler', () => {
-    const config = buildAssetPickerConfig({ sampler: 'sampler2D' }, LABELS, 'en');
+    const config = buildAssetPickerConfig(
+      { sampler: 'sampler2D' },
+      LABELS,
+      'en',
+    );
 
     expect(Object.keys(config.storages)).toEqual([REPOSITORY_STORAGE_ID]);
     expect(config.storages[REPOSITORY_STORAGE_ID]).toEqual({
@@ -25,7 +29,11 @@ describe('buildAssetPickerConfig', () => {
   });
 
   it('picks a single file and delivers URL thumbnails', () => {
-    const config = buildAssetPickerConfig({ sampler: 'sampler2D' }, LABELS, 'en');
+    const config = buildAssetPickerConfig(
+      { sampler: 'sampler2D' },
+      LABELS,
+      'en',
+    );
 
     expect(config.pick).toEqual({
       limit: 1,
@@ -37,7 +45,11 @@ describe('buildAssetPickerConfig', () => {
   });
 
   it('forwards the title and language labels', () => {
-    const config = buildAssetPickerConfig({ sampler: 'sampler2D' }, LABELS, 'de');
+    const config = buildAssetPickerConfig(
+      { sampler: 'sampler2D' },
+      LABELS,
+      'de',
+    );
 
     expect(config.title).toBe(LABELS.title);
     expect(config.language).toBe('de');

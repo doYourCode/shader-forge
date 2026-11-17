@@ -1,10 +1,4 @@
-import {
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  watch,
-  type Ref,
-} from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, watch, type Ref } from 'vue';
 
 import { mermaidService } from '@/services/mermaid/MermaidService';
 

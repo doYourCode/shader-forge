@@ -5,7 +5,10 @@ import type {
   Scene,
   ShaderMaterial,
 } from '@babylonjs/core';
-import { SHADER_SAMPLER_NAMES, SHADER_UNIFORM_NAMES } from './MaterialController';
+import {
+  SHADER_SAMPLER_NAMES,
+  SHADER_UNIFORM_NAMES,
+} from './MaterialController';
 import { Matrix } from '@babylonjs/core';
 import { updateNormalMatrix } from './mesh/MeshMatricesProc';
 import { IblEnvironment, type IblBindingTarget } from './IblEnvironment';
@@ -65,8 +68,11 @@ export class PreviewAnimator {
     if (!material || !this.scene.activeCamera) return;
 
     material.setFloat(SHADER_UNIFORM_NAMES.time, performance.now() * 0.001);
-    material.setVector3(SHADER_UNIFORM_NAMES.cameraPos,this.scene.activeCamera.position);
-    material.setVector3(SHADER_UNIFORM_NAMES.lightDir,this.light.direction);
+    material.setVector3(
+      SHADER_UNIFORM_NAMES.cameraPos,
+      this.scene.activeCamera.position,
+    );
+    material.setVector3(SHADER_UNIFORM_NAMES.lightDir, this.light.direction);
 
     // Keep the shader reflection in sync with the environment selected in the
     // viewer, including after an HDRI swap or a successful recompile.
@@ -81,7 +87,7 @@ export class PreviewAnimator {
     this.ibl.bind(material);
 
     // set the normal matrix here
-        updateNormalMatrix(
+    updateNormalMatrix(
       this.mesh,
       material,
       this.inverseWorldMatrix,

@@ -24,15 +24,21 @@
   --accent-purple: #c678dd;
   --accent-cyan: #56b6c2;
 
-  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   color-scheme: dark;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-html, body, #app {
+html,
+body,
+#app {
   margin: 0;
   padding: 0;
   min-height: 100%;

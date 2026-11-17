@@ -2,10 +2,7 @@ import { resolveEnvUrl } from '@/core/assets/assetUrls';
 import { createCatalog, withDefault } from '@/core/assets/catalog';
 import type { DefaultedCatalog } from '@/core/assets/catalog';
 import { assetLabel } from '@/core/assets/labels';
-import type {
-  PreviewHdri,
-  PreviewHdriFormat,
-} from '@/core/models/previewHdri';
+import type { PreviewHdri, PreviewHdriFormat } from '@/core/models/previewHdri';
 
 /**
  * Authored record for one environment.

@@ -117,10 +117,7 @@ function onKindChange(definition: UserUniformDefinition, event: Event): void {
   if (kind !== definition.kind) emit('change-kind', definition.id, kind);
 }
 
-function onStagesChange(
-  definition: UserUniformDefinition,
-  event: Event,
-): void {
+function onStagesChange(definition: UserUniformDefinition, event: Event): void {
   const stages = (event.target as HTMLSelectElement).value as UserUniformStage;
   if (stages !== definition.stages) {
     emit('change-stages', definition.id, stages);
@@ -304,10 +301,7 @@ function onNewKindChange(event: Event): void {
         {{ t('userData.generated.note') }}
       </p>
 
-      <p
-        v-if="generatedBlocks.length === 0"
-        class="user-data__generated-empty"
-      >
+      <p v-if="generatedBlocks.length === 0" class="user-data__generated-empty">
         {{ t('userData.generated.empty') }}
       </p>
 
@@ -320,7 +314,9 @@ function onNewKindChange(event: Event): void {
           <h4 class="user-data__generated-stage">
             {{ t(`userData.generated.${block.stage}`) }}
           </h4>
-          <pre class="user-data__glsl"><code>{{ block.lines.join('\n') }}</code></pre>
+          <pre
+            class="user-data__glsl"
+          ><code>{{ block.lines.join('\n') }}</code></pre>
         </div>
       </template>
     </section>

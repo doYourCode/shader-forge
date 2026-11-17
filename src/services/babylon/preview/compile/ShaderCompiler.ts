@@ -1,8 +1,4 @@
-import type {
-  AbstractMesh,
-  Scene,
-  ShaderMaterial,
-} from '@babylonjs/core';
+import type { AbstractMesh, Scene, ShaderMaterial } from '@babylonjs/core';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
 import { buildShaderMaterial } from '../MaterialController';
@@ -163,7 +159,7 @@ export class ShaderCompiler {
     material: ShaderMaterial,
     mesh: AbstractMesh | null,
   ): CompileAttempt | null {
-    let ready = false;
+    let ready: boolean;
     try {
       ready = material.isReady(mesh ?? undefined);
     } catch (error) {

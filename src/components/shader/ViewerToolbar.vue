@@ -70,11 +70,7 @@ function handleHdriChange(event: Event): void {
           :value="props.activeHdriId"
           @change="handleHdriChange"
         >
-          <option
-            v-for="hdri in props.hdris"
-            :key="hdri.id"
-            :value="hdri.id"
-          >
+          <option v-for="hdri in props.hdris" :key="hdri.id" :value="hdri.id">
             {{ t(assetLabelKey('hdris', hdri.id)) }}
           </option>
         </select>
@@ -164,7 +160,9 @@ function handleHdriChange(event: Event): void {
   font-family: var(--font-mono);
   font-size: 12px;
   cursor: pointer;
-  transition: color 0.12s ease, background 0.12s ease,
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
     border-color 0.12s ease;
 }
 
@@ -190,7 +188,9 @@ function handleHdriChange(event: Event): void {
   font-family: var(--font-mono);
   font-size: 12px;
   cursor: pointer;
-  transition: color 0.12s ease, background 0.12s ease,
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
     border-color 0.12s ease;
 }
 

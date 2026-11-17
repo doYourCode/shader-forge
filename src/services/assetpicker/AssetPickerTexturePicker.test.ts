@@ -125,12 +125,9 @@ describe('AssetPickerTexturePicker', () => {
     });
 
     expect(fake.registerAdapter).toHaveBeenCalledTimes(1);
-    expect(fake.registerAdapter.mock.calls[0]?.[0]).toBe(
-      REPOSITORY_ADAPTER_ID,
-    );
+    expect(fake.registerAdapter.mock.calls[0]?.[0]).toBe(REPOSITORY_ADAPTER_ID);
 
-    const registerOrder =
-      fake.registerAdapter.mock.invocationCallOrder[0] ?? 0;
+    const registerOrder = fake.registerAdapter.mock.invocationCallOrder[0] ?? 0;
     const mountOrder =
       fake.createAssetPickerApp.mock.invocationCallOrder[0] ?? 0;
     expect(registerOrder).toBeLessThan(mountOrder);
@@ -144,7 +141,10 @@ describe('AssetPickerTexturePicker', () => {
     const fake = createFakeApi();
     let loads = 0;
     const picker = new AssetPickerTexturePicker({
-      labels: () => ({ title: 'Select a texture', storage: 'Bundled textures' }),
+      labels: () => ({
+        title: 'Select a texture',
+        storage: 'Bundled textures',
+      }),
       loadApi: async () => {
         loads += 1;
         return fake.api;
@@ -171,7 +171,10 @@ describe('AssetPickerTexturePicker', () => {
     const fake = createFakeApi();
     const gate = deferred<AssetPickerApi>();
     const picker = new AssetPickerTexturePicker({
-      labels: () => ({ title: 'Select a texture', storage: 'Bundled textures' }),
+      labels: () => ({
+        title: 'Select a texture',
+        storage: 'Bundled textures',
+      }),
       loadApi: () => gate.promise,
     });
 
@@ -233,7 +236,10 @@ describe('AssetPickerTexturePicker', () => {
     const fake = createFakeApi();
     const gate = deferred<AssetPickerApi>();
     const picker = new AssetPickerTexturePicker({
-      labels: () => ({ title: 'Select a texture', storage: 'Bundled textures' }),
+      labels: () => ({
+        title: 'Select a texture',
+        storage: 'Bundled textures',
+      }),
       loadApi: () => gate.promise,
     });
 
@@ -248,7 +254,10 @@ describe('AssetPickerTexturePicker', () => {
 
   it('reports picker-unavailable when the module fails to load', async () => {
     const picker = new AssetPickerTexturePicker({
-      labels: () => ({ title: 'Select a texture', storage: 'Bundled textures' }),
+      labels: () => ({
+        title: 'Select a texture',
+        storage: 'Bundled textures',
+      }),
       loadApi: () => Promise.reject(new Error('network down')),
     });
 
@@ -265,7 +274,10 @@ describe('AssetPickerTexturePicker', () => {
     const fake = createFakeApi();
     let attempts = 0;
     const picker = new AssetPickerTexturePicker({
-      labels: () => ({ title: 'Select a texture', storage: 'Bundled textures' }),
+      labels: () => ({
+        title: 'Select a texture',
+        storage: 'Bundled textures',
+      }),
       loadApi: () => {
         attempts += 1;
         return attempts === 1

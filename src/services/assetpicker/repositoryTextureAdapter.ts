@@ -89,7 +89,9 @@ function toAssetPickerItem(
     name: texture.label,
     type: 'file',
     extension: extensionOf(texture.url),
-    thumbnail: texture.url,
+    // Grid tiles are small; prefer the dedicated preview over decoding the
+    // full-resolution texture. Catalogs without previews still work.
+    thumbnail: texture.thumbnailUrl ?? texture.url,
     links: { open: texture.url },
     data: { textureId: texture.id },
   };

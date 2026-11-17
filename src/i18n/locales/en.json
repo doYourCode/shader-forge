@@ -127,6 +127,7 @@
       "change": "Change texture…",
       "clear": "Clear texture",
       "dialog": "Select a texture",
+      "loading": "Loading texture picker…",
       "close": "Close texture picker",
       "bundled": "Bundled textures",
       "advanced": "Custom source",

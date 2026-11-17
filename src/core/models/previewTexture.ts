@@ -15,6 +15,12 @@ export interface PreviewTexture {
   readonly label: string;
   /** Vite `?url` import, resolved at build time. */
   readonly url: string;
+  /**
+   * Optional small preview (Vite build-time URL). Pickers should fall back to
+   * `url` when absent, but catalog entries are expected to provide one so the
+   * grid does not decode full-resolution textures.
+   */
+  readonly thumbnailUrl?: string;
   /** The only uniform kind this asset can be bound to. */
   readonly sampler: SamplerKind;
   readonly format: PreviewTextureFormat;

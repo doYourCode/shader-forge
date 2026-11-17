@@ -19,6 +19,7 @@ const CHECKER: PreviewTexture = {
   id: 'uv-checker-01',
   label: 'UV Checker 01',
   url: 'https://cdn.example/textures/uv-checker-01.png?v=2#preview',
+  thumbnailUrl: 'https://cdn.example/textures/thumbs/uv-checker-01.webp',
   sampler: 'sampler2D',
   format: 'image',
 };
@@ -143,10 +144,19 @@ describe('registerRepositoryAdapter', () => {
       name: CHECKER.label,
       type: 'file',
       extension: 'png',
-      thumbnail: CHECKER.url,
+      thumbnail: CHECKER.thumbnailUrl,
       links: { open: CHECKER.url },
       data: { textureId: CHECKER.id },
     });
+  });
+
+  it('falls back to the full texture when no preview exists', async () => {
+    const { adapter } = createAdapter();
+
+    const result = await adapter.list(null);
+    const marble = result.items.find((item) => item.id === MARBLE.id);
+
+    expect(marble?.thumbnail).toBe(MARBLE.url);
   });
 
   it('strips query strings and hashes before deriving the extension', async () => {

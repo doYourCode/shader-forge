@@ -13,8 +13,10 @@ import { TEXTURE_PICKER } from './texturePickerContext';
 /** The texture widget is only delegated to; opening is covered elsewhere. */
 function createFakeTexturePicker(): TexturePickerPort {
   return {
+    preload: () => undefined,
     open: () => ({
       result: Promise.resolve({ status: 'cancelled' }),
+      ready: Promise.resolve(),
       dispose: () => undefined,
     }),
   };

@@ -61,9 +61,9 @@ function isAssetPickerApi(value: unknown): value is AssetPickerApi {
  * AssetPicker source package.
  *
  * The static import would inject AssetPicker's global CSS and run its demo
- * bootstrap at application start, so the module is loaded lazily on the first
- * open. Each open mounts an independent Vue app into the caller's host and is
- * represented by a session that owns its lifecycle.
+ * bootstrap at application start, so the module is loaded lazily on preload or
+ * first open. Each open mounts an independent Vue app into the caller's host
+ * and is represented by a session that owns its lifecycle.
  */
 export class AssetPickerTexturePicker implements TexturePickerPort {
   private readonly labels: () => AssetPickerLabels;
@@ -82,12 +82,27 @@ export class AssetPickerTexturePicker implements TexturePickerPort {
     this.language = deps.language ?? (() => 'en');
   }
 
+  /**
+   * Starts the lazy module import (and adapter registration) without opening a
+   * picker. This is what keeps the first click cheap: pointer/focus handlers
+   * can warm the graph while the user is still moving to the button.
+   */
+  preload(): void {
+    if (this.disposed) return;
+    void this.load();
+  }
+
   open(request: TexturePickRequest, host: HTMLElement): TexturePickerSession {
     if (this.disposed) return disposedSession();
 
     let settle!: (result: TexturePickResult) => void;
     const result = new Promise<TexturePickResult>((resolve) => {
       settle = resolve;
+    });
+
+    let markReady!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      markReady = resolve;
     });
 
     let app: App | null = null;
@@ -102,12 +117,15 @@ export class AssetPickerTexturePicker implements TexturePickerPort {
       mounted?.unmount();
 
       this.sessions.delete(session);
+      // A failed or disposed session must also release the loading state.
+      markReady();
       settle(outcome);
     };
 
     let session: TexturePickerSession;
     session = {
       result,
+      ready,
       dispose: () => complete({ status: 'cancelled' }),
     };
     this.sessions.add(session);
@@ -160,6 +178,8 @@ export class AssetPickerTexturePicker implements TexturePickerPort {
           complete({ status: 'rejected', reason: 'picker-unavailable' });
           return;
         }
+
+        markReady();
 
         // Defensive: if a pathological implementation fired onFinish during
         // mount, the app was not available to `complete` yet.
@@ -216,6 +236,7 @@ function disposedSession(): TexturePickerSession {
       status: 'rejected',
       reason: 'picker-unavailable',
     }),
+    ready: Promise.resolve(),
     dispose: () => undefined,
   };
 }

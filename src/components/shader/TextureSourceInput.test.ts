@@ -20,11 +20,13 @@ import { TEXTURE_PICKER } from './texturePickerContext';
 interface FakeSession {
   readonly session: TexturePickerSession;
   readonly resolve: (result: TexturePickResult) => void;
+  readonly markReady: () => void;
   readonly dispose: ReturnType<typeof vi.fn>;
 }
 
 function createFakePicker() {
   const sessions: FakeSession[] = [];
+  const preload = vi.fn();
 
   const open = vi.fn(
     (
@@ -35,19 +37,29 @@ function createFakePicker() {
       const result = new Promise<TexturePickResult>((resolvePromise) => {
         resolve = resolvePromise;
       });
-      const dispose = vi.fn(() => resolve({ status: 'cancelled' }));
-      const session: TexturePickerSession = { result, dispose };
 
-      sessions.push({ session, resolve, dispose });
+      let markReady!: () => void;
+      const ready = new Promise<void>((resolvePromise) => {
+        markReady = resolvePromise;
+      });
+
+      const dispose = vi.fn(() => {
+        resolve({ status: 'cancelled' });
+        markReady();
+      });
+      const session: TexturePickerSession = { result, ready, dispose };
+
+      sessions.push({ session, resolve, markReady, dispose });
       return session;
     },
   );
 
-  const picker: TexturePickerPort = { open };
+  const picker: TexturePickerPort = { preload, open };
 
   return {
     picker,
     open,
+    preload,
     sessions,
     lastSession: () => {
       const last = sessions.at(-1);
@@ -168,6 +180,39 @@ describe('TextureSourceInput', () => {
 
     expect(document.body.style.overflow).toBe('');
     expect(document.getElementById('app')?.hasAttribute('inert')).toBe(false);
+  });
+
+  it('preloads on hover and focus without opening a session', async () => {
+    const { wrapper, fake } = mountInput();
+    const choose = wrapper.find('.texture-source__choose');
+
+    await choose.trigger('pointerenter');
+    await choose.trigger('focus');
+
+    expect(fake.preload).toHaveBeenCalledTimes(2);
+    expect(fake.open).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
+  it('shows a loading state until the picker reports ready', async () => {
+    const { wrapper, fake } = mountInput();
+    await openPicker(wrapper);
+
+    const loading = document.querySelector<HTMLElement>(
+      '.texture-source__picker-loading',
+    );
+    expect(loading).not.toBeNull();
+    expect(loading?.textContent).toContain('Loading texture picker');
+
+    fake.lastSession().markReady();
+    await flushPromises();
+
+    expect(
+      document.querySelector('.texture-source__picker-loading'),
+    ).toBeNull();
+
+    wrapper.unmount();
   });
 
   it('emits the picked repository source', async () => {

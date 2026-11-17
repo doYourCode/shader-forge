@@ -38,6 +38,15 @@ const TEXTURE_URLS = import.meta.glob(
   },
 ) as Readonly<Record<string, string>>;
 
+const TEXTURE_THUMBNAIL_URLS = import.meta.glob(
+  '/src/assets/textures/thumbs/*.webp',
+  {
+    query: '?url&no-inline',
+    import: 'default',
+    eager: true,
+  },
+) as Readonly<Record<string, string>>;
+
 /**
  * The resolved maps, exposed so catalog invariant tests can compare both
  * directions without restating glob patterns (a test that duplicates the
@@ -47,6 +56,7 @@ export const assetUrlMaps = Object.freeze({
   meshes: Object.freeze(MESH_URLS),
   environments: Object.freeze(ENVIRONMENT_URLS),
   textures: Object.freeze(TEXTURE_URLS),
+  textureThumbnails: Object.freeze(TEXTURE_THUMBNAIL_URLS),
 });
 
 /** Resolves a mesh path such as `meshes/monkey.glb`. */
@@ -62,6 +72,11 @@ export function resolveEnvUrl(path: string): string {
 /** Resolves a texture path such as `textures/Uv_checker_01.png`. */
 export function resolveTextureUrl(path: string): string {
   return resolveAssetUrl(TEXTURE_URLS, path);
+}
+
+/** Resolves a thumbnail path such as `textures/thumbs/Uv_checker_01.webp`. */
+export function resolveTextureThumbnailUrl(path: string): string {
+  return resolveAssetUrl(TEXTURE_THUMBNAIL_URLS, path);
 }
 
 /**

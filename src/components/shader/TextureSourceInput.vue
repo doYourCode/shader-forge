@@ -45,6 +45,7 @@ const picker: TexturePickerPort = (() => {
 })();
 
 const isOpen = ref(false);
+const isPickerLoading = ref(false);
 const error = ref<'rejected' | 'unavailable' | null>(null);
 const hostRef = ref<HTMLElement | null>(null);
 const dialogRef = ref<HTMLElement | null>(null);
@@ -104,10 +105,15 @@ function rejectionKey(reason: TexturePickRejection): 'rejected' | 'unavailable' 
   return reason === 'unsupported-asset' ? 'rejected' : 'unavailable';
 }
 
+function preloadPicker(): void {
+  picker.preload();
+}
+
 function openPicker(): void {
   if (isOpen.value) return;
 
   error.value = null;
+  isPickerLoading.value = true;
   enterModalState();
   isOpen.value = true;
   void mountPicker();
@@ -137,6 +143,13 @@ async function mountPicker(): Promise<void> {
 
   activeSession = session;
 
+  // `ready` never rejects, but guard the callback anyway so a misbehaving
+  // implementation cannot leave the skeleton on screen forever.
+  const releaseLoading = (): void => {
+    if (!unmounted && activeSession === session) isPickerLoading.value = false;
+  };
+  void session.ready.then(releaseLoading, releaseLoading);
+
   let result: TexturePickResult;
   try {
     result = await session.result;
@@ -163,6 +176,8 @@ async function mountPicker(): Promise<void> {
 }
 
 function closeModal(restoreFocus: boolean): void {
+  isPickerLoading.value = false;
+
   if (isOpen.value) {
     isOpen.value = false;
 
@@ -221,6 +236,7 @@ function onFileInput(event: Event): void {
 
 onBeforeUnmount(() => {
   unmounted = true;
+  isPickerLoading.value = false;
 
   const session = activeSession;
   activeSession = null;
@@ -254,6 +270,8 @@ onBeforeUnmount(() => {
         type="button"
         class="texture-source__choose"
         :disabled="isOpen || !hasBundledTextures"
+        @pointerenter="preloadPicker"
+        @focus="preloadPicker"
         @click="openPicker"
       >
         {{ chooseLabel }}
@@ -349,7 +367,24 @@ onBeforeUnmount(() => {
             </button>
           </header>
 
-          <div ref="hostRef" class="texture-source__picker" />
+          <div
+            class="texture-source__picker-body"
+            :aria-busy="isPickerLoading"
+          >
+            <div ref="hostRef" class="texture-source__picker" />
+            <div
+              v-if="isPickerLoading"
+              class="texture-source__picker-loading"
+              role="status"
+              aria-live="polite"
+            >
+              <span
+                class="texture-source__picker-spinner"
+                aria-hidden="true"
+              />
+              <span>{{ t('userData.texture.loading') }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -581,6 +616,43 @@ onBeforeUnmount(() => {
 .texture-source__close:hover {
   color: var(--fg-strong);
   border-color: var(--border);
+}
+
+.texture-source__picker-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.texture-source__picker-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.texture-source__picker-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: texture-source-spin 0.8s linear infinite;
+}
+
+@keyframes texture-source-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .texture-source__picker {

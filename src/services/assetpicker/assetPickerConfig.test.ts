@@ -33,6 +33,7 @@ describe('buildAssetPickerConfig', () => {
       extensions: [],
     });
     expect(config.thumbnails).toBe('url');
+    expect(config.autoOpenSingleStorage).toBe(true);
   });
 
   it('forwards the title and language labels', () => {

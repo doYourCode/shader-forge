@@ -19,9 +19,22 @@ export type TexturePickResult =
 
 export interface TexturePickerSession {
   readonly result: Promise<TexturePickResult>;
+  /**
+   * Settles once the picker has mounted, or once it is clear it never will
+   * (unavailable module, early disposal). It never rejects: a failed mount is
+   * reported through {@link result}, so callers can always use it to stop a
+   * loading state.
+   */
+  readonly ready: Promise<void>;
   dispose(): void;
 }
 
 export interface TexturePickerPort {
+  /**
+   * Warms implementation code without opening a session. Idempotent and safe
+   * to call from pointer/focus handlers; failures are retried by the next
+   * `open()`.
+   */
+  preload(): void;
   open(request: TexturePickRequest, host: HTMLElement): TexturePickerSession;
 }

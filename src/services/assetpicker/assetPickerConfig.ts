@@ -34,6 +34,8 @@ export function buildAssetPickerConfig(
     language,
     pick: { limit: 1, types: ['file'], extensions: [] },
     thumbnails: 'url',
+    // One storage means no useful overview: show the texture grid directly.
+    autoOpenSingleStorage: true,
     storages: {
       [REPOSITORY_STORAGE_ID]: {
         adapter: REPOSITORY_ADAPTER_ID,

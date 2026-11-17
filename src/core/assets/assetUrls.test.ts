@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveEnvUrl,
   resolveMeshUrl,
+  resolveTextureThumbnailUrl,
   resolveTextureUrl,
 } from './assetUrls';
 
@@ -27,6 +28,15 @@ const TEXTURES = import.meta.glob(
   },
 ) as Record<string, string>;
 
+const TEXTURE_THUMBNAILS = import.meta.glob(
+  '/src/assets/textures/thumbs/*.webp',
+  {
+    query: '?url&no-inline',
+    import: 'default',
+    eager: true,
+  },
+) as Record<string, string>;
+
 describe('asset URL resolvers', () => {
   it('resolves an existing repo-relative path', () => {
     expect(resolveMeshUrl('meshes/monkey.glb')).toBe(
@@ -37,6 +47,11 @@ describe('asset URL resolvers', () => {
     );
     expect(resolveTextureUrl('textures/Uv_checker_01.png')).toBe(
       TEXTURES['/src/assets/textures/Uv_checker_01.png'],
+    );
+    expect(
+      resolveTextureThumbnailUrl('textures/thumbs/Uv_checker_01.webp'),
+    ).toBe(
+      TEXTURE_THUMBNAILS['/src/assets/textures/thumbs/Uv_checker_01.webp'],
     );
   });
 
@@ -49,6 +64,9 @@ describe('asset URL resolvers', () => {
     }
     for (const [key, url] of Object.entries(TEXTURES)) {
       expect(resolveTextureUrl(pathOf(key))).toBe(url);
+    }
+    for (const [key, url] of Object.entries(TEXTURE_THUMBNAILS)) {
+      expect(resolveTextureThumbnailUrl(pathOf(key))).toBe(url);
     }
   });
 

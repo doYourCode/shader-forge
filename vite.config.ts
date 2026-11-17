@@ -26,5 +26,9 @@ export default defineConfig({
     // AssetPicker is a source-only package: the Vue plugin must transform its
     // SFCs instead of the dependency optimizer pre-bundling it.
     exclude: ['assetpicker'],
+    // The excluded package hides `fecha` from Vite's startup scan, so without
+    // this it is served as ~52 KB of raw ESM on first use. Pre-bundling keeps
+    // the picker's cold path small if a date-formatting adapter returns.
+    include: ['fecha'],
   },
 });

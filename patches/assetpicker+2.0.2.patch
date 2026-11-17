@@ -1,8 +1,19 @@
 diff --git a/node_modules/assetpicker/app/src/App.vue b/node_modules/assetpicker/app/src/App.vue
-index bd73eec..a1289f3 100644
+index bd73eec..274e8df 100644
 --- a/node_modules/assetpicker/app/src/App.vue
 +++ b/node_modules/assetpicker/app/src/App.vue
-@@ -41,7 +41,6 @@ onMounted(() => {
+@@ -16,6 +16,10 @@ const picker = createPicker(props.config, { onFinish: props.onFinish });
+ provide(PICKER, picker);
+ const store = picker.store;
+ 
++// Hosts can opt into skipping the one-item storage overview; when enabled,
++// open it before the first render so the file grid is the first thing shown.
++picker.openInitialStorage();
++
+ const sidebarWidth = ref(240);
+ const searchTerm = ref('');
+ let searchTimer;
+@@ -41,7 +45,6 @@ onMounted(() => {
  <template>
    <div class="assetpicker" :class="{ loaded: store.ui.loaded, maximized: store.ui.maximized }">
      <header class="ap-navbar">
@@ -10,7 +21,7 @@ index bd73eec..a1289f3 100644
        <input
          v-model="searchTerm"
          type="search"
-@@ -50,8 +49,6 @@ onMounted(() => {
+@@ -50,8 +53,6 @@ onMounted(() => {
          :aria-label="t('header.search')"
          @input="onSearchInput"
        />
@@ -19,7 +30,7 @@ index bd73eec..a1289f3 100644
        <div class="ap-progress" :class="{ active: store.ui.loading }"></div>
      </header>
  
-@@ -82,36 +79,37 @@ onMounted(() => {
+@@ -82,36 +83,37 @@ onMounted(() => {
    display: flex;
    flex-direction: column;
    height: 100%;
@@ -80,7 +91,7 @@ index bd73eec..a1289f3 100644
  }
  .ap-progress {
    position: absolute;
-@@ -119,7 +117,7 @@ onMounted(() => {
+@@ -119,7 +121,7 @@ onMounted(() => {
    bottom: 0;
    height: 2px;
    width: 100%;
@@ -89,7 +100,7 @@ index bd73eec..a1289f3 100644
    opacity: 0;
    transition: opacity 0.2s;
  }
-@@ -138,40 +136,61 @@ onMounted(() => {
+@@ -138,40 +140,61 @@ onMounted(() => {
  }
  .ap-sidebar {
    overflow: auto;
@@ -166,6 +177,44 @@ index bd73eec..a1289f3 100644
  }
  .ap-btn:disabled {
    opacity: 0.5;
+diff --git a/node_modules/assetpicker/app/src/adapters/index.js b/node_modules/assetpicker/app/src/adapters/index.js
+index 8b00de6..9419887 100644
+--- a/node_modules/assetpicker/app/src/adapters/index.js
++++ b/node_modules/assetpicker/app/src/adapters/index.js
+@@ -1,16 +1,15 @@
+ import { createDummyAdapter } from './dummy.js';
+-import { createGithubAdapter } from './github.js';
+-import { createGoogledriveAdapter } from './googledrive.js';
+-import { createEntermediadbAdapter } from './entermediadb.js';
+ 
+ // Adapter registry. Each entry maps a storage's `adapter` type to a factory
+ // implementing the contract: { key, label, list(item)->{items,total},
+ // search(word)->{items,total} }.
++//
++// ShaderForge only configures the adapter it registers itself, so the remote
++// GitHub / Google Drive / EnterMediaDB factories are intentionally omitted.
++// Keeping them here pulled their HTTP client and date library into every
++// picker session even though they could never be selected.
+ const FACTORIES = {
+   dummy: createDummyAdapter,
+-  github: createGithubAdapter,
+-  googledrive: createGoogledriveAdapter,
+-  entermediadb: createEntermediadbAdapter,
+ };
+ 
+ export function registerAdapter(type, factory) {
+diff --git a/node_modules/assetpicker/app/src/config.js b/node_modules/assetpicker/app/src/config.js
+index d72afde..d7606bd 100644
+--- a/node_modules/assetpicker/app/src/config.js
++++ b/node_modules/assetpicker/app/src/config.js
+@@ -11,6 +11,7 @@ export const DEFAULT_CONFIG = {
+   proxy: { url: 'proxy.php?to={{url}}', all: false },
+   thumbnails: 'url',
+   language: 'auto',
++  autoOpenSingleStorage: false,
+ };
+ 
+ /**
 diff --git a/node_modules/assetpicker/app/src/style.css b/node_modules/assetpicker/app/src/style.css
 index 1dc6cab..3ee9630 100644
 --- a/node_modules/assetpicker/app/src/style.css
@@ -336,6 +385,34 @@ index 1dc6cab..3ee9630 100644
 +  color: var(--ap-warning-text, #222);
 +  border-radius: var(--ap-radius, 6px);
  }
+diff --git a/node_modules/assetpicker/app/src/use-picker.js b/node_modules/assetpicker/app/src/use-picker.js
+index 2512979..0610188 100644
+--- a/node_modules/assetpicker/app/src/use-picker.js
++++ b/node_modules/assetpicker/app/src/use-picker.js
+@@ -87,11 +87,23 @@ export function createPicker(callerConfig, { onFinish } = {}) {
+     );
+   }
+ 
++  /**
++   * Opt-in shortcut for hosts that configure exactly one storage: skip the
++   * overview screen and open that storage. The selection state is set
++   * synchronously, so the first render already targets the storage and the
++   * items fill in as soon as the adapter resolves.
++   */
++  function openInitialStorage() {
++    if (!config.autoOpenSingleStorage || storageKeys.length !== 1) return;
++    void openStorage(storageKeys[0]).catch(() => undefined);
++  }
++
+   return {
+     store,
+     adapters,
+     storageKeys,
+     openStorage,
++    openInitialStorage,
+     openItem,
+     togglePick,
+     home,
 diff --git a/node_modules/assetpicker/app/tests/App.spec.js b/node_modules/assetpicker/app/tests/App.spec.js
 index 790e8f6..8418bfe 100644
 --- a/node_modules/assetpicker/app/tests/App.spec.js

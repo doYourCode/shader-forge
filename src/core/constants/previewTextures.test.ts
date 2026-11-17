@@ -15,8 +15,9 @@ const FORMAT_BY_SAMPLER: Record<SamplerKind, PreviewTextureFormat> = {
   samplerCube: 'cubemap',
 };
 
-/** The glob map is the authority on which texture files exist. */
+/** The glob maps are the authority on which texture files exist. */
 const TEXTURE_URLS = assetUrlMaps.textures;
+const TEXTURE_THUMBNAIL_URLS = assetUrlMaps.textureThumbnails;
 
 describe('previewTextures', () => {
   it('uses unique ids', () => {
@@ -25,11 +26,12 @@ describe('previewTextures', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('gives every entry a non-empty id, label and URL', () => {
+  it('gives every entry a non-empty id, label, URL and thumbnail', () => {
     for (const texture of previewTextures) {
       expect(texture.id.trim().length).toBeGreaterThan(0);
       expect(texture.label.trim().length).toBeGreaterThan(0);
       expect(texture.url.trim().length).toBeGreaterThan(0);
+      expect(texture.thumbnailUrl?.trim().length).toBeGreaterThan(0);
     }
   });
 
@@ -54,6 +56,14 @@ describe('previewTextures', () => {
     const claimedUrls = previewTextures.map((texture) => texture.url);
 
     // Both directions: no dead catalog entry and no orphan bundled file.
+    expect(new Set(claimedUrls)).toEqual(new Set(bundledUrls));
+    expect(new Set(claimedUrls).size).toBe(claimedUrls.length);
+  });
+
+  it('maps every thumbnail URL to a bundled preview and claims every file', () => {
+    const bundledUrls = Object.values(TEXTURE_THUMBNAIL_URLS);
+    const claimedUrls = previewTextures.map((texture) => texture.thumbnailUrl);
+
     expect(new Set(claimedUrls)).toEqual(new Set(bundledUrls));
     expect(new Set(claimedUrls).size).toBe(claimedUrls.length);
   });

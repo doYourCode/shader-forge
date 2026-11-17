@@ -1,4 +1,7 @@
-import { resolveTextureUrl } from '@/core/assets/assetUrls';
+import {
+  resolveTextureThumbnailUrl,
+  resolveTextureUrl,
+} from '@/core/assets/assetUrls';
 import { createCatalog } from '@/core/assets/catalog';
 import { assetLabel } from '@/core/assets/labels';
 import type {
@@ -18,25 +21,30 @@ interface PreviewTextureRecord {
   readonly id: string;
   /** Repo-relative path under `src/assets`. */
   readonly path: string;
+  /** Repo-relative path of the small grid preview under `src/assets`. */
+  readonly thumbnailPath: string;
   readonly sampler: SamplerKind;
 }
 
 /**
  * Repository textures available to user-data sampler uniforms.
  *
- * Adding another image means dropping it under `src/assets/textures`, adding
- * one record here, and adding one `assets.textures.<id>` key per locale. Cube
+ * Adding another image means dropping it under `src/assets/textures`, adding a
+ * 160 px WebP preview under `src/assets/textures/thumbs`, adding one record
+ * here, and adding one `assets.textures.<id>` key per locale. Cube
  * entries must not reuse the HDRI environment assets; they belong here.
  */
 const records: readonly PreviewTextureRecord[] = [
   {
     id: 'uv-checker-01',
     path: 'textures/Uv_checker_01.png',
+    thumbnailPath: 'textures/thumbs/Uv_checker_01.webp',
     sampler: 'sampler2D',
   },
   {
     id: 'uv-checker-02',
     path: 'textures/Uv_checker_02.png',
+    thumbnailPath: 'textures/thumbs/Uv_checker_02.webp',
     sampler: 'sampler2D',
   },
 ];
@@ -45,6 +53,7 @@ const entries: readonly PreviewTexture[] = records.map((record) => ({
   id: record.id,
   label: assetLabel('textures', record.id),
   url: resolveTextureUrl(record.path),
+  thumbnailUrl: resolveTextureThumbnailUrl(record.thumbnailPath),
   sampler: record.sampler,
   format: FORMAT_BY_SAMPLER[record.sampler],
 }));

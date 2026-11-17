@@ -58,6 +58,8 @@ declare module 'assetpicker' {
     readonly language?: AssetPickerLanguage;
     readonly pick?: AssetPickerPickConfig;
     readonly thumbnails?: AssetPickerThumbnailMode;
+    /** Opens the only configured storage instead of the overview screen. */
+    readonly autoOpenSingleStorage?: boolean;
     readonly storages: Readonly<Record<string, AssetPickerStorageConfig>>;
   }
 

@@ -134,9 +134,53 @@ describe('AssetPickerTexturePicker', () => {
     const mountOrder =
       fake.createAssetPickerApp.mock.invocationCallOrder[0] ?? 0;
     expect(registerOrder).toBeLessThan(mountOrder);
+    await expect(session.ready).resolves.toBeUndefined();
 
     session.dispose();
     await flushPromises();
+  });
+
+  it('preloads the module once and reuses it for the first open', async () => {
+    const fake = createFakeApi();
+    let loads = 0;
+    const picker = new AssetPickerTexturePicker({
+      labels: () => ({ title: 'Select a texture', storage: 'Bundled textures' }),
+      loadApi: async () => {
+        loads += 1;
+        return fake.api;
+      },
+    });
+
+    picker.preload();
+    await flushPromises();
+
+    expect(loads).toBe(1);
+    expect(fake.createAssetPickerApp).not.toHaveBeenCalled();
+
+    const session = picker.open(REQUEST, createHost());
+    await flushPromises();
+
+    expect(loads).toBe(1);
+    expect(fake.createAssetPickerApp).toHaveBeenCalledTimes(1);
+
+    session.dispose();
+    await flushPromises();
+  });
+
+  it('resolves ready even when the session is disposed before the module loads', async () => {
+    const fake = createFakeApi();
+    const gate = deferred<AssetPickerApi>();
+    const picker = new AssetPickerTexturePicker({
+      labels: () => ({ title: 'Select a texture', storage: 'Bundled textures' }),
+      loadApi: () => gate.promise,
+    });
+
+    const session = picker.open(REQUEST, createHost());
+    session.dispose();
+    gate.resolve(fake.api);
+
+    await expect(session.ready).resolves.toBeUndefined();
+    expect(fake.createAssetPickerApp).not.toHaveBeenCalled();
   });
 
   it('resolves a picked item as a repository source and unmounts once', async () => {
@@ -214,6 +258,7 @@ describe('AssetPickerTexturePicker', () => {
       status: 'rejected',
       reason: 'picker-unavailable',
     });
+    await expect(session.ready).resolves.toBeUndefined();
   });
 
   it('retries the module load after a failure', async () => {

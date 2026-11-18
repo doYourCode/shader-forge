@@ -19,8 +19,14 @@ import { PreviewEngine } from './preview/PreviewEngine';
 import type {
   CompileResult,
   MaterialBlueprint,
+  PostEffectStack,
   ShaderSource,
 } from './preview/PreviewTypes';
+import {
+  PostEffectPipeline,
+  type PostEffectPipelineDeps,
+} from './preview/post/PostEffectPipeline';
+import type { TonemapMode } from '@/core/models/postEffect';
 import {
   createPreviewScene,
   type PreviewScene,
@@ -57,7 +63,11 @@ export type {
 export type {
   CompileResult,
   MaterialBlueprint,
+  PostEffectDocument,
+  PostEffectSource,
+  PostEffectStack,
   ShaderSource,
+  TonemapMode,
 } from './preview/PreviewTypes';
 
 /** Factories for the collaborators, so tests can substitute them. */
@@ -87,6 +97,10 @@ export interface SceneManagerDeps {
   createTextureRegistry(scene: Scene): TextureRegistryPort;
   createUniformBinder(textures: TextureRegistryPort): UniformBinderPort;
   createUniformBindingTarget(material: ShaderMaterial): UniformBindingTarget;
+  createPostEffects(
+    deps: PostEffectPipelineDeps,
+    mesh: Mesh,
+  ): PostEffectPipeline;
 }
 
 export type PreviewMeshProviderFactory = (
@@ -113,6 +127,7 @@ const defaultDeps: SceneManagerDeps = {
   createUniformBinder: (textures) => new UniformBinder(textures),
   createUniformBindingTarget: (material) =>
     new ShaderMaterialBindingTarget(material),
+  createPostEffects: (deps, mesh) => new PostEffectPipeline(deps, mesh),
 };
 
 /**
@@ -134,6 +149,7 @@ export class SceneManager {
   private environment: EnvironmentController | null = null;
   private textures: TextureRegistryPort | null = null;
   private userData: UserDataController | null = null;
+  private postEffects: PostEffectPipeline | null = null;
   private wireframe = false;
   /**
    * Monotonic token identifying the current init session. Any `await` resumes
@@ -174,6 +190,8 @@ export class SceneManager {
       createUniformBindingTarget:
         deps.createUniformBindingTarget ??
         defaultDeps.createUniformBindingTarget,
+      createPostEffects:
+        deps.createPostEffects ?? defaultDeps.createPostEffects,
     };
     this.timer = timer;
   }
@@ -184,6 +202,7 @@ export class SceneManager {
     model: PreviewModel = previewModels.default,
     hdri: PreviewHdri = previewHdris.default,
     userData: UserDataController | null = null,
+    postStack: PostEffectStack | null = null,
   ): Promise<void> {
     this.dispose();
     this.userData = userData;
@@ -200,7 +219,10 @@ export class SceneManager {
       return;
     }
 
-    const { scene, directionalLight } = this.deps.createScene(engine, canvas);
+    const { scene, camera, directionalLight } = this.deps.createScene(
+      engine,
+      canvas,
+    );
     this.scene = scene;
     previewEngine.attachScene(scene);
 
@@ -274,6 +296,22 @@ export class SceneManager {
     this.animator = animator;
     animator.start();
 
+    if (postStack) {
+      const postEffects = this.deps.createPostEffects(
+        {
+          scene,
+          camera,
+          engine,
+          textures,
+          getUserBindings: () => this.userData?.postBindings() ?? [],
+          recorder: previewEngine.recorder,
+        },
+        mesh,
+      );
+      this.postEffects = postEffects;
+      void this.compileInitialPostEffects(postStack, session);
+    }
+
     // Frames may already be drawing (mountCanvas unpauses the engine so the
     // canvas is cleared while assets load), but init only completes — and the
     // loading overlay only hides once the environment is ready as well.
@@ -328,6 +366,7 @@ export class SceneManager {
 
     materials.setMesh(nextMesh);
     this.animator?.setMesh(nextMesh);
+    this.postEffects?.setMesh(nextMesh);
     currentMesh.dispose();
 
     this.mesh = nextMesh;
@@ -348,6 +387,7 @@ export class SceneManager {
 
   resize(): void {
     this.previewEngine?.resize();
+    this.postEffects?.resize();
   }
 
   async compile(blueprint: MaterialBlueprint): Promise<CompileResult> {
@@ -401,6 +441,52 @@ export class SceneManager {
     materials.showError();
 
     return { ok: false, message, errors };
+  }
+
+  /**
+   * Compiles the enabled view-space effect stack and, on success, installs it
+   * as one unit. A failed compile leaves the previous chain rendering, so the
+   * last working image (and the last working effect set) is preserved.
+   */
+  async compilePostEffects(stack: PostEffectStack): Promise<CompileResult> {
+    const pipeline = this.postEffects;
+    const session = this.session;
+
+    if (!pipeline || !this.isCurrent(session)) {
+      return { ok: false, message: 'Scene not initialized', errors: [] };
+    }
+
+    const result = await pipeline.compile(stack);
+
+    if (!this.isCurrent(session) || this.postEffects !== pipeline) {
+      return { ok: false, message: 'Scene disposed', errors: [] };
+    }
+
+    return result;
+  }
+
+  /** Output transform only; the display pass reads it without recompiling. */
+  setTonemap(mode: TonemapMode): void {
+    this.postEffects?.setTonemap(mode);
+  }
+
+  /**
+   * First compile of a stack handed to `init`. Its outcome is reported through
+   * `onError` because init has already resolved by the time the driver answers.
+   */
+  private async compileInitialPostEffects(
+    stack: PostEffectStack,
+    session: number,
+  ): Promise<void> {
+    const pipeline = this.postEffects;
+    if (!pipeline) return;
+
+    const result = await pipeline.compile(stack);
+    if (!this.isCurrent(session) || this.postEffects !== pipeline) return;
+
+    if (!result.ok && result.errors.length > 0) {
+      this.onError(result.errors);
+    }
   }
 
   /**
@@ -462,6 +548,9 @@ export class SceneManager {
     this.environment = null;
 
     this.previewEngine?.stopRenderLoop();
+
+    this.postEffects?.dispose();
+    this.postEffects = null;
 
     this.materials?.dispose();
     this.materials = null;

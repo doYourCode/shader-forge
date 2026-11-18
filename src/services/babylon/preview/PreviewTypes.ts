@@ -1,6 +1,13 @@
 import type { ShaderError } from '@/core/models/shaderError';
 import type { UserDataAssemblyRecord } from '@/core/shader/uniformCodegen';
 
+export type {
+  PostEffectDocument,
+  PostEffectSource,
+  PostEffectStack,
+  TonemapMode,
+} from '@/core/models/postEffect';
+
 /** The two GLSL stages edited by the user. */
 export interface ShaderSource {
   vertex: string;

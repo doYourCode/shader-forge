@@ -1,9 +1,11 @@
 /**
  * `user_data` is used for diagnostics whose driver line falls inside the
  * generated user-data block. Those errors belong to a table row, not to an
- * editor line.
+ * editor line. `post` is used for view-space effect fragments, which belong to
+ * one effect document rather than to the surface shader tabs.
  */
-export type ShaderErrorStage = 'vertex' | 'fragment' | 'program' | 'user_data';
+export type ShaderErrorStage =
+  'vertex' | 'fragment' | 'post' | 'program' | 'user_data';
 
 /**
  * Broad category of a shader failure.
@@ -37,4 +39,11 @@ export interface ShaderError {
    * attributed to the generated block; absent otherwise.
    */
   row?: number | null;
+
+  /**
+   * Post-effect document the diagnostic belongs to, when `stage` is `post`.
+   * Effects are edited one at a time, so the UI needs to know which document
+   * to reveal.
+   */
+  effectId?: string;
 }

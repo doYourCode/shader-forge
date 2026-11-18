@@ -96,7 +96,8 @@
     "stages": {
       "fragment": "Frag",
       "vertex": "Vert",
-      "both": "All"
+      "both": "All",
+      "post": "Post"
     },
     "kinds": {
       "float": "Float",
@@ -148,7 +149,24 @@
       "note": "Read-only preview of the managed block. These lines are injected into the source that is compiled; the editor text is left untouched.",
       "fragment": "Fragment stage",
       "vertex": "Vertex stage",
+      "post": "Post effect stage",
       "empty": "Add a uniform to see the generated declarations here."
+    }
+  },
+  "postEffects": {
+    "title": "Post effects",
+    "description": "View-space effects run as fullscreen fragment passes after the scene, in stack order. Each pass reads the previous one; the output transform runs last.",
+    "add": "Add effect",
+    "enable": "Enable {name}",
+    "disabled": "Off",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "remove": "Remove {name}",
+    "tonemap": "Output transform",
+    "tonemapModes": {
+      "none": "None (linear to sRGB)",
+      "reinhard": "Reinhard",
+      "aces": "ACES filmic"
     }
   }
 }

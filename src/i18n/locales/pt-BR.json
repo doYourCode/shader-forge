@@ -96,7 +96,8 @@
     "stages": {
       "fragment": "Frag",
       "vertex": "Vert",
-      "both": "Todos"
+      "both": "Todos",
+      "post": "Pós"
     },
     "kinds": {
       "float": "Float",
@@ -148,7 +149,24 @@
       "note": "Prévia somente leitura do bloco gerenciado. Estas linhas são injetadas no código compilado; o texto do editor não é alterado.",
       "fragment": "Estágio de fragmento",
       "vertex": "Estágio de vértice",
+      "post": "Estágio de efeito de pós-processamento",
       "empty": "Adicione um uniform para ver as declarações geradas aqui."
+    }
+  },
+  "postEffects": {
+    "title": "Efeitos de pós-processamento",
+    "description": "Efeitos em espaço de visão rodam como passes de fragmento em tela cheia depois da cena, na ordem da pilha. Cada passe lê o anterior; a transformação de saída roda por último.",
+    "add": "Adicionar efeito",
+    "enable": "Ativar {name}",
+    "disabled": "Desligado",
+    "moveUp": "Mover {name} para cima",
+    "moveDown": "Mover {name} para baixo",
+    "remove": "Remover {name}",
+    "tonemap": "Transformação de saída",
+    "tonemapModes": {
+      "none": "Nenhuma (linear para sRGB)",
+      "reinhard": "Reinhard",
+      "aces": "ACES filmic"
     }
   }
 }

@@ -40,10 +40,15 @@ const newName = ref('');
 const newKind = ref<UserUniformKind>('float');
 const addError = ref<string | null>(null);
 
-const STAGES: readonly UserUniformStage[] = ['fragment', 'vertex', 'both'];
+const STAGES: readonly UserUniformStage[] = [
+  'fragment',
+  'vertex',
+  'both',
+  'post',
+];
 
 /** Stages whose generated block is previewed, in display order. */
-const PREVIEW_STAGES = ['fragment', 'vertex'] as const;
+const PREVIEW_STAGES = ['fragment', 'vertex', 'post'] as const;
 
 /**
  * Read-only projection of the same block the compile pipeline injects. It is

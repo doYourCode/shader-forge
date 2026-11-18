@@ -18,7 +18,7 @@ export type UserUniformKind =
   | 'samplerCube';
 
 /** Which stage the declaration must be emitted into. */
-export type UserUniformStage = 'fragment' | 'vertex' | 'both';
+export type UserUniformStage = 'fragment' | 'vertex' | 'both' | 'post';
 
 /** The texture kinds are the only kinds whose value is a texture source. */
 export type SamplerKind = 'sampler2D' | 'samplerCube';

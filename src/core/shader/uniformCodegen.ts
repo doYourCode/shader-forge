@@ -23,8 +23,8 @@ export const USER_DATA_BLOCK_START = '// >>> ShaderForge user data';
 export const USER_DATA_BLOCK_END = '// <<< end ShaderForge user data >>>';
 const BLOCK_START_LINE = `${USER_DATA_BLOCK_START} (managed block — edit it in the User data tab)`;
 
-/** The two GLSL stages a block can be injected into. */
-export type InjectedStage = 'vertex' | 'fragment';
+/** The GLSL targets a block can be injected into. */
+export type InjectedStage = 'vertex' | 'fragment' | 'post';
 
 export interface GeneratedUserDataBlock {
   /** Full block, sentinels included, in insertion order. */
@@ -197,7 +197,8 @@ function toRecord(assembly: StageAssembly): StageAssemblyRecord | null {
 }
 
 function targetsStage(stage: UserUniformStage, target: InjectedStage): boolean {
-  return stage === 'both' || stage === target;
+  if (stage === 'both') return target === 'vertex' || target === 'fragment';
+  return stage === target;
 }
 
 function splitLines(source: string): string[] {

@@ -1,5 +1,5 @@
 export type EditorTabId =
-  'vertex' | 'fragment' | 'user_data' | 'uniforms' | 'io';
+  'vertex' | 'fragment' | 'post' | 'user_data' | 'uniforms' | 'io';
 
 export interface EditorTab {
   id: EditorTabId;
@@ -33,6 +33,17 @@ export const editableTabs: readonly EditorTab[] = [
 export const userDataTab: EditorTab = {
   id: 'user_data',
   label: 'User data',
+  readOnly: false,
+};
+
+/**
+ * The view-space effect tab. Its document is not fixed: it shows the fragment
+ * of the effect selected in the effect stack, so it is kept out of
+ * `editableTabs` like the user-data panel.
+ */
+export const postTab: EditorTab = {
+  id: 'post',
+  label: 'Post effect',
   readOnly: false,
 };
 

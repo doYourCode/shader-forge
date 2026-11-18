@@ -5,6 +5,12 @@ import defaultVertex from '@/assets/internal-shaders/default.vert.glsl?raw';
 import defaultFragment from '@/assets/internal-shaders/default.frag.glsl?raw';
 import errorVertex from '@/assets/internal-shaders/error.vert.glsl?raw';
 import errorFragment from '@/assets/internal-shaders/error.frag.glsl?raw';
+import gbufferFragment from '@/assets/internal-shaders/post.gbuffer.frag.glsl?raw';
+import gbufferVertex from '@/assets/internal-shaders/post.gbuffer.vert.glsl?raw';
+import depthFragment from '@/assets/internal-shaders/post.depth.frag.glsl?raw';
+import depthVertex from '@/assets/internal-shaders/post.depth.vert.glsl?raw';
+import linearizeFragment from '@/assets/internal-shaders/post.linearize.frag.glsl?raw';
+import displayFragment from '@/assets/internal-shaders/post.display.frag.glsl?raw';
 
 export interface InternalShaderPair {
   vertex: string;
@@ -31,4 +37,27 @@ export const internalShaders = {
     vertex: defaultVertex,
     fragment: defaultFragment,
   } satisfies InternalShaderPair,
+
+  /**
+   * Stages of the view-space post-effect pipeline. Only the user's effect
+   * fragment is editable; the linear conversion, the display transform and the
+   * normal/depth prepass are fixed.
+   */
+  post: {
+    linearize: linearizeFragment,
+    display: displayFragment,
+    gbuffer: {
+      vertex: gbufferVertex,
+      fragment: gbufferFragment,
+    },
+    depth: {
+      vertex: depthVertex,
+      fragment: depthFragment,
+    },
+  } satisfies {
+    linearize: string;
+    display: string;
+    gbuffer: InternalShaderPair;
+    depth: InternalShaderPair;
+  },
 } as const;

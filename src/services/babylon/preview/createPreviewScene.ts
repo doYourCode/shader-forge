@@ -38,6 +38,11 @@ export function createPreviewScene(
   camera.lowerRadiusLimit = 2.5;
   camera.upperRadiusLimit = 5;
   camera.wheelDeltaPercentage = 0.01;
+  // The preview only ever frames the loaded model. A tight clip range keeps
+  // both the hardware depth buffer and the normalised depth pass precise;
+  // Babylon's defaults (1 / 10 000) waste almost all of that precision.
+  camera.minZ = 0.1;
+  camera.maxZ = 20;
   scene.activeCamera = camera;
 
   new HemisphericLight('hemi', new Vector3(0, 1, 0), scene);

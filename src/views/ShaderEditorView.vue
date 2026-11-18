@@ -11,6 +11,7 @@ import { useShaderEditor } from '@/composables/useShaderEditor';
 import {
   builtInTabGroup,
   editableTabs,
+  postTab,
   userDataTab,
   type EditorTab,
 } from '@/core/models/editorTab';
@@ -24,6 +25,7 @@ import EditorToolbar from '@/components/shader/EditorToolbar.vue';
 import ViewerToolbar from '@/components/shader/ViewerToolbar.vue';
 import StatusBar from '@/components/shader/StatusBar.vue';
 import UserDataPanel from '@/components/shader/UserDataPanel.vue';
+import PostEffectPanel from '@/components/shader/PostEffectPanel.vue';
 import CopyShaderButton from '@/components/shader/CopyShaderButton.vue';
 
 const { t, locale } = useI18n();
@@ -59,7 +61,11 @@ const examplePicker = new AssetPickerExamplePicker({
 provide(EXAMPLE_PICKER, examplePicker);
 
 /** The structured user-data tab lives beside the text documents. */
-const editorTabs: readonly EditorTab[] = [...editableTabs, userDataTab];
+const editorTabs: readonly EditorTab[] = [
+  ...editableTabs,
+  postTab,
+  userDataTab,
+];
 
 const {
   activeTab,
@@ -77,6 +83,9 @@ const {
   userDataDoc,
   highlightedUserRow,
   loadingMessage,
+  postEffects,
+  activePostEffectId,
+  tonemap,
   mountEditor,
   mountCanvas,
   switchTab,
@@ -88,6 +97,12 @@ const {
   resize,
   setWireframe,
   setPaused,
+  selectPostEffect,
+  addPostEffect,
+  removePostEffect,
+  movePostEffect,
+  setPostEffectEnabled,
+  setTonemap,
   addUserUniform,
   removeUserUniform,
   renameUserUniform,
@@ -114,9 +129,11 @@ function errorStageLabel(error: ShaderError): string {
       ? 'Vertex shader'
       : error.stage === 'fragment'
         ? 'Fragment shader'
-        : error.stage === 'user_data'
-          ? 'User data'
-          : 'Shader program';
+        : error.stage === 'post'
+          ? 'Post effect'
+          : error.stage === 'user_data'
+            ? 'User data'
+            : 'Shader program';
 
   if (error.stage === 'user_data') {
     return error.row == null ? stage : `${stage} · row ${error.row + 1}`;
@@ -135,6 +152,7 @@ function errorKindLabel(error: ShaderError): string {
 
 function isRevealable(error: ShaderError): boolean {
   if (error.stage === 'user_data') return error.row != null;
+  if (error.stage === 'post') return error.line !== null;
   return error.stage !== 'program' && error.line !== null;
 }
 
@@ -204,6 +222,19 @@ function togglePause() {
         @switch="switchTab"
         @compile="compile"
         @load-example="loadExample"
+      />
+      <PostEffectPanel
+        v-if="activeTab === 'post'"
+        class="shader-editor__post-panel"
+        :effects="postEffects"
+        :active-id="activePostEffectId"
+        :tonemap="tonemap"
+        @select="selectPostEffect"
+        @add="addPostEffect"
+        @remove="removePostEffect"
+        @move="movePostEffect"
+        @toggle="setPostEffectEnabled"
+        @tonemap="setTonemap"
       />
       <div
         v-show="activeTab !== 'user_data'"
@@ -342,6 +373,12 @@ function togglePause() {
 .shader-editor__user-data {
   flex: 1;
   min-height: 0;
+}
+
+.shader-editor__post-panel {
+  flex: 0 0 auto;
+  max-height: 45%;
+  overflow: auto;
 }
 
 /* Let CodeMirror use the full height of its host instead of only the

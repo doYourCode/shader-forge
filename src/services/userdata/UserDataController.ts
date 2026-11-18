@@ -15,6 +15,7 @@ import {
   type UserUniformValue,
 } from '@/core/models/userUniform';
 import { defaultUniformValue } from '@/core/constants/userUniformKinds';
+import { POST_EFFECT_RESERVED_NAMES } from '@/core/constants/postEffectAbi';
 import { assembleUserData } from '@/core/shader/uniformCodegen';
 import {
   SHADER_ATTRIBUTES,
@@ -29,6 +30,7 @@ import type {
 } from '@/services/babylon/preview/PreviewTypes';
 import {
   toUniformBinding,
+  type UniformBinding,
   type UniformBindingTarget,
   type UniformBinderPort,
 } from './UniformBinder';
@@ -44,6 +46,7 @@ export const BUILTIN_RESERVED_UNIFORM_NAMES: ReadonlySet<string> = new Set([
   ...SHADER_UNIFORMS,
   ...SHADER_SAMPLERS,
   ...SHADER_ATTRIBUTES,
+  ...POST_EFFECT_RESERVED_NAMES,
 ]);
 
 const RESERVED_UNIFORM_NAMES: ReadonlySet<string> = new Set([
@@ -152,6 +155,22 @@ export class UserDataController {
     gpu.binder.attach(target);
     gpu.binder.applyAll(this.bindings());
     this.flushTextureReleases(gpu);
+  }
+
+  /**
+   * Bindings for definitions targeting the post-effect pipeline. They are
+   * bound to whichever `PostProcess` is currently applied, independently of the
+   * surface material's binder.
+   */
+  postBindings(): readonly UniformBinding[] {
+    return this.document.definitions
+      .filter((definition) => definition.stages === 'post')
+      .filter(
+        (definition) =>
+          !isSamplerKind(definition.kind) ||
+          hasTextureContent(definition.value),
+      )
+      .map((definition) => toUniformBinding(definition));
   }
 
   validateName(name: string, exceptId?: string): NameValidationResult {

@@ -57,3 +57,29 @@ describe('internal shaders', () => {
     expect(internalShaders.validation.fragment).toBe(defaultFragment);
   });
 });
+
+describe('post depth pass shaders', () => {
+  const depth = internalShaders.post.depth;
+
+  it.each([
+    ['vertex', depth.vertex],
+    ['fragment', depth.fragment],
+  ])('%s starts with #version 300 es and a precision', (_stage, source) => {
+    const lines = source.replace(/\r/g, '').split('\n');
+
+    expect(lines[0]).toBe('#version 300 es');
+    expect(lines[1]).toBe('precision highp float;');
+  });
+
+  it('normalises linear view depth to the camera clip range', () => {
+    expect(depth.fragment).toContain('(vViewDepth - cameraNear)');
+    expect(depth.fragment).toContain('cameraFar - cameraNear');
+    expect(depth.fragment).toContain('clamp(depth, 0.0, 1.0)');
+  });
+
+  it('writes a single-channel result', () => {
+    expect(depth.fragment).toContain(
+      'fragColor = vec4(clamp(depth, 0.0, 1.0), 0.0, 0.0, 1.0);',
+    );
+  });
+});

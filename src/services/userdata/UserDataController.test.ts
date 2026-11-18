@@ -579,3 +579,32 @@ describe('UserDataController lifecycle', () => {
     expect(harness.controller.doc.definitions).toHaveLength(1);
   });
 });
+
+describe('UserDataController post-effect bindings', () => {
+  it('exposes only definitions targeting the post stage', () => {
+    const harness = createHarness();
+    harness.controller.add({ name: 'radius', kind: 'float', stages: 'post' });
+    harness.controller.add({ name: 'tint', kind: 'color' });
+    harness.controller.add({ name: 'amount', kind: 'float', stages: 'both' });
+
+    expect(harness.controller.postBindings()).toEqual([
+      expect.objectContaining({ name: 'radius', kind: 'float' }),
+    ]);
+  });
+
+  it('skips a post sampler until it has a usable source', () => {
+    const harness = createHarness();
+    harness.controller.add({
+      name: 'mask',
+      kind: 'sampler2D',
+      stages: 'post',
+    });
+
+    expect(harness.controller.postBindings()).toHaveLength(0);
+
+    const id = harness.controller.doc.definitions[0]!.id;
+    harness.controller.setValue(id, { kind: 'url', url: '/mask.png' });
+
+    expect(harness.controller.postBindings()).toHaveLength(1);
+  });
+});

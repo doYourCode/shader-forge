@@ -1,5 +1,5 @@
-import { LOCALES } from './locales';
-import type { ContentSource } from './ContentResolver';
+import { LOCALES } from '@/core/content/locales';
+import type { ContentSource } from '@/core/content/ContentResolver';
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -13,7 +13,7 @@ const CONTENT_KEY = new RegExp(
 /**
  * Vite's native content API: every markdown file under a locale tree is
  * imported eagerly as raw text at build time. No new dependency and no
- * runtime fetch — the same mechanism the old single-tree loader used.
+ * runtime fetch.
  */
 const modules = import.meta.glob('/content/*/{docs,knowledge}/*.md', {
   query: '?raw',

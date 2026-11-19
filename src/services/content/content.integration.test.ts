@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { ContentResolver } from './ContentResolver';
-import { buildContentTree } from './contentTrees';
+import { ContentResolver } from '@/core/content/ContentResolver';
+import { buildContentTree } from '@/core/content/contentTrees';
+import { DEFAULT_LOCALE } from '@/core/content/locales';
 import { loadContentSource } from './contentSource';
-import { DEFAULT_LOCALE } from './locales';
 
 /**
  * Exercises the real Vite `import.meta.glob` loader and the migrated content

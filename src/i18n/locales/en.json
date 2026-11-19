@@ -62,6 +62,57 @@
     }
   },
   "editor": {
+    "status": {
+      "idle": "⚪ Idle",
+      "ready": "🟢 Ready",
+      "error": "🔴 Error",
+      "compiling": "🟡 Compiling",
+      "messages": {
+        "editorReady": "Editor ready",
+        "compiled": "Compiled successfully",
+        "compiling": "Compiling…",
+        "compilingPost": "Compiling post effects…",
+        "switchedTab": "Switched to {tab}",
+        "loadedExample": "Loaded example: {label}",
+        "postEffectSelected": "Post effect selected",
+        "shaderErrors": "{count} shader error | {count} shader errors",
+        "shaderErrorsAtLine": "{count} shader error · line {line} | {count} shader errors · line {line}",
+        "linkFailed": "Shader program failed to link",
+        "unavailable": {
+          "sceneNotInitialized": "Preview is not ready yet",
+          "sceneDisposed": "Preview is no longer available",
+          "superseded": "Superseded by a newer compile"
+        }
+      }
+    },
+    "error": {
+      "title": "Shader compilation failed",
+      "count": "{count} error | {count} errors",
+      "kind": {
+        "syntax": "Syntax",
+        "type": "Type",
+        "logic": "Logic",
+        "link": "Link",
+        "program": "Compiler",
+        "timeout": "Timeout",
+        "internal": "Internal"
+      },
+      "atLine": "{stage} · line {line}",
+      "atLineColumn": "{stage} · line {line}, col {column}",
+      "atRow": "{stage} · row {row}"
+    },
+    "stage": {
+      "vertex": "Vertex shader",
+      "fragment": "Fragment shader",
+      "post": "Post effect",
+      "user_data": "User data",
+      "program": "Shader program"
+    },
+    "loading": {
+      "preview": "Loading preview…",
+      "model": "Loading model…",
+      "environment": "Loading environment…"
+    },
     "copy": {
       "label": "Copy shader source",
       "idle": "Copy source with generated user data",

@@ -5,7 +5,8 @@ import {
   type ShaderExample,
 } from '@/core/constants/shaderExamples';
 import { SceneManager } from '@/services/babylon/SceneManager';
-import type { ShaderSource } from '@/services/babylon/preview/PreviewTypes';
+import { createRenderTargetSnapshot } from '@/services/babylon/preview/snapshot/PreviewSnapshot';
+import type { ShaderSource } from '@/core/models/shaderSource';
 import { UserDataController } from '@/services/userdata/UserDataController';
 
 /**
@@ -51,7 +52,14 @@ export async function bakeExampleThumb(
   });
   userData.replaceAll(example.uniforms);
 
-  const manager = new SceneManager();
+  // Only the bake tool needs screenshot support, so it injects the snapshot
+  // factory instead of the runtime facade carrying bake-only code.
+  const manager = new SceneManager(
+    undefined,
+    undefined,
+    undefined,
+    createRenderTargetSnapshot,
+  );
   try {
     await manager.init(
       canvas,
@@ -61,7 +69,7 @@ export async function bakeExampleThumb(
       userData,
     );
 
-    const dataUrl = await manager.snapshot(THUMB_WIDTH, THUMB_HEIGHT);
+    const dataUrl = await manager.snapshot?.capture(THUMB_WIDTH, THUMB_HEIGHT);
     if (!dataUrl) {
       throw new Error(`The preview rendered no frame for "${example.id}".`);
     }

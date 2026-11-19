@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Mesh } from '@babylonjs/core';
 
 import type { ShaderError } from '@/core/models/shaderError';
-import type { MaterialBlueprint } from '../PreviewTypes';
+import type { MaterialBlueprint } from '@/core/models/shaderSource';
 import { FragmentDiagnostics } from './FragmentDiagnostics';
 import type { ShaderCompiler } from './ShaderCompiler';
 

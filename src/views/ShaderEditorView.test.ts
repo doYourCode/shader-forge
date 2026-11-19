@@ -24,9 +24,7 @@ const { sceneManager, editorManager, examplePicker } = vi.hoisted(() => {
     onError: null as ((errors: unknown[]) => void) | null,
     init: vi.fn(),
     compile: vi.fn(async (_blueprint: BlueprintLike) => ({
-      ok: true,
-      message: 'Compiled successfully',
-      errors: [],
+      status: 'ok' as const,
     })),
     loadModel: vi.fn(async () => true),
     loadEnvironment: vi.fn(async () => true),

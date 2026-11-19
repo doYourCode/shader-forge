@@ -5,7 +5,6 @@ import type {
   Scene,
   ShaderMaterial,
 } from '@babylonjs/core';
-import { CreateScreenshotUsingRenderTargetAsync } from '@babylonjs/core/Misc/screenshotTools';
 import type { ShaderError } from '@/core/models/shaderError';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
@@ -16,12 +15,12 @@ import { internalErrorFrom } from './preview/errors/shaderErrorFactory';
 import { MaterialController } from './preview/MaterialController';
 import { PreviewAnimator } from './preview/PreviewAnimator';
 import { PreviewEngine } from './preview/PreviewEngine';
+import type { CompileResult } from '@/core/models/compileResult';
 import type {
-  CompileResult,
   MaterialBlueprint,
-  PostEffectStack,
   ShaderSource,
-} from './preview/PreviewTypes';
+} from '@/core/models/shaderSource';
+import type { PostEffectStack } from '@/core/models/postEffect';
 import {
   PostEffectPipeline,
   type PostEffectPipelineDeps,
@@ -54,6 +53,10 @@ import {
   type UniformBinderPort,
 } from '@/services/userdata/UniformBinder';
 import type { UserDataController } from '@/services/userdata/UserDataController';
+import type {
+  PreviewSnapshot,
+  PreviewSnapshotFactory,
+} from './preview/snapshot/PreviewSnapshot';
 
 export { assertWebGl2 } from './preview/PreviewEngine';
 export type {
@@ -62,13 +65,18 @@ export type {
 } from './preview/PreviewEngine';
 export type {
   CompileResult,
+  CompileUnavailableReason,
+} from '@/core/models/compileResult';
+export type {
   MaterialBlueprint,
+  ShaderSource,
+} from '@/core/models/shaderSource';
+export type {
   PostEffectDocument,
   PostEffectSource,
   PostEffectStack,
-  ShaderSource,
   TonemapMode,
-} from './preview/PreviewTypes';
+} from '@/core/models/postEffect';
 
 /** Factories for the collaborators, so tests can substitute them. */
 export interface SceneManagerDeps {
@@ -159,6 +167,12 @@ export class SceneManager {
   /** Separately cancels in-flight model swaps inside the current session. */
   private modelRequest = 0;
 
+  /**
+   * Bake-only image capture, present only when a snapshot factory was
+   * injected. Production constructs the manager without one.
+   */
+  readonly snapshot: PreviewSnapshot | null;
+
   onError: (errors: ShaderError[]) => void = () => {};
 
   constructor(
@@ -169,8 +183,19 @@ export class SceneManager {
      * profiler; tests and production defaults get the no-op timer.
      */
     timer: LoadTimer = noopLoadTimer,
+    /**
+     * Optional snapshot port. Only the example-thumbnail bake tool injects a
+     * factory; everything else gets no snapshot capability at all.
+     */
+    snapshotFactory: PreviewSnapshotFactory | null = null,
   ) {
     this.meshProviderFactory = meshProviderFactory;
+    this.snapshot =
+      snapshotFactory?.({
+        getScene: () => this.scene,
+        getMesh: () => this.mesh,
+        getMaterial: () => this.materials?.activeMaterial ?? null,
+      }) ?? null;
     this.deps = {
       createEngine: deps.createEngine ?? defaultDeps.createEngine,
       createScene: deps.createScene ?? defaultDeps.createScene,
@@ -405,7 +430,7 @@ export class SceneManager {
       !diagnostics ||
       !this.isCurrent(session)
     ) {
-      return { ok: false, message: 'Scene not initialized', errors: [] };
+      return { status: 'unavailable', reason: 'scene-not-initialized' };
     }
 
     const attempt = await this.timer.measure('shader:compile', () =>
@@ -414,22 +439,18 @@ export class SceneManager {
 
     if (!this.isCurrent(session)) {
       attempt.release(true);
-      return { ok: false, message: 'Scene disposed', errors: [] };
+      return { status: 'unavailable', reason: 'scene-disposed' };
     }
 
     if (attempt.ok && attempt.material) {
       materials.apply(attempt.material, blueprint);
       this.applyUserDataBindings();
-      return { ok: true, message: 'Compiled successfully', errors: [] };
+      return { status: 'ok' };
     }
 
     attempt.release(true);
 
     let errors = attempt.errors;
-    const message =
-      errors.length > 0
-        ? 'Shader compilation failed'
-        : 'Shader program failed to link';
 
     if (attempt.stage === 'vertex') {
       const fragmentErrors = await diagnostics.collect(blueprint, mesh);
@@ -440,7 +461,7 @@ export class SceneManager {
 
     materials.showError();
 
-    return { ok: false, message, errors };
+    return { status: 'failed', errors };
   }
 
   /**
@@ -453,13 +474,13 @@ export class SceneManager {
     const session = this.session;
 
     if (!pipeline || !this.isCurrent(session)) {
-      return { ok: false, message: 'Scene not initialized', errors: [] };
+      return { status: 'unavailable', reason: 'scene-not-initialized' };
     }
 
     const result = await pipeline.compile(stack);
 
     if (!this.isCurrent(session) || this.postEffects !== pipeline) {
-      return { ok: false, message: 'Scene disposed', errors: [] };
+      return { status: 'unavailable', reason: 'scene-disposed' };
     }
 
     return result;
@@ -484,43 +505,9 @@ export class SceneManager {
     const result = await pipeline.compile(stack);
     if (!this.isCurrent(session) || this.postEffects !== pipeline) return;
 
-    if (!result.ok && result.errors.length > 0) {
-      this.onError(result.errors);
+    if (result.status === 'failed' && result.errors.length > 0) {
+      this.onError([...result.errors]);
     }
-  }
-
-  /**
-   * Renders the current scene to an image and returns it as a data URL.
-   *
-   * Used by the example thumbnail baker (`npm run bake:examples`), so a baked
-   * preview comes from the exact pipeline the editor renders instead of a
-   * second Babylon setup that could drift.
-   */
-  async snapshot(
-    width: number,
-    height: number,
-    mimeType = 'image/webp',
-  ): Promise<string | null> {
-    const scene = this.scene;
-    const mesh = this.mesh;
-    const material = this.materials?.activeMaterial ?? null;
-    const camera = scene?.activeCamera ?? null;
-
-    if (!scene || !mesh || !material || !camera) return null;
-
-    // A screenshot taken before the effect compiled would capture the blank
-    // scene (or the error material), which is worse than reporting no image.
-    const ready = await waitForMaterial(material, mesh);
-    if (!ready) return null;
-
-    return CreateScreenshotUsingRenderTargetAsync(
-      scene.getEngine(),
-      camera,
-      { width, height, precision: 1 },
-      mimeType,
-      4,
-      true,
-    );
   }
 
   setWireframe(on: boolean): void {
@@ -602,38 +589,4 @@ export class SceneManager {
       ),
     );
   }
-}
-
-/** Upper bound for the shader warm-up; a broken effect must not hang a bake. */
-const MAX_SNAPSHOT_WARMUP_FRAMES = 120;
-
-/**
- * Waits for the active effect to compile, resolving `false` when the warm-up
- * budget is exhausted. The render loop keeps drawing, but a screenshot taken
- * before the effect is ready would capture the blank scene.
- */
-function waitForMaterial(
-  material: ShaderMaterial,
-  mesh: Mesh,
-): Promise<boolean> {
-  return new Promise((resolve) => {
-    let frame = 0;
-
-    const check = (): void => {
-      if (material.isReady(mesh)) {
-        resolve(true);
-        return;
-      }
-
-      if (frame >= MAX_SNAPSHOT_WARMUP_FRAMES) {
-        resolve(false);
-        return;
-      }
-
-      frame += 1;
-      requestAnimationFrame(check);
-    };
-
-    check();
-  });
 }

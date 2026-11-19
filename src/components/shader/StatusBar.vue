@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { EditorStatus } from '@/composables/useShaderEditor';
 
 const props = defineProps<{
@@ -9,18 +10,9 @@ const props = defineProps<{
   message: string;
 }>();
 
-const statusLabel = computed(() => {
-  switch (props.status) {
-    case 'ready':
-      return '🟢 Ready';
-    case 'error':
-      return '🔴 Error';
-    case 'compiling':
-      return '🟡 Compiling';
-    default:
-      return '⚪ Idle';
-  }
-});
+const { t } = useI18n();
+
+const statusLabel = computed(() => t(`editor.status.${props.status}`));
 </script>
 
 <template>

@@ -4,7 +4,7 @@ import {
   type Scene,
   type ShaderMaterial,
 } from '@babylonjs/core';
-import { SHADER_SAMPLER_NAMES } from './MaterialController';
+import { SHADER_SAMPLER_NAMES } from '@/core/constants/materialAbi';
 
 /** Creates (or returns the cached) split-sum BRDF LUT for a scene. */
 export type BrdfLutProvider = (scene: Scene) => BaseTexture;

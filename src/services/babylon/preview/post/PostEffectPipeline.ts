@@ -15,6 +15,7 @@ import {
   POST_EFFECT_UNIFORM_NAMES,
   POST_EFFECT_UNIFORMS,
 } from '@/core/constants/postEffectAbi';
+import type { CompileResult } from '@/core/models/compileResult';
 import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
 import type { ShaderError } from '@/core/models/shaderError';
 import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
@@ -24,7 +25,6 @@ import {
   type UniformBinding,
 } from '@/services/userdata/UniformBinder';
 import { internalShaders } from '../../internalShaders';
-import type { CompileResult } from '../PreviewTypes';
 import { EffectBindingTarget } from './EffectBindingTarget';
 import { PostEffectCompiler } from './PostEffectCompiler';
 import { ViewSpaceGbuffer } from './ViewSpaceGbuffer';
@@ -98,7 +98,7 @@ export class PostEffectPipeline {
    */
   async compile(stack: PostEffectStack): Promise<CompileResult> {
     if (this.disposed) {
-      return { ok: false, message: 'Preview disposed', errors: [] };
+      return { status: 'unavailable', reason: 'scene-disposed' };
     }
 
     const generation = ++this.generation;
@@ -118,7 +118,9 @@ export class PostEffectPipeline {
       source: null,
     });
 
-    if (!linearize.ok) return fail(linearize.errors);
+    if (!linearize.ok) {
+      return { status: 'failed', errors: linearize.errors };
+    }
     candidates.push(linearize.postProcess);
 
     for (const effect of stack.effects) {
@@ -144,7 +146,7 @@ export class PostEffectPipeline {
 
     if (errors.length > 0) {
       disposeAll(candidates);
-      return { ok: false, message: 'Post effect compilation failed', errors };
+      return { status: 'failed', errors };
     }
 
     const display = await compiler.compile({
@@ -157,26 +159,18 @@ export class PostEffectPipeline {
 
     if (!display.ok) {
       disposeAll(candidates);
-      return {
-        ok: false,
-        message: 'Post effect compilation failed',
-        errors: [...display.errors],
-      };
+      return { status: 'failed', errors: display.errors };
     }
     candidates.push(display.postProcess);
 
     // A newer compile may have started while this one awaited the driver.
     if (this.disposed || generation !== this.generation) {
       disposeAll(candidates);
-      return {
-        ok: false,
-        message: 'Superseded by a newer compile',
-        errors: [],
-      };
+      return { status: 'unavailable', reason: 'compile-superseded' };
     }
 
     this.install(candidates, stack.tonemap);
-    return { ok: true, message: 'Compiled successfully', errors: [] };
+    return { status: 'ok' };
   }
 
   /** Output transform only; the display pass reads it every frame. */
@@ -288,14 +282,6 @@ export class PostEffectPipeline {
     this.inverseView.copyFrom(camera.getViewMatrix());
     this.inverseView.invert();
   }
-}
-
-function fail(errors: readonly ShaderError[]): CompileResult {
-  return {
-    ok: false,
-    message: 'Post effect compilation failed',
-    errors: [...errors],
-  };
 }
 
 function disposeAll(postProcesses: readonly PostProcess[]): void {

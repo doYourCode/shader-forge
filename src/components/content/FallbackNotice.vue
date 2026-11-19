@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { PT_BR_LOCALE } from '@/lib/locales';
+import { PT_BR_LOCALE } from '@/core/content/locales';
 
 const props = withDefaults(
   defineProps<{

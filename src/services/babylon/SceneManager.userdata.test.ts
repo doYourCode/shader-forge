@@ -8,7 +8,7 @@ import {
   type PreviewMeshProviderFactory,
   type SceneManagerDeps,
 } from './SceneManager';
-import type { MaterialBlueprint } from './preview/PreviewTypes';
+import type { MaterialBlueprint } from '@/core/models/shaderSource';
 
 const MODEL: PreviewModel = {
   id: 'model',
@@ -162,7 +162,7 @@ describe('SceneManager user data binding', () => {
 
     const result = await harness.manager.compile(BLUEPRINT);
 
-    expect(result.ok).toBe(true);
+    expect(result.status).toBe('ok');
     expect(harness.createUniformBindingTarget).toHaveBeenCalledWith({
       id: 'compiled-material',
     });

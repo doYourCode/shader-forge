@@ -1,20 +1,17 @@
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
+
 import {
   EditorManager,
   type EditorDiagnostic,
 } from '@/services/codemirror/EditorManager';
-import {
-  SceneManager,
-  type CompileResult,
-  type MaterialBlueprint,
-  type ShaderSource,
-} from '@/services/babylon/SceneManager';
-import type { EditorTabId } from '@/core/models/editorTab';
+import { SceneManager } from '@/services/babylon/SceneManager';
+import type { CompileResult } from '@/core/models/compileResult';
 import type {
-  PostEffectDocument,
-  PostEffectStack,
-  TonemapMode,
-} from '@/core/models/postEffect';
+  MaterialBlueprint,
+  ShaderSource,
+} from '@/core/models/shaderSource';
+import type { EditorTabId } from '@/core/models/editorTab';
+import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
 import type { PreviewHdri } from '@/core/models/previewHdri';
 import type { PreviewModel } from '@/core/models/previewModel';
 import type { ShaderError } from '@/core/models/shaderError';
@@ -34,7 +31,6 @@ import {
   defaultIoDoc,
 } from '@/core/constants/defaultShaders';
 import { findShaderExample } from '@/core/constants/shaderExamples';
-import { createDefaultPostEffect } from '@/core/constants/postEffects';
 import { assembleStage, generateBlock } from '@/core/shader/uniformCodegen';
 import { buildPostEffectSource } from '@/core/shader/postEffectCodegen';
 import {
@@ -43,14 +39,26 @@ import {
   type UserDataCommandResult,
 } from '@/services/userdata/UserDataController';
 import { LoadProfiler, exposeProfiler } from '@/services/perf/LoadProfiler';
+import {
+  useShaderCompilation,
+  type EditorStatusMessage,
+} from './useShaderCompilation';
+import { usePostEffects } from './usePostEffects';
+import { useUserDataCommands } from './useUserDataCommands';
 
-export type EditorStatus = 'idle' | 'ready' | 'error' | 'compiling';
+export type { EditorStatus } from './useShaderCompilation';
 
 type EditableTabId = 'vertex' | 'fragment';
 type TextTabId = 'vertex' | 'fragment' | 'uniforms' | 'io';
-/** Which document family the Compile button (and structural edits) target. */
-type CompileTarget = 'material' | 'post';
 
+/**
+ * Composition root of the editor screen.
+ *
+ * It owns the managers and the tab/document navigation, and wires three focused
+ * collaborators: compilation (queue + error/status state), the post-effect stack
+ * and the user-data command surface. It deliberately does not implement those
+ * concerns itself.
+ */
 export function useShaderEditor() {
   const editorManager = new EditorManager();
   /**
@@ -74,42 +82,26 @@ export function useShaderEditor() {
   const activeHdriId = computed(() => activeHdri.value.id);
   const cursorLine = ref(1);
   const cursorCol = ref(1);
-  const status = ref<EditorStatus>('idle');
-  const statusMessage = ref('');
-  const source = ref(defaultVertexShader);
   const wireframe = ref(false);
   const paused = ref(false);
-  const errors = ref<ShaderError[]>([]);
   const highlightedUserRow = ref<number | null>(null);
-  /**
-   * View-space effect stack. At least one effect always exists so the post tab
-   * always has a document to edit.
-   */
-  const postEffects = reactive<PostEffectDocument[]>([
-    createDefaultPostEffect('effect-1'),
-  ]);
-  const activePostEffectId = ref('effect-1');
-  const activePostEffect = computed<PostEffectDocument | null>(
-    () =>
-      postEffects.find((effect) => effect.id === activePostEffectId.value) ??
-      postEffects[0] ??
-      null,
-  );
-  const tonemap = ref<TonemapMode>('none');
-  const compileTarget = ref<CompileTarget>('material');
-  let effectCounter = 1;
   /** Empty while the preview is idle; drives the canvas loading overlay. */
-  const loadingMessage = ref('');
+  const loadingMessage = ref<EditorStatusMessage | null>(null);
   let loadingDepth = 0;
 
-  function beginLoad(message: string): void {
+  let confirmedModel = previewModels.default;
+  let modelSelection = 0;
+  let confirmedHdri = previewHdris.default;
+  let hdriSelection = 0;
+
+  function beginLoad(message: EditorStatusMessage): void {
     loadingDepth += 1;
     loadingMessage.value = message;
   }
 
   function endLoad(): void {
     loadingDepth = Math.max(0, loadingDepth - 1);
-    if (loadingDepth === 0) loadingMessage.value = '';
+    if (loadingDepth === 0) loadingMessage.value = null;
   }
 
   const tabDocs: Record<TextTabId, string> = {
@@ -120,60 +112,75 @@ export function useShaderEditor() {
   };
 
   const userDataDoc: UserDataDocument = reactive(createEmptyUserDataDocument());
+
+  /**
+   * The effect stack only knows how to edit itself; it asks the coordinator to
+   * flush the buffer and apply the output transform.
+   */
+  const postEffects = usePostEffects({
+    onBeforeEdit: storeActiveDocument,
+    applyTonemap: (mode) => sceneManager.setTonemap(mode),
+  });
+
+  /**
+   * All shader work runs one compile at a time: material and post-effect
+   * compilers share the WebGL log recorder, so overlapping batches would
+   * misattribute driver diagnostics. The queue is the only entry point.
+   */
+  const compilation = useShaderCompilation({
+    compileMaterial: (blueprint) => sceneManager.compile(blueprint),
+    compilePostEffects: (stack) => sceneManager.compilePostEffects(stack),
+    getMaterialBlueprint: () => userData.buildBlueprint(currentSources()),
+    getPostStack: () => currentPostStack(),
+    onBeforeCompile: storeActiveDocument,
+    onOutcome: handleOutcome,
+    onExternalErrors: handleExternalErrors,
+  });
+
   const userData = new UserDataController(
     {
       getSources: () => currentSources(),
       onCompileRequested: (blueprint) => {
         // A structural edit changes declarations for one of the two document
         // families; recompiling both keeps every generated block truthful.
-        void compile(blueprint).then(() => compilePostEffects());
+        void compilation
+          .compileMaterial(blueprint)
+          .then(() => compilation.compilePostEffects());
       },
     },
     userDataDoc,
   );
 
-  /**
-   * All shader work runs one compile at a time: material and post-effect
-   * compilers share the WebGL log recorder, so overlapping batches would
-   * misattribute driver diagnostics.
-   */
-  let shaderWork: Promise<unknown> = Promise.resolve();
+  const userDataCommands = useUserDataCommands(userData);
 
-  function serialize<T>(work: () => Promise<T>): Promise<T> {
-    const next = shaderWork.then(work, work);
-    shaderWork = next.then(
-      () => undefined,
-      () => undefined,
-    );
-    return next;
-  }
+  // Driver-time failures enter the same error state as a compile outcome.
+  sceneManager.onError = (shaderErrors) =>
+    compilation.reportErrors(shaderErrors);
 
-  let compileInFlight = false;
-  let queuedCompile: MaterialBlueprint | 'current' | null = null;
-  let confirmedModel = previewModels.default;
-  let modelSelection = 0;
-  let confirmedHdri = previewHdris.default;
-  let hdriSelection = 0;
-
-  sceneManager.onError = (shaderErrors) => {
-    errors.value = shaderErrors;
-    status.value = 'error';
-    statusMessage.value = formatErrorStatus(shaderErrors);
-    highlightedUserRow.value = firstUserDataRow(shaderErrors);
-    editorManager.setDiagnostics(diagnosticsFor(activeTab.value));
-  };
+  const status = compilation.status;
+  const statusMessage = compilation.statusMessage;
+  const errors = compilation.errors;
 
   function currentSources(): ShaderSource {
     return { vertex: tabDocs.vertex, fragment: tabDocs.fragment };
+  }
+
+  function currentPostStack(): PostEffectStack {
+    return {
+      tonemap: postEffects.tonemap.value,
+      effects: postEffects.effects
+        .filter((effect) => effect.enabled)
+        .map((effect) => buildPostEffectSource(userDataDoc, effect)),
+    };
   }
 
   function isEditableTab(tab: EditorTabId): tab is EditableTabId {
     return tab === 'vertex' || tab === 'fragment';
   }
 
-  function storeActiveDocument() {
+  function storeActiveDocument(): void {
     if (activeTab.value === 'post') {
-      const effect = activePostEffect.value;
+      const effect = postEffects.active.value;
       if (effect) effect.fragment = editorManager.getValue();
       return;
     }
@@ -201,7 +208,7 @@ export function useShaderEditor() {
         .filter(
           (error): error is ShaderError & { line: number } =>
             error.stage === 'post' &&
-            error.effectId === activePostEffectId.value &&
+            error.effectId === postEffects.activeId.value &&
             error.line !== null,
         )
         .map(toDiagnostic);
@@ -227,12 +234,12 @@ export function useShaderEditor() {
     return match?.row ?? null;
   }
 
-  function applyTab(tab: EditorTabId) {
+  function applyTab(tab: EditorTabId): void {
     activeTab.value = tab;
 
     if (tab === 'post') {
-      compileTarget.value = 'post';
-      editorManager.setValue(activePostEffect.value?.fragment ?? '');
+      compilation.setTarget('post');
+      editorManager.setValue(postEffects.active.value?.fragment ?? '');
       editorManager.setReadOnly(false);
       editorManager.setDiagnostics(diagnosticsFor('post'));
       editorManager.setInjectedBlock(
@@ -249,17 +256,13 @@ export function useShaderEditor() {
       return;
     }
 
-    compileTarget.value = 'material';
+    compilation.setTarget('material');
 
     const readOnly = !isEditableTab(tab);
     editorManager.setValue(tabDocs[tab]);
     editorManager.setReadOnly(readOnly);
     editorManager.setDiagnostics(diagnosticsFor(tab));
     editorManager.setInjectedBlock(injectedBlockFor(tab));
-
-    if (!readOnly) {
-      source.value = tabDocs[tab];
-    }
   }
 
   /**
@@ -298,7 +301,7 @@ export function useShaderEditor() {
     storeActiveDocument();
 
     if (tab === 'post') {
-      const effect = activePostEffect.value;
+      const effect = postEffects.active.value;
       return effect ? buildPostEffectSource(userDataDoc, effect).fragment : '';
     }
 
@@ -311,7 +314,7 @@ export function useShaderEditor() {
   // comment; the preview follows them immediately.
   watch(() => userDataDoc.revision, updateInjectedBlock);
 
-  function mountEditor(host: HTMLElement) {
+  function mountEditor(host: HTMLElement): void {
     editorManager.mount(
       host,
       tabDocs.vertex,
@@ -324,21 +327,11 @@ export function useShaderEditor() {
 
     updateInjectedBlock();
 
-    status.value = 'ready';
-    statusMessage.value = 'Editor ready';
+    compilation.setReady({ key: 'editor.status.messages.editorReady' });
   }
 
-  function currentPostStack(): PostEffectStack {
-    return {
-      tonemap: tonemap.value,
-      effects: postEffects
-        .filter((effect) => effect.enabled)
-        .map((effect) => buildPostEffectSource(userDataDoc, effect)),
-    };
-  }
-
-  function mountCanvas(canvas: HTMLCanvasElement) {
-    beginLoad('Loading preview…');
+  function mountCanvas(canvas: HTMLCanvasElement): void {
+    beginLoad({ key: 'editor.loading.preview' });
 
     // init resolves once the mesh, material and environment are ready,
     // which is what the overlay reports; frames may already be clearing the
@@ -369,7 +362,7 @@ export function useShaderEditor() {
     const previous = confirmedModel;
     activeModel.value = model;
 
-    beginLoad('Loading model…');
+    beginLoad({ key: 'editor.loading.model' });
     try {
       const loaded = await loadProfiler.measure('model:swap', () =>
         sceneManager.loadModel(model),
@@ -399,7 +392,7 @@ export function useShaderEditor() {
     const previous = confirmedHdri;
     activeHdri.value = hdri;
 
-    beginLoad('Loading environment…');
+    beginLoad({ key: 'editor.loading.environment' });
     try {
       const loaded = await loadProfiler.measure('env:swap', () =>
         sceneManager.loadEnvironment(hdri),
@@ -419,14 +412,16 @@ export function useShaderEditor() {
     }
   }
 
-  function switchTab(tab: EditorTabId) {
+  function switchTab(tab: EditorTabId): void {
     if (tab === activeTab.value) return;
 
     storeActiveDocument();
     applyTab(tab);
 
-    status.value = 'idle';
-    statusMessage.value = `Switched to ${tab}`;
+    compilation.setIdle({
+      key: 'editor.status.messages.switchedTab',
+      params: { tab },
+    });
   }
 
   /**
@@ -449,94 +444,56 @@ export function useShaderEditor() {
     // generates the declarations its source references and binds the seeded
     // values. Replacing the document (rather than merging) keeps a load
     // deterministic; it is part of the same destructive load as the sources.
-    userData.replaceAll(example.uniforms);
+    userDataCommands.replaceAll(example.uniforms);
 
     // Diagnostics belong to the previous source; `applyTab` clears them from
     // the editor and the compile below republishes them for the example.
-    errors.value = [];
+    compilation.clearErrors();
     highlightedUserRow.value = null;
 
     applyTab(isEditableTab(activeTab.value) ? activeTab.value : 'vertex');
 
     void compile().then(() => {
       if (status.value === 'ready') {
-        statusMessage.value = `Loaded example: ${example.label}`;
+        compilation.setReady({
+          key: 'editor.status.messages.loadedExample',
+          params: { label: example.label },
+        });
       }
     });
   }
 
-  async function compile(blueprint?: MaterialBlueprint) {
-    // The Compile button acts on the document family being edited. Structural
-    // user-data edits pass a blueprint, so they always compile the material.
-    if (blueprint === undefined && compileTarget.value === 'post') {
-      await compilePostEffects();
-      return;
-    }
-
-    // A structural edit may land while a compile is in flight; the latest
-    // request is replayed after the current one settles.
-    if (compileInFlight) {
-      queuedCompile = blueprint ?? 'current';
-      return;
-    }
-
-    compileInFlight = true;
-    storeActiveDocument();
-
-    const target = blueprint ?? userData.buildBlueprint(currentSources());
-
-    status.value = 'compiling';
-    statusMessage.value = 'Compiling…';
-
-    let result: CompileResult;
-    try {
-      result = await serialize(() => sceneManager.compile(target));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      result = {
-        ok: false,
-        message,
-        errors: [
-          {
-            stage: 'program',
-            line: null,
-            column: null,
-            kind: 'internal',
-            title: 'Shader compilation failed',
-            message,
-            advice: null,
-          },
-        ],
-      };
-    } finally {
-      compileInFlight = false;
-    }
-
-    applyCompileResult(result);
-
-    const next = queuedCompile;
-    queuedCompile = null;
-    if (next !== null) {
-      void compile(next === 'current' ? undefined : next);
-    }
+  /**
+   * Compiles the document family being edited. Structural user-data edits pass
+   * a blueprint, so they always compile the material.
+   */
+  function compile(blueprint?: MaterialBlueprint): Promise<void> {
+    return blueprint
+      ? compilation.compileMaterial(blueprint)
+      : compilation.compile();
   }
 
-  function applyCompileResult(result: CompileResult): void {
-    errors.value = result.errors;
-    highlightedUserRow.value = firstUserDataRow(result.errors);
+  function compilePostEffects(): Promise<void> {
+    return compilation.compilePostEffects();
+  }
 
-    if (result.ok) {
-      status.value = 'ready';
-      statusMessage.value = 'Compiled successfully';
+  /**
+   * Diagnostics and navigation follow every applied outcome. `errors` is
+   * already owned by the compilation composable, so this only routes the
+   * editor to the first located failure.
+   */
+  function handleOutcome(result: CompileResult): void {
+    highlightedUserRow.value =
+      result.status === 'failed' ? firstUserDataRow(result.errors) : null;
+
+    revealOutcome(result);
+  }
+
+  function revealOutcome(result: CompileResult): void {
+    if (result.status !== 'failed') {
       editorManager.setDiagnostics(diagnosticsFor(activeTab.value));
       return;
     }
-
-    status.value = 'error';
-    statusMessage.value =
-      result.errors.length > 0
-        ? formatErrorStatus(result.errors)
-        : result.message;
 
     const firstLocated = result.errors.find(isLocatedError);
 
@@ -563,6 +520,11 @@ export function useShaderEditor() {
     editorManager.revealPosition(firstLocated.line, firstLocated.column);
   }
 
+  function handleExternalErrors(shaderErrors: readonly ShaderError[]): void {
+    highlightedUserRow.value = firstUserDataRow(shaderErrors);
+    editorManager.setDiagnostics(diagnosticsFor(activeTab.value));
+  }
+
   function isLocatedError(error: ShaderError): error is ShaderError & {
     line: number;
     stage: 'vertex' | 'fragment' | 'post';
@@ -577,8 +539,8 @@ export function useShaderEditor() {
 
   function revealPostEffectError(error: ShaderError & { line: number }): void {
     const effectId = error.effectId;
-    if (effectId && postEffects.some((effect) => effect.id === effectId)) {
-      activePostEffectId.value = effectId;
+    if (effectId && postEffects.has(effectId)) {
+      postEffects.select(effectId);
     }
 
     if (activeTab.value !== 'post') {
@@ -623,138 +585,43 @@ export function useShaderEditor() {
   }
 
   function selectPostEffect(id: string): void {
-    if (!postEffects.some((effect) => effect.id === id)) return;
-    if (id === activePostEffectId.value && activeTab.value === 'post') return;
+    if (!postEffects.has(id)) return;
+    if (id === postEffects.activeId.value && activeTab.value === 'post') return;
 
-    storeActiveDocument();
-    activePostEffectId.value = id;
+    postEffects.select(id);
     applyTab('post');
 
-    status.value = 'idle';
-    statusMessage.value = 'Post effect selected';
+    compilation.setIdle({ key: 'editor.status.messages.postEffectSelected' });
   }
 
   function addPostEffect(): void {
-    storeActiveDocument();
-
-    effectCounter += 1;
-    const effect = createDefaultPostEffect(
-      `effect-${effectCounter}`,
-      `Effect ${effectCounter}`,
-    );
-
-    postEffects.push(effect);
-    activePostEffectId.value = effect.id;
+    postEffects.add();
     applyTab('post');
 
-    void compilePostEffects();
+    void compilation.compilePostEffects();
   }
 
   function removePostEffect(id: string): void {
-    const index = postEffects.findIndex((effect) => effect.id === id);
-    if (index < 0) return;
-
-    storeActiveDocument();
-    postEffects.splice(index, 1);
-
-    // The post tab always needs a document to edit.
-    if (postEffects.length === 0) {
-      effectCounter += 1;
-      postEffects.push(
-        createDefaultPostEffect(
-          `effect-${effectCounter}`,
-          `Effect ${effectCounter}`,
-        ),
-      );
-    }
-
-    if (activePostEffectId.value === id) {
-      const next = postEffects[Math.min(index, postEffects.length - 1)];
-      if (next) activePostEffectId.value = next.id;
-    }
+    if (!postEffects.remove(id)) return;
 
     if (activeTab.value === 'post') applyTab('post');
-    void compilePostEffects();
+    void compilation.compilePostEffects();
   }
 
   function movePostEffect(id: string, offset: number): void {
-    const index = postEffects.findIndex((effect) => effect.id === id);
-    if (index < 0) return;
-
-    const target = index + offset;
-    if (target < 0 || target >= postEffects.length) return;
-
-    const [effect] = postEffects.splice(index, 1);
-    if (!effect) return;
-
-    postEffects.splice(target, 0, effect);
-    void compilePostEffects();
+    if (postEffects.move(id, offset)) {
+      void compilation.compilePostEffects();
+    }
   }
 
   function setPostEffectEnabled(id: string, enabled: boolean): void {
-    const effect = postEffects.find((candidate) => candidate.id === id);
-    if (!effect || effect.enabled === enabled) return;
-
-    effect.enabled = enabled;
-    void compilePostEffects();
+    if (postEffects.setEnabled(id, enabled)) {
+      void compilation.compilePostEffects();
+    }
   }
 
   function setTonemap(mode: TonemapMode): void {
-    tonemap.value = mode;
-    sceneManager.setTonemap(mode);
-  }
-
-  let postCompileInFlight = false;
-  let postCompileQueued = false;
-
-  /**
-   * Compiles the enabled effect stack. The chain is replaced only as a whole,
-   * so a failing effect keeps the last working stack on screen.
-   */
-  async function compilePostEffects(): Promise<void> {
-    if (postCompileInFlight) {
-      postCompileQueued = true;
-      return;
-    }
-
-    postCompileInFlight = true;
-    storeActiveDocument();
-
-    status.value = 'compiling';
-    statusMessage.value = 'Compiling post effects…';
-
-    let result: CompileResult;
-    try {
-      result = await serialize(() =>
-        sceneManager.compilePostEffects(currentPostStack()),
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      result = {
-        ok: false,
-        message,
-        errors: [
-          {
-            stage: 'post',
-            line: null,
-            column: null,
-            kind: 'internal',
-            title: 'Post effect compilation failed',
-            message,
-            advice: null,
-          },
-        ],
-      };
-    } finally {
-      postCompileInFlight = false;
-    }
-
-    applyCompileResult(result);
-
-    if (postCompileQueued) {
-      postCompileQueued = false;
-      void compilePostEffects();
-    }
+    postEffects.setTonemap(mode);
   }
 
   function addUserUniform(request: {
@@ -762,48 +629,40 @@ export function useShaderEditor() {
     kind: UserUniformKind;
     stages?: UserUniformStage;
   }): AddUserUniformResult {
-    return userData.add(request);
+    return userDataCommands.add(request);
   }
 
   function removeUserUniform(id: string): UserDataCommandResult {
-    return userData.remove(id);
+    return userDataCommands.remove(id);
   }
 
   function renameUserUniform(id: string, name: string): UserDataCommandResult {
-    return userData.rename(id, name);
+    return userDataCommands.rename(id, name);
   }
 
   function changeUserUniformKind(
     id: string,
     kind: UserUniformKind,
   ): UserDataCommandResult {
-    return userData.changeKind(id, kind);
+    return userDataCommands.changeKind(id, kind);
   }
 
   function changeUserUniformStages(
     id: string,
     stages: UserUniformStage,
   ): UserDataCommandResult {
-    return userData.changeStages(id, stages);
+    return userDataCommands.changeStages(id, stages);
   }
 
   function setUserUniformValue(
     id: string,
     value: UserUniformValue,
   ): UserDataCommandResult {
-    return userData.setValue(id, value);
+    return userDataCommands.setValue(id, value);
   }
 
   function validateUserUniformName(name: string, exceptId?: string) {
-    return userData.validateName(name, exceptId);
-  }
-
-  function formatErrorStatus(shaderErrors: readonly ShaderError[]): string {
-    const first = shaderErrors.find((error) => error.line !== null);
-    const suffix = first?.line != null ? ` · line ${first.line}` : '';
-    return `${shaderErrors.length} shader ${
-      shaderErrors.length === 1 ? 'error' : 'errors'
-    }${suffix}`;
+    return userDataCommands.validateName(name, exceptId);
   }
 
   function resize() {
@@ -836,17 +695,16 @@ export function useShaderEditor() {
     cursorCol,
     status,
     statusMessage,
-    source,
     wireframe,
     paused,
     errors,
     userDataDoc,
     highlightedUserRow,
     loadingMessage,
-    postEffects,
-    activePostEffectId,
-    activePostEffect,
-    tonemap,
+    postEffects: postEffects.effects,
+    activePostEffectId: postEffects.activeId,
+    activePostEffect: postEffects.active,
+    tonemap: postEffects.tonemap,
     mountEditor,
     mountCanvas,
     switchTab,

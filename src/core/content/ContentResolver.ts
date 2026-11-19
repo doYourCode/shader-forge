@@ -1,4 +1,4 @@
-import { parseFrontmatter } from '@/core/content/frontmatter';
+import { parseFrontmatter } from './frontmatter';
 import { DEFAULT_LOCALE, isLocale, type Locale } from './locales';
 
 /** Content kinds that participate in the directory-per-locale layout. */
@@ -26,10 +26,22 @@ export type ResolveResult =
  * In-memory content source.
  *
  * Keys are `<locale>/<relativePath>` (e.g. `en/docs/intro.md`). The app builds
- * this from Vite's native `import.meta.glob` loader in `contentSource.ts`;
- * tests pass a plain object.
+ * this from Vite's native `import.meta.glob` loader in
+ * `services/content/contentSource.ts`; tests pass a plain object.
  */
 export type ContentSource = Readonly<Record<string, string>>;
+
+/**
+ * The read-only content port. Views, the tree builder and tests depend on this
+ * interface, never on the concrete resolver, so the source of the documents can
+ * be substituted (and the resolver is injected rather than imported as a
+ * module-level singleton).
+ */
+export interface ContentLookup {
+  resolve(relativePath: string, locale: string): Promise<ResolveResult>;
+  hasTranslation(relativePath: string, locale: string): Promise<boolean>;
+  relativePaths(kind?: ContentKind): string[];
+}
 
 export interface ContentResolverOptions {
   /**
@@ -68,7 +80,7 @@ interface RawFrontmatter {
  * 4. Unknown locale codes are normalised to the default locale (see
  *    `locales.ts`), so they behave exactly like a default-locale request.
  */
-export class ContentResolver {
+export class ContentResolver implements ContentLookup {
   readonly defaultLocale: Locale;
 
   private readonly source: ContentSource;

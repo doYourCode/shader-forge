@@ -62,6 +62,57 @@
     }
   },
   "editor": {
+    "status": {
+      "idle": "⚪ Ocioso",
+      "ready": "🟢 Pronto",
+      "error": "🔴 Erro",
+      "compiling": "🟡 Compilando",
+      "messages": {
+        "editorReady": "Editor pronto",
+        "compiled": "Compilação concluída",
+        "compiling": "Compilando…",
+        "compilingPost": "Compilando efeitos de pós-processamento…",
+        "switchedTab": "Alternado para {tab}",
+        "loadedExample": "Exemplo carregado: {label}",
+        "postEffectSelected": "Efeito de pós-processamento selecionado",
+        "shaderErrors": "{count} erro de shader | {count} erros de shader",
+        "shaderErrorsAtLine": "{count} erro de shader · linha {line} | {count} erros de shader · linha {line}",
+        "linkFailed": "O programa de shader falhou ao ser vinculado",
+        "unavailable": {
+          "sceneNotInitialized": "A pré-visualização ainda não está pronta",
+          "sceneDisposed": "A pré-visualização não está mais disponível",
+          "superseded": "Substituída por uma compilação mais recente"
+        }
+      }
+    },
+    "error": {
+      "title": "Falha na compilação do shader",
+      "count": "{count} erro | {count} erros",
+      "kind": {
+        "syntax": "Sintaxe",
+        "type": "Tipo",
+        "logic": "Lógica",
+        "link": "Vinculação",
+        "program": "Compilador",
+        "timeout": "Tempo esgotado",
+        "internal": "Interno"
+      },
+      "atLine": "{stage} · linha {line}",
+      "atLineColumn": "{stage} · linha {line}, col {column}",
+      "atRow": "{stage} · linha {row}"
+    },
+    "stage": {
+      "vertex": "Shader de vértices",
+      "fragment": "Shader de fragmentos",
+      "post": "Efeito de pós-processamento",
+      "user_data": "Dados do usuário",
+      "program": "Programa de shader"
+    },
+    "loading": {
+      "preview": "Carregando pré-visualização…",
+      "model": "Carregando modelo…",
+      "environment": "Carregando ambiente…"
+    },
     "copy": {
       "label": "Copiar código do shader",
       "idle": "Copiar código com os dados de usuário gerados",

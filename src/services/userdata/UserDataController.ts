@@ -16,18 +16,18 @@ import {
 } from '@/core/models/userUniform';
 import { defaultUniformValue } from '@/core/constants/userUniformKinds';
 import { POST_EFFECT_RESERVED_NAMES } from '@/core/constants/postEffectAbi';
-import { assembleUserData } from '@/core/shader/uniformCodegen';
 import {
   SHADER_ATTRIBUTES,
-  SHADER_SAMPLERS,
   SHADER_SAMPLER_NAMES,
-  SHADER_UNIFORMS,
+  SHADER_SAMPLERS,
   SHADER_UNIFORM_NAMES,
-} from '@/services/babylon/preview/MaterialController';
+  SHADER_UNIFORMS,
+} from '@/core/constants/materialAbi';
+import { assembleUserData } from '@/core/shader/uniformCodegen';
 import type {
   MaterialBlueprint,
   ShaderSource,
-} from '@/services/babylon/preview/PreviewTypes';
+} from '@/core/models/shaderSource';
 import {
   toUniformBinding,
   type UniformBinding,
@@ -37,8 +37,8 @@ import {
 import type { TextureRegistryPort } from './TextureRegistry';
 
 /**
- * Names the engine already owns. Imported (never copied) from the material
- * factory so the shader contract and the validation cannot drift apart.
+ * Names the engine already owns. Imported (never copied) from the material ABI
+ * so the shader contract and the validation cannot drift apart.
  */
 export const BUILTIN_RESERVED_UNIFORM_NAMES: ReadonlySet<string> = new Set([
   ...Object.values(SHADER_UNIFORM_NAMES),

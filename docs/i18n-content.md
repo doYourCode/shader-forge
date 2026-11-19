@@ -65,7 +65,8 @@ better than a bad translation, and the UI already shows a fallback notice.
 
 ## Runtime model
 
-`src/lib/ContentResolver.ts` is the only module that knows about fallback:
+`src/core/content/ContentResolver.ts` is the only module that knows about
+fallback:
 
 ```ts
 const result = await contentResolver.resolve('docs/shader-editor.md', 'pt-BR');
@@ -81,12 +82,14 @@ const result = await contentResolver.resolve('docs/shader-editor.md', 'pt-BR');
   never counts the fallback as a translation.
 - Drafts in a non-default locale are treated as missing, so they fall back.
 
-The resolver is constructed once in `src/lib/content.ts` from Vite's native
-`import.meta.glob` loader (`src/lib/contentSource.ts`). No new dependency is
-involved.
+The resolver is constructed once in `src/App.vue` and provided as the
+`ContentLookup` port (`src/services/content/contentProvider.ts`) from Vite's
+native `import.meta.glob` loader (`src/services/content/contentSource.ts`). No
+new dependency is involved. Views read the port through `useContentLookup()`
+instead of importing a module-level singleton.
 
-The navigation tree (`src/lib/contentTrees.ts`) is built through the resolver,
-so it shows exactly what the content pane will show.
+The navigation tree (`src/core/content/contentTrees.ts`) is built through the
+same port, so it shows exactly what the content pane will show.
 
 ## Routes and UI behaviour
 
@@ -126,9 +129,9 @@ mechanism.
 
 ## Adding a future locale
 
-1. Add the code to `LOCALES` in `src/lib/locales.ts`. This is the single source
-   of truth; do not hard-code locale strings elsewhere.
-2. Add translated section labels in `src/lib/contentTrees.ts`. The
+1. Add the code to `LOCALES` in `src/core/content/locales.ts`. This is the
+   single source of truth; do not hard-code locale strings elsewhere.
+2. Add translated section labels in `src/core/content/contentTrees.ts`. The
    `Record<Locale, string>` type will fail to compile until every locale has
    them.
 3. Create `content/<locale>/{docs,knowledge}/` and add the translated files

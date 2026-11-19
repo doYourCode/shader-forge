@@ -8,7 +8,7 @@ import {
   type ShaderMaterial,
 } from '@babylonjs/core';
 
-import { SHADER_SAMPLER_NAMES } from './MaterialController';
+import { SHADER_SAMPLER_NAMES } from '@/core/constants/materialAbi';
 import { PreviewAnimator } from './PreviewAnimator';
 
 function createHarness() {

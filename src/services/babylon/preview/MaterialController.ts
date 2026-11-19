@@ -1,60 +1,20 @@
 import { ShaderMaterial, type Mesh, type Scene } from '@babylonjs/core';
+
+import {
+  SHADER_ATTRIBUTES,
+  SHADER_SAMPLERS,
+  SHADER_UNIFORMS,
+} from '@/core/constants/materialAbi';
+import {
+  type MaterialExtras,
+  type ShaderSource,
+} from '@/core/models/shaderSource';
+
 import { internalShaders } from '../internalShaders';
-import type { MaterialExtras, ShaderSource } from './PreviewTypes';
 
 const ERROR_MATERIAL_NAME = 'previewErrorShader';
 const DEFAULT_MATERIAL_NAME = 'previewShader';
 const ERROR_PREWARM_FRAMES = 120;
-
-export const SHADER_ATTRIBUTES: string[] = [
-  'position',
-  'normal',
-  'tangent',
-  'uv',
-  'uv2',
-  'color',
-];
-
-/**
- * Names of the uniforms the animator updates every frame. The material factory
- * builds `SHADER_UNIFORMS` from this object so the two can never drift.
- */
-export const SHADER_UNIFORM_NAMES = {
-  time: 'time',
-  cameraPos: 'cameraPos',
-  lightDir: 'lightDir',
-  normalMatrix: 'normalMatrix',
-} as const;
-
-/**
- * Sampler names available to user shaders. The active scene HDRI is bound to
- * `environmentMap` before every render, so it follows environment changes.
- * The IBL samplers are bound from the same environment (plus the scene-cached
- * BRDF LUT) by `IblEnvironment` on every frame.
- */
-export const SHADER_SAMPLER_NAMES = {
-  environment: 'environmentMap',
-  irradiance: 'irradianceMap',
-  prefilteredEnvironment: 'prefilteredEnvironmentMap',
-  brdfLut: 'brdfLUT',
-} as const;
-
-export const SHADER_SAMPLERS: string[] = [
-  SHADER_SAMPLER_NAMES.environment,
-  SHADER_SAMPLER_NAMES.irradiance,
-  SHADER_SAMPLER_NAMES.prefilteredEnvironment,
-  SHADER_SAMPLER_NAMES.brdfLut,
-];
-
-export const SHADER_UNIFORMS: string[] = [
-  'world',
-  'view',
-  'projection',
-  SHADER_UNIFORM_NAMES.time,
-  SHADER_UNIFORM_NAMES.cameraPos,
-  SHADER_UNIFORM_NAMES.lightDir,
-  SHADER_UNIFORM_NAMES.normalMatrix,
-];
 
 /**
  * The single place user shader materials are constructed. Both the init path
@@ -62,7 +22,7 @@ export const SHADER_UNIFORMS: string[] = [
  *
  * User-defined uniforms/samplers arrive on the source (it is a material
  * blueprint at compile time) and are spread-appended into fresh copies; the
- * shared `SHADER_*` constants are never mutated.
+ * shared ABI lists are never mutated.
  */
 export function buildShaderMaterial(
   scene: Scene,

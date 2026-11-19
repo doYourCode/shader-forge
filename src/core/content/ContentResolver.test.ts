@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { ContentResolver, type ContentSource } from './ContentResolver';
-import { DEFAULT_LOCALE } from './locales';
+import {
+  ContentResolver,
+  type ContentSource,
+} from '@/core/content/ContentResolver';
+import { DEFAULT_LOCALE } from '@/core/content/locales';
 
 const EN_PUBLISHED = `---
 title: The Rendering Pipeline

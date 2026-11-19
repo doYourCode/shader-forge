@@ -1,5 +1,5 @@
 import type { ITreeNode } from '@/core/models/treeNode';
-import type { ContentKind, ContentResolver } from './ContentResolver';
+import type { ContentKind, ContentLookup } from './ContentResolver';
 import { DEFAULT_LOCALE, PT_BR_LOCALE, type Locale } from './locales';
 
 type SectionMeta = {
@@ -55,21 +55,21 @@ export function slugFromRelativePath(relativePath: string): string {
 }
 
 /**
- * Builds the tree for one kind + locale through the resolver, so fallback is
- * decided in exactly one place. Paths that resolve to nothing (missing, or an
- * unpublished draft) are omitted.
+ * Builds the tree for one kind + locale through the content port, so fallback
+ * is decided in exactly one place. Paths that resolve to nothing (missing, or
+ * an unpublished draft) are omitted.
  *
  * The node spine is the union of paths across locales; identical relative
  * paths are the translation key, so a translated document keeps its position.
  */
 export async function buildContentTree(
-  resolver: ContentResolver,
+  lookup: ContentLookup,
   kind: ContentKind,
   locale: Locale,
 ): Promise<ITreeNode[]> {
-  const relativePaths = resolver.relativePaths(kind);
+  const relativePaths = lookup.relativePaths(kind);
   const results = await Promise.all(
-    relativePaths.map((relativePath) => resolver.resolve(relativePath, locale)),
+    relativePaths.map((relativePath) => lookup.resolve(relativePath, locale)),
   );
 
   const docs = results.flatMap((result) =>

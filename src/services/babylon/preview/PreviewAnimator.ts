@@ -8,7 +8,7 @@ import type {
 import {
   SHADER_SAMPLER_NAMES,
   SHADER_UNIFORM_NAMES,
-} from './MaterialController';
+} from '@/core/constants/materialAbi';
 import { Matrix } from '@babylonjs/core';
 import { updateNormalMatrix } from './mesh/MeshMatricesProc';
 import { IblEnvironment, type IblBindingTarget } from './IblEnvironment';

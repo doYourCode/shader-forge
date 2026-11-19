@@ -2,12 +2,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Mesh, Scene } from '@babylonjs/core';
 
-import {
-  buildShaderMaterial,
-  SHADER_SAMPLERS,
-  SHADER_UNIFORMS,
-} from '../MaterialController';
-import type { MaterialBlueprint } from '../PreviewTypes';
+import { SHADER_SAMPLERS, SHADER_UNIFORMS } from '@/core/constants/materialAbi';
+import type { MaterialBlueprint } from '@/core/models/shaderSource';
+import { buildShaderMaterial } from '../MaterialController';
 
 interface FakeMaterial {
   readonly name: string;

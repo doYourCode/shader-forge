@@ -9,16 +9,16 @@ import ContentPane from '@/components/knowledge/ContentPane.vue';
 import FallbackNotice from './FallbackNotice.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
 
-import { contentResolver } from '@/lib/content';
-import { buildContentTree } from '@/lib/contentTrees';
-import { contentPath, relativePathFor } from '@/lib/contentPaths';
+import { buildContentTree } from '@/core/content/contentTrees';
+import { contentPath, relativePathFor } from '@/core/content/contentPaths';
 import {
   noContentResult,
   showsFallbackNotice,
   type ContentKind,
   type ResolveResult,
-} from '@/lib/ContentResolver';
-import { resolveLocale, type Locale } from '@/lib/locales';
+} from '@/core/content/ContentResolver';
+import { resolveLocale, type Locale } from '@/core/content/locales';
+import { useContentLookup } from '@/services/content/contentProvider';
 import { findFirstLeaf } from '@/core/utils/treeUtils';
 import type { ITreeNode } from '@/core/models/treeNode';
 
@@ -27,6 +27,7 @@ const props = defineProps<{ kind: ContentKind }>();
 const route = useRoute();
 const router = useRouter();
 const { locale: uiLocale } = useI18n();
+const contentLookup = useContentLookup();
 
 /**
  * The header language selector (vue-i18n `locale`) is the single source of
@@ -51,7 +52,7 @@ watch(
   [() => props.kind, contentLocale],
   async ([kind, locale]) => {
     const token = ++treeToken;
-    const next = await buildContentTree(contentResolver, kind, locale);
+    const next = await buildContentTree(contentLookup, kind, locale);
     if (token === treeToken) tree.value = next;
   },
   { immediate: true },
@@ -74,7 +75,7 @@ watch(
 
     const token = ++documentToken;
     resolving.value = true;
-    const next = await contentResolver.resolve(
+    const next = await contentLookup.resolve(
       relativePathFor(props.kind, nextSlug),
       locale,
     );

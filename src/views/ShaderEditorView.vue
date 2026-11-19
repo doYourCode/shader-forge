@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, provide } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount, provide } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { AssetPickerTexturePicker } from '@/services/assetpicker/AssetPickerTexturePicker';
@@ -15,7 +15,7 @@ import {
   userDataTab,
   type EditorTab,
 } from '@/core/models/editorTab';
-import type { ShaderError, ShaderErrorKind } from '@/core/models/shaderError';
+import type { ShaderError } from '@/core/models/shaderError';
 import type {
   UserUniformKind,
   UserUniformStage,
@@ -113,41 +113,38 @@ const {
   clipboardSource,
 } = useShaderEditor();
 
-const ERROR_KIND_LABELS: Record<ShaderErrorKind, string> = {
-  syntax: 'Syntax',
-  type: 'Type',
-  logic: 'Logic',
-  link: 'Link',
-  program: 'Compiler',
-  timeout: 'Timeout',
-  internal: 'Internal',
-};
+const statusText = computed(() => {
+  const message = statusMessage.value;
+  return message ? t(message.key, message.params ?? {}) : '';
+});
+
+const loadingText = computed(() => {
+  const message = loadingMessage.value;
+  return message ? t(message.key, message.params ?? {}) : '';
+});
 
 function errorStageLabel(error: ShaderError): string {
-  const stage =
-    error.stage === 'vertex'
-      ? 'Vertex shader'
-      : error.stage === 'fragment'
-        ? 'Fragment shader'
-        : error.stage === 'post'
-          ? 'Post effect'
-          : error.stage === 'user_data'
-            ? 'User data'
-            : 'Shader program';
+  const stage = t(`editor.stage.${error.stage}`);
 
   if (error.stage === 'user_data') {
-    return error.row == null ? stage : `${stage} · row ${error.row + 1}`;
+    return error.row == null
+      ? stage
+      : t('editor.error.atRow', { stage, row: error.row + 1 });
   }
 
-  return error.line === null
-    ? stage
-    : `${stage} · line ${error.line}${
-        error.column === null ? '' : `, col ${error.column}`
-      }`;
+  if (error.line === null) return stage;
+
+  return error.column === null
+    ? t('editor.error.atLine', { stage, line: error.line })
+    : t('editor.error.atLineColumn', {
+        stage,
+        line: error.line,
+        column: error.column,
+      });
 }
 
 function errorKindLabel(error: ShaderError): string {
-  return ERROR_KIND_LABELS[error.kind];
+  return t(`editor.error.kind.${error.kind}`);
 }
 
 function isRevealable(error: ShaderError): boolean {
@@ -275,13 +272,13 @@ function togglePause() {
         <canvas ref="canvasRef" class="shader-editor__canvas" />
 
         <div
-          v-if="loadingMessage"
+          v-if="loadingText"
           class="shader-editor__loading"
           role="status"
           aria-live="polite"
         >
           <span class="shader-editor__loading-spinner" aria-hidden="true" />
-          <span>{{ loadingMessage }}</span>
+          <span>{{ loadingText }}</span>
         </div>
 
         <div
@@ -292,10 +289,10 @@ function togglePause() {
         >
           <div class="shader-editor__errors-header">
             <span class="shader-editor__errors-title">
-              Shader compilation failed
+              {{ t('editor.error.title') }}
             </span>
             <span class="shader-editor__errors-count">
-              {{ errors.length }} {{ errors.length === 1 ? 'error' : 'errors' }}
+              {{ t('editor.error.count', { count: errors.length }) }}
             </span>
           </div>
           <ul class="shader-editor__errors-list">
@@ -341,7 +338,7 @@ function togglePause() {
       :line="cursorLine"
       :col="cursorCol"
       :status="status"
-      :message="statusMessage"
+      :message="statusText"
     />
   </div>
 </template>

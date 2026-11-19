@@ -6,7 +6,11 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import ContentBrowser from './ContentBrowser.vue';
 import { router as appRouter } from '@/router';
 import { i18n } from '@/i18n';
-import type { ContentKind } from '@/lib/ContentResolver';
+import {
+  CONTENT_LOOKUP,
+  createContentLookup,
+} from '@/services/content/contentProvider';
+import type { ContentKind } from '@/core/content/ContentResolver';
 
 // Mermaid needs a real SVG engine. Its placeholder contract is covered by
 // markdown.test.ts and its rendering by MermaidService.test.ts.
@@ -15,6 +19,9 @@ vi.mock('@/services/mermaid/MermaidService', () => ({
 }));
 
 let wrapper: VueWrapper | undefined;
+
+/** The content port is injected by App at runtime; tests provide it directly. */
+const contentLookup = createContentLookup();
 
 function makeRouter(): Router {
   // Reuse the application's route table so URL shapes are exercised for real.
@@ -40,7 +47,10 @@ async function mountAt(
 
   wrapper = mount(ContentBrowser, {
     props: { kind },
-    global: { plugins: [router, i18n] },
+    global: {
+      plugins: [router, i18n],
+      provide: { [CONTENT_LOOKUP]: contentLookup },
+    },
   });
 
   await settle();

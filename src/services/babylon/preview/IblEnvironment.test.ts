@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BaseTexture, Scene, ShaderMaterial } from '@babylonjs/core';
 
+import { SHADER_SAMPLER_NAMES } from '@/core/constants/materialAbi';
 import { IblEnvironment } from './IblEnvironment';
-import { SHADER_SAMPLER_NAMES } from './MaterialController';
 
 function createHarness() {
   const irradiance = { name: 'irradiance' } as unknown as BaseTexture;

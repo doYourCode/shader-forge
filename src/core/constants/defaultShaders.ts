@@ -1,6 +1,12 @@
 import defaultVertex from '@/assets/internal-shaders/default.vert.glsl?raw';
 import defaultFragment from '@/assets/internal-shaders/default.frag.glsl?raw';
 
+import {
+  SHADER_ATTRIBUTE_SPECS,
+  SHADER_SAMPLER_SPECS,
+  SHADER_UNIFORM_SPECS,
+} from './materialAbi';
+
 /**
  * Default shaders shown in the editor on first load.
  * Sourced directly from the .glsl asset files so the editor defaults
@@ -9,33 +15,52 @@ import defaultFragment from '@/assets/internal-shaders/default.frag.glsl?raw';
 export const defaultVertexShader = defaultVertex;
 export const defaultFragmentShader = defaultFragment;
 
-export const defaultUniformsDoc = `
-// Uniform input (from the engine)
+/** Column the trailing comment starts at, so the reference stays scannable. */
+const COMMENT_COLUMN = 44;
 
-uniform mat4 worldViewProjection    // Final clip-space transform;
-uniform mat4 normalMatrix           // Inverse-transpose world matrix;
-uniform mat4 world                  // Mesh world matrix;
-uniform mat4 worldView              // World * view;
-uniform mat4 view                   // Camera view matrix;
-uniform mat4 projection             // Camera projection matrix;
+function declaration(
+  qualifier: 'uniform' | 'in',
+  glslType: string,
+  name: string,
+  hint: string,
+): string {
+  return `${`${qualifier} ${glslType} ${name}`.padEnd(COMMENT_COLUMN)}// ${hint}`;
+}
 
-uniform vec3 cameraPos;             // Position of the camera in world-space;
-uniform vec3 lightDir;              // Direction vector of the light in world-space.
-uniform float time;                 // Used for animating effects based on a timescale;
+/** One reference line per family member, in ABI declaration order. */
+function referenceLines(
+  qualifier: 'uniform' | 'in',
+  specs: Readonly<
+    Record<string, { readonly glslType: string; readonly hint: string }>
+  >,
+): string[] {
+  return Object.entries(specs).map(([name, spec]) =>
+    declaration(qualifier, spec.glslType, name, spec.hint),
+  );
+}
 
-uniform samplerCube irradianceMap;              // Diffuse irradiance (cosine-convolved environment cubemap);
-uniform samplerCube prefilteredEnvironmentMap;  // GGX-prefiltered specular cubemap (higher mip levels = rougher);
-uniform sampler2D brdfLUT;                      // Split-sum LUT (R = bias, G = albedo); sample at (NdotV, roughness), then mix(R, G, F0).
-`.trim();
+/**
+ * Built-in `Uniforms` reference, generated from the material ABI.
+ *
+ * Generating it is the point: the tab used to advertise uniforms the material
+ * never registered (`worldViewProjection`, `worldView`), so a user following
+ * the reference compiled against uniforms that were never bound.
+ */
+export const defaultUniformsDoc = [
+  '// Uniform input (from the engine)',
+  '',
+  ...referenceLines('uniform', SHADER_UNIFORM_SPECS),
+  '',
+  ...referenceLines('uniform', SHADER_SAMPLER_SPECS),
+].join('\n');
 
-export const defaultIoDoc = `
-// Vertex attribute (from mesh data)
-
-uniform vec3 position   // Vertex position in object/local space;
-uniform vec3 normal     // Surface normal direction;
-uniform vec3 tangent    // Tangent direction for normal mapping;
-uniform vec2 uv         // Primary texture coordinates;
-uniform vec2 uv2        // Secondary texture coordinates;
-uniform vec3 color      // Vertex color (RGB).
-
-`.trim();
+/**
+ * Built-in `Attributes` reference, generated from the material ABI. Attributes
+ * are vertex inputs, so they are declared with `in` (they were previously
+ * documented as `uniform`, which does not compile).
+ */
+export const defaultIoDoc = [
+  '// Vertex attribute (from mesh data)',
+  '',
+  ...referenceLines('in', SHADER_ATTRIBUTE_SPECS),
+].join('\n');

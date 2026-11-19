@@ -6,6 +6,11 @@ import {
   isValueForKind,
 } from '@/core/models/userUniform';
 import {
+  SHADER_ATTRIBUTES,
+  SHADER_SAMPLERS,
+  SHADER_UNIFORMS,
+} from './materialAbi';
+import {
   findShaderExample,
   shaderExampleCatalog,
   shaderExampleGroups,
@@ -13,33 +18,13 @@ import {
 } from './shaderExamples';
 
 /**
- * The bindings the preview material already registers. Kept as literals because
- * importing `MaterialController` would pull Babylon into a pure data test; it
- * mirrors `SHADER_ATTRIBUTES`, `SHADER_UNIFORMS` and `SHADER_SAMPLERS` there,
- * and exists to prove the examples never introduce a new one.
+ * The bindings the preview material registers, read straight from the ABI.
+ * Importing the ABI (not `MaterialController`) keeps Babylon out of this pure
+ * data test, and the examples can never reference a name the material lacks.
  */
-const BOUND_ATTRIBUTES = [
-  'position',
-  'normal',
-  'tangent',
-  'uv',
-  'uv2',
-  'color',
-];
+const BOUND_ATTRIBUTES = [...SHADER_ATTRIBUTES];
 
-const BOUND_UNIFORMS = [
-  'world',
-  'view',
-  'projection',
-  'time',
-  'cameraPos',
-  'lightDir',
-  'normalMatrix',
-  'environmentMap',
-  'irradianceMap',
-  'prefilteredEnvironmentMap',
-  'brdfLUT',
-];
+const BOUND_UNIFORMS = [...SHADER_UNIFORMS, ...SHADER_SAMPLERS];
 
 /** `?raw` eager glob: the filesystem is the authority on which files exist. */
 const EXAMPLE_FILES = import.meta.glob('/src/assets/examples/*.{vert,frag}', {

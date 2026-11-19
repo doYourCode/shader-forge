@@ -1,6 +1,6 @@
 import type { Mesh } from '@babylonjs/core';
 import type { ShaderError } from '@/core/models/shaderError';
-import type { MaterialBlueprint } from '../PreviewTypes';
+import type { MaterialBlueprint } from '@/core/models/shaderSource';
 import type { ShaderCompiler } from './ShaderCompiler';
 
 /**

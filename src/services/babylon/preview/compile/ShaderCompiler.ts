@@ -2,7 +2,7 @@ import type { AbstractMesh, Scene, ShaderMaterial } from '@babylonjs/core';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
 import { buildShaderMaterial } from '../MaterialController';
-import type { ShaderSource } from '../PreviewTypes';
+import type { ShaderSource } from '@/core/models/shaderSource';
 import {
   internalError,
   internalErrorFrom,

@@ -1,4 +1,4 @@
-import {
+﻿import {
   createEmptyUserDataDocument,
   hasTextureContent,
   isSamplerKind,
@@ -13,17 +13,12 @@ import {
   type UserUniformStage,
   type UserUniformValue,
 } from '@/core/models/userUniform';
-import { GLSL_RESERVED_WORDS } from '@/core/constants/glslReservedWords';
 import { defaultUniformValue } from '@/core/constants/userUniformKinds';
-import { POST_EFFECT_RESERVED_NAMES } from '@/core/constants/postEffectAbi';
 import {
-  SHADER_ATTRIBUTES,
-  SHADER_SAMPLER_NAMES,
-  SHADER_SAMPLERS,
-  SHADER_UNIFORM_NAMES,
-  SHADER_UNIFORMS,
-} from '@/core/constants/materialAbi';
-import { assembleUserData } from '@/core/shader/uniformCodegen';
+  RESERVED_UNIFORM_NAMES,
+  buildUserDataBlueprint,
+  validateUserDataName,
+} from '@/core/userdata/userData';
 import type {
   MaterialBlueprint,
   ShaderSource,
@@ -36,23 +31,7 @@ import {
 } from './UniformBinder';
 import type { TextureRegistryPort } from './TextureRegistry';
 
-/**
- * Names the engine already owns. Imported (never copied) from the material ABI
- * so the shader contract and the validation cannot drift apart.
- */
-export const BUILTIN_RESERVED_UNIFORM_NAMES: ReadonlySet<string> = new Set([
-  ...Object.values(SHADER_UNIFORM_NAMES),
-  ...Object.values(SHADER_SAMPLER_NAMES),
-  ...SHADER_UNIFORMS,
-  ...SHADER_SAMPLERS,
-  ...SHADER_ATTRIBUTES,
-  ...POST_EFFECT_RESERVED_NAMES,
-]);
-
-const RESERVED_UNIFORM_NAMES: ReadonlySet<string> = new Set([
-  ...GLSL_RESERVED_WORDS,
-  ...BUILTIN_RESERVED_UNIFORM_NAMES,
-]);
+export { BUILTIN_RESERVED_UNIFORM_NAMES } from '@/core/userdata/userData';
 
 /** Structural edits recompile once the user stops editing. */
 export const USER_DATA_COMPILE_DEBOUNCE_MS = 300;
@@ -174,42 +153,14 @@ export class UserDataController {
   }
 
   validateName(name: string, exceptId?: string): NameValidationResult {
-    const taken = new Set<string>();
-    for (const definition of this.document.definitions) {
-      if (definition.id !== exceptId) taken.add(definition.name);
-    }
-
-    return validateUniformName(name, taken, RESERVED_UNIFORM_NAMES);
+    return validateUserDataName(this.document, name, exceptId);
   }
 
   /** Projects the document onto assembled GLSL plus the material extras. */
   buildBlueprint(
     sources: ShaderSource = this.deps.getSources(),
   ): MaterialBlueprint {
-    const assembly = assembleUserData(
-      this.document,
-      sources.vertex,
-      sources.fragment,
-    );
-
-    return {
-      vertex: assembly.vertex,
-      fragment: assembly.fragment,
-      // Keep the authoring pair on the blueprint: the assembled stages above
-      // contain generated lines the editor never shows, and diagnostics must
-      // be translated back to this exact text.
-      editorSource: {
-        vertex: sources.vertex,
-        fragment: sources.fragment,
-      },
-      extraUniforms: this.document.definitions
-        .filter((definition) => !isSamplerKind(definition.kind))
-        .map((definition) => definition.name),
-      extraSamplers: this.document.definitions
-        .filter((definition) => isSamplerKind(definition.kind))
-        .map((definition) => definition.name),
-      userData: assembly.record,
-    };
+    return buildUserDataBlueprint(this.document, sources);
   }
 
   add(request: {

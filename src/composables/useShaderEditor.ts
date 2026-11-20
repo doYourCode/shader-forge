@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, type Ref } from 'vue';
 
 import { EditorManager } from '@/services/codemirror/EditorManager';
 import { SceneManager } from '@/services/babylon/SceneManager';
@@ -6,22 +6,14 @@ import type { MaterialBlueprint } from '@/core/models/shaderSource';
 import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
 import type { PreviewHdri } from '@/core/models/previewHdri';
 import type { PreviewModel } from '@/core/models/previewModel';
-import type {
-  UserDataDocument,
-  UserUniformKind,
-  UserUniformStage,
-  UserUniformValue,
-} from '@/core/models/userUniform';
+import type { UserDataDocument } from '@/core/models/userUniform';
 import { createEmptyUserDataDocument } from '@/core/models/userUniform';
 import { previewModels } from '@/core/constants/previewModels';
 import { previewHdris } from '@/core/constants/previewHdris';
 import { findShaderExample } from '@/core/constants/shaderExamples';
 import { buildPostEffectSource } from '@/core/shader/postEffectCodegen';
-import {
-  UserDataController,
-  type AddUserUniformResult,
-  type UserDataCommandResult,
-} from '@/services/userdata/UserDataController';
+import { GenerationTracker } from '@/core/async/generation';
+import { UserDataController } from '@/services/userdata/UserDataController';
 import { LoadProfiler, exposeProfiler } from '@/services/perf/LoadProfiler';
 import {
   useShaderCompilation,
@@ -70,11 +62,6 @@ export function useShaderEditor() {
   const loadingMessage = ref<EditorStatusMessage | null>(null);
   let loadingDepth = 0;
 
-  let confirmedModel = previewModels.default;
-  let modelSelection = 0;
-  let confirmedHdri = previewHdris.default;
-  let hdriSelection = 0;
-
   function beginLoad(message: EditorStatusMessage): void {
     loadingDepth += 1;
     loadingMessage.value = message;
@@ -84,6 +71,68 @@ export function useShaderEditor() {
     loadingDepth = Math.max(0, loadingDepth - 1);
     if (loadingDepth === 0) loadingMessage.value = null;
   }
+
+  /**
+   * Creates one dropdown selection command. The visible selection switches
+   * immediately, but the previous *confirmed* value is remembered: a failed
+   * load restores it unless a newer selection already owns the dropdown.
+   */
+  function createConfirmedSelection<T extends { id: string }>(options: {
+    readonly active: Ref<T>;
+    readonly initial: T;
+    readonly find: (id: string) => T | undefined;
+    readonly load: (value: T) => Promise<boolean>;
+    readonly measure: string;
+    readonly loadingKey: string;
+  }): (id: string) => Promise<void> {
+    const selection = new GenerationTracker();
+    let confirmed = options.initial;
+
+    return async (id) => {
+      if (id === options.active.value.id) return;
+
+      const next = options.find(id);
+      if (!next) return;
+
+      const request = selection.begin();
+      const previous = confirmed;
+      options.active.value = next;
+
+      beginLoad({ key: options.loadingKey });
+      try {
+        const loaded = await loadProfiler.measure(options.measure, () =>
+          options.load(next),
+        );
+
+        if (loaded) {
+          confirmed = next;
+          return;
+        }
+
+        if (request.isCurrent()) options.active.value = previous;
+      } finally {
+        endLoad();
+      }
+    };
+  }
+
+  const selectModel = createConfirmedSelection<PreviewModel>({
+    active: activeModel,
+    initial: previewModels.default,
+    find: (id) => previewModels.find(id),
+    load: (model) => sceneManager.loadModel(model),
+    measure: 'model:swap',
+    loadingKey: 'editor.loading.model',
+  });
+
+  const selectHdri = createConfirmedSelection<PreviewHdri>({
+    active: activeHdri,
+    initial: previewHdris.default,
+    find: (id) => previewHdris.find(id),
+    load: (hdri) => sceneManager.loadEnvironment(hdri),
+    measure: 'env:swap',
+    loadingKey: 'editor.loading.environment',
+  });
 
   const userDataDoc: UserDataDocument = reactive(createEmptyUserDataDocument());
 
@@ -189,66 +238,6 @@ export function useShaderEditor() {
     sceneManager.setPaused(false);
   }
 
-  async function selectModel(id: string) {
-    if (id === activeModel.value.id) return;
-
-    const model = previewModels.find(id);
-    if (!model) return;
-
-    const request = ++modelSelection;
-    const previous = confirmedModel;
-    activeModel.value = model;
-
-    beginLoad({ key: 'editor.loading.model' });
-    try {
-      const loaded = await loadProfiler.measure('model:swap', () =>
-        sceneManager.loadModel(model),
-      );
-
-      if (loaded) {
-        confirmedModel = model;
-        return;
-      }
-
-      // A newer selection owns the dropdown now; don't revert over it.
-      if (request === modelSelection) {
-        activeModel.value = previous;
-      }
-    } finally {
-      endLoad();
-    }
-  }
-
-  async function selectHdri(id: string) {
-    if (id === activeHdri.value.id) return;
-
-    const hdri = previewHdris.find(id);
-    if (!hdri) return;
-
-    const request = ++hdriSelection;
-    const previous = confirmedHdri;
-    activeHdri.value = hdri;
-
-    beginLoad({ key: 'editor.loading.environment' });
-    try {
-      const loaded = await loadProfiler.measure('env:swap', () =>
-        sceneManager.loadEnvironment(hdri),
-      );
-
-      if (loaded) {
-        confirmedHdri = hdri;
-        return;
-      }
-
-      // A newer selection owns the dropdown now; don't revert over it.
-      if (request === hdriSelection) {
-        activeHdri.value = previous;
-      }
-    } finally {
-      endLoad();
-    }
-  }
-
   /**
    * Replaces both editable documents with one example and compiles the pair.
    *
@@ -352,47 +341,6 @@ export function useShaderEditor() {
     postEffects.setTonemap(mode);
   }
 
-  function addUserUniform(request: {
-    name: string;
-    kind: UserUniformKind;
-    stages?: UserUniformStage;
-  }): AddUserUniformResult {
-    return userDataCommands.add(request);
-  }
-
-  function removeUserUniform(id: string): UserDataCommandResult {
-    return userDataCommands.remove(id);
-  }
-
-  function renameUserUniform(id: string, name: string): UserDataCommandResult {
-    return userDataCommands.rename(id, name);
-  }
-
-  function changeUserUniformKind(
-    id: string,
-    kind: UserUniformKind,
-  ): UserDataCommandResult {
-    return userDataCommands.changeKind(id, kind);
-  }
-
-  function changeUserUniformStages(
-    id: string,
-    stages: UserUniformStage,
-  ): UserDataCommandResult {
-    return userDataCommands.changeStages(id, stages);
-  }
-
-  function setUserUniformValue(
-    id: string,
-    value: UserUniformValue,
-  ): UserDataCommandResult {
-    return userDataCommands.setValue(id, value);
-  }
-
-  function validateUserUniformName(name: string, exceptId?: string) {
-    return userDataCommands.validateName(name, exceptId);
-  }
-
   function resize() {
     sceneManager.resize();
   }
@@ -451,13 +399,7 @@ export function useShaderEditor() {
     movePostEffect,
     setPostEffectEnabled,
     setTonemap,
-    addUserUniform,
-    removeUserUniform,
-    renameUserUniform,
-    changeUserUniformKind,
-    changeUserUniformStages,
-    setUserUniformValue,
-    validateUserUniformName,
+    userDataCommands,
     clipboardSource: navigation.clipboardSource,
   };
 }

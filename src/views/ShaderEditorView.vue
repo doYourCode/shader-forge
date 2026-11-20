@@ -16,11 +16,6 @@ import {
   type EditorTabGroup,
 } from '@/core/models/editorTab';
 import type { ShaderError } from '@/core/models/shaderError';
-import type {
-  UserUniformKind,
-  UserUniformStage,
-  UserUniformValue,
-} from '@/core/models/userUniform';
 import CompileButton from '@/components/shader/CompileButton.vue';
 import EditorToolbar from '@/components/shader/EditorToolbar.vue';
 import ViewerToolbar from '@/components/shader/ViewerToolbar.vue';
@@ -109,13 +104,7 @@ const {
   movePostEffect,
   setPostEffectEnabled,
   setTonemap,
-  addUserUniform,
-  removeUserUniform,
-  renameUserUniform,
-  changeUserUniformKind,
-  changeUserUniformStages,
-  setUserUniformValue,
-  validateUserUniformName,
+  userDataCommands,
   clipboardSource,
 } = useShaderEditor();
 
@@ -157,33 +146,6 @@ function isRevealable(error: ShaderError): boolean {
   if (error.stage === 'user_data') return error.row != null;
   if (error.stage === 'post') return error.line !== null;
   return error.stage !== 'program' && error.line !== null;
-}
-
-function handleAddUniform(request: {
-  name: string;
-  kind: UserUniformKind;
-}): void {
-  addUserUniform(request);
-}
-
-function handleRemoveUniform(id: string): void {
-  removeUserUniform(id);
-}
-
-function handleRenameUniform(id: string, name: string): void {
-  renameUserUniform(id, name);
-}
-
-function handleKindChange(id: string, kind: UserUniformKind): void {
-  changeUserUniformKind(id, kind);
-}
-
-function handleStagesChange(id: string, stages: UserUniformStage): void {
-  changeUserUniformStages(id, stages);
-}
-
-function handleValueChange(id: string, value: UserUniformValue): void {
-  setUserUniformValue(id, value);
 }
 
 function handleResize() {
@@ -262,13 +224,13 @@ function togglePause() {
         class="shader-editor__user-data"
         :definitions="userDataDoc.definitions"
         :highlighted-row="highlightedUserRow"
-        :validate-name="validateUserUniformName"
-        @add="handleAddUniform"
-        @remove="handleRemoveUniform"
-        @rename="handleRenameUniform"
-        @change-kind="handleKindChange"
-        @change-stages="handleStagesChange"
-        @change-value="handleValueChange"
+        :validate-name="userDataCommands.validateName"
+        @add="userDataCommands.add"
+        @remove="userDataCommands.remove"
+        @rename="userDataCommands.rename"
+        @change-kind="userDataCommands.changeKind"
+        @change-stages="userDataCommands.changeStages"
+        @change-value="userDataCommands.setValue"
       />
     </div>
 

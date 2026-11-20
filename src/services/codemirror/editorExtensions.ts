@@ -18,6 +18,7 @@ import {
   isShaderHeaderDirective,
   isShaderHeaderLine,
 } from '@/core/shader/injectionPoint';
+import { i18n } from '@/i18n';
 
 /**
  * One compiler diagnostic as the editor renders it. Declared beside the
@@ -148,12 +149,12 @@ class InjectedBlockWidget extends WidgetType {
     wrapper.setAttribute('role', 'group');
     wrapper.setAttribute(
       'aria-label',
-      'Generated user data uniforms, read only',
+      i18n.global.t('editor.injectedBlock.label'),
     );
 
     const badge = document.createElement('div');
     badge.className = 'cm-injected-block__badge';
-    badge.textContent = 'read-only · user data';
+    badge.textContent = i18n.global.t('editor.injectedBlock.badge');
 
     const code = document.createElement('pre');
     code.className = 'cm-injected-block__code';

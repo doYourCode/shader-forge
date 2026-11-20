@@ -129,7 +129,27 @@
       "bundled": "Shader examples",
       "rejected": "That item is not a shader example.",
       "unavailable": "The example picker could not be loaded."
+    },
+    "tabs": {
+      "vertex": "Vertex",
+      "fragment": "Fragment",
+      "post": "Post effect",
+      "userData": "User data",
+      "io": "Attributes",
+      "uniforms": "Uniforms",
+      "noDocument": "no document"
+    },
+    "tabGroups": {
+      "stages": "Shader Stages",
+      "data": "Shader Data"
+    },
+    "injectedBlock": {
+      "badge": "read-only · user data",
+      "label": "Generated user data uniforms, read only"
     }
+  },
+  "mermaid": {
+    "error": "This diagram could not be rendered."
   },
   "userData": {
     "title": "User data",

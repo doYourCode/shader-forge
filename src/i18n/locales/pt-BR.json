@@ -129,7 +129,27 @@
       "bundled": "Exemplos de shader",
       "rejected": "Este item não é um exemplo de shader.",
       "unavailable": "Não foi possível carregar o seletor de exemplos."
+    },
+    "tabs": {
+      "vertex": "Vértices",
+      "fragment": "Fragmentos",
+      "post": "Pós-efeito",
+      "userData": "Dados do usuário",
+      "io": "Atributos",
+      "uniforms": "Uniformes",
+      "noDocument": "nenhum documento"
+    },
+    "tabGroups": {
+      "stages": "Etapas do shader",
+      "data": "Dados do shader"
+    },
+    "injectedBlock": {
+      "badge": "somente leitura · dados do usuário",
+      "label": "Uniformes de dados do usuário gerados, somente leitura"
     }
+  },
+  "mermaid": {
+    "error": "Não foi possível renderizar este diagrama."
   },
   "userData": {
     "title": "Dados do usuário",

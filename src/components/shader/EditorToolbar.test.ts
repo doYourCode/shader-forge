@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 
@@ -70,6 +70,11 @@ async function openGroup(
 }
 
 describe('EditorToolbar', () => {
+  beforeEach(() => {
+    // The app boots in pt-BR; these assertions cover the English fallback.
+    i18n.global.locale.value = 'en';
+  });
+
   it('renders the two document groups before the standalone tab', () => {
     const wrapper = mountToolbar();
 
@@ -82,6 +87,21 @@ describe('EditorToolbar', () => {
     expect(
       wrapper.findAll('.editor-toolbar__tab').map((tab) => tab.text()),
     ).toEqual(['Post effect']);
+  });
+
+  it('translates the tab and group labels', () => {
+    i18n.global.locale.value = 'pt-BR';
+    const wrapper = mountToolbar();
+
+    const triggers = wrapper
+      .findAll('.tab-group__trigger')
+      .map((trigger) => trigger.text());
+
+    expect(triggers[0]).toContain('Etapas do shader');
+    expect(triggers[1]).toContain('Dados do shader');
+    expect(
+      wrapper.findAll('.editor-toolbar__tab').map((tab) => tab.text()),
+    ).toEqual(['Pós-efeito']);
   });
 
   it('puts Vertex and Fragment behind the Shader Stages menu', async () => {

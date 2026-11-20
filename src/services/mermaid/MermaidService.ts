@@ -4,6 +4,7 @@ import {
   MERMAID_SOURCE_ATTRIBUTE,
   MERMAID_STATE_ATTRIBUTE,
 } from '@/core/content/mermaid';
+import { i18n } from '@/i18n';
 
 /**
  * Minimal surface of Mermaid's public API used here. Keeping the dependency
@@ -181,7 +182,7 @@ export class MermaidService {
 
     const title = document.createElement('p');
     title.className = 'mermaid-diagram__error-title';
-    title.textContent = 'This diagram could not be rendered.';
+    title.textContent = i18n.global.t('mermaid.error');
 
     const pre = document.createElement('pre');
     const code = document.createElement('code');

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { i18n } from '@/i18n';
 import { EditorManager } from './EditorManager';
 
 const DOC = `#version 300 es
@@ -11,6 +12,10 @@ in vec3 position;
 void main() {}`;
 
 let active: EditorManager | null = null;
+
+beforeEach(() => {
+  i18n.global.locale.value = 'en';
+});
 
 afterEach(() => {
   active?.dispose();

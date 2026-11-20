@@ -1,6 +1,8 @@
+import { resolveLocale, type Locale } from '@/core/content/locales';
 import { i18n } from './index';
 
-export type AppLocale = 'en' | 'pt-BR';
+/** The UI locales are exactly the content locales; there is one list. */
+export type AppLocale = Locale;
 
 export function setLocale(locale: AppLocale): void {
   i18n.global.locale.value = locale;
@@ -8,5 +10,5 @@ export function setLocale(locale: AppLocale): void {
 }
 
 export function getLocale(): AppLocale {
-  return i18n.global.locale.value as AppLocale;
+  return resolveLocale(i18n.global.locale.value);
 }

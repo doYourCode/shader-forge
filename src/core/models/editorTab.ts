@@ -3,7 +3,8 @@ export type EditorTabId =
 
 export interface EditorTab {
   id: EditorTabId;
-  label: string;
+  /** UI-message key; core stays framework- and locale-free. */
+  labelKey: string;
   readOnly: boolean;
 }
 
@@ -15,7 +16,8 @@ export interface EditorTab {
 export interface EditorTabGroup {
   /** Stable key used for rendering and focus handling. */
   id: string;
-  label: string;
+  /** UI-message key; core stays framework- and locale-free. */
+  labelKey: string;
   tabs: readonly EditorTab[];
 }
 
@@ -24,8 +26,8 @@ export interface EditorTabGroup {
  * absent: it is a structured table panel, not a text buffer.
  */
 export const editableTabs: readonly EditorTab[] = [
-  { id: 'vertex', label: 'Vertex', readOnly: false },
-  { id: 'fragment', label: 'Fragment', readOnly: false },
+  { id: 'vertex', labelKey: 'editor.tabs.vertex', readOnly: false },
+  { id: 'fragment', labelKey: 'editor.tabs.fragment', readOnly: false },
 ];
 
 /**
@@ -34,7 +36,7 @@ export const editableTabs: readonly EditorTab[] = [
  */
 export const userDataTab: EditorTab = {
   id: 'user_data',
-  label: 'User data',
+  labelKey: 'editor.tabs.userData',
   readOnly: false,
 };
 
@@ -45,7 +47,7 @@ export const userDataTab: EditorTab = {
  */
 export const postTab: EditorTab = {
   id: 'post',
-  label: 'Post effect',
+  labelKey: 'editor.tabs.post',
   readOnly: false,
 };
 
@@ -55,7 +57,7 @@ export const postTab: EditorTab = {
  */
 export const stageTabGroup: EditorTabGroup = {
   id: 'stages',
-  label: 'Shader Stages',
+  labelKey: 'editor.tabGroups.stages',
   tabs: editableTabs,
 };
 
@@ -65,10 +67,10 @@ export const stageTabGroup: EditorTabGroup = {
  */
 export const dataTabGroup: EditorTabGroup = {
   id: 'data',
-  label: 'Shader Data',
+  labelKey: 'editor.tabGroups.data',
   tabs: [
     userDataTab,
-    { id: 'io', label: 'Attributes', readOnly: true },
-    { id: 'uniforms', label: 'Uniforms', readOnly: true },
+    { id: 'io', labelKey: 'editor.tabs.io', readOnly: true },
+    { id: 'uniforms', labelKey: 'editor.tabs.uniforms', readOnly: true },
   ],
 };

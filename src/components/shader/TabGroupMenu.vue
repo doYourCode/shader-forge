@@ -8,6 +8,7 @@ import {
   useId,
 } from 'vue';
 import { ChevronDown } from 'lucide-vue-next';
+import { useI18n } from 'vue-i18n';
 
 import type {
   EditorTab,
@@ -25,6 +26,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'switch', id: EditorTabId): void;
 }>();
+
+const { t } = useI18n();
 
 const labelId = useId();
 const menuId = useId();
@@ -180,7 +183,9 @@ onBeforeUnmount(() => {
         'tab-group__trigger--active': activeTab !== null,
         'tab-group__trigger--open': menuOpen,
       }"
-      :aria-label="`${props.group.label}: ${activeTab?.label ?? 'no document'}`"
+      :aria-label="`${t(props.group.labelKey)}: ${
+        activeTab ? t(activeTab.labelKey) : t('editor.tabs.noDocument')
+      }`"
       aria-haspopup="menu"
       :aria-expanded="menuOpen"
       :aria-controls="menuOpen ? menuId : undefined"
@@ -188,10 +193,10 @@ onBeforeUnmount(() => {
       @keydown="handleTriggerKeydown"
     >
       <span :id="labelId" class="tab-group__label">{{
-        props.group.label
+        t(props.group.labelKey)
       }}</span>
       <span v-if="activeTab" class="tab-group__current">
-        {{ activeTab.label }}
+        {{ t(activeTab.labelKey) }}
       </span>
       <ChevronDown class="tab-group__chevron" :size="11" aria-hidden="true" />
     </button>
@@ -218,7 +223,7 @@ onBeforeUnmount(() => {
           <span class="tab-group__check" aria-hidden="true">
             {{ tab.id === props.active ? '✓' : '' }}
           </span>
-          <span>{{ tab.label }}</span>
+          <span>{{ t(tab.labelKey) }}</span>
         </button>
       </li>
     </ul>

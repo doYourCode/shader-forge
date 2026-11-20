@@ -2,12 +2,13 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { resolveLocale } from '@/core/content/locales';
 import { setLocale, type AppLocale } from '@/i18n/setLocale';
 
 const { locale, t } = useI18n();
 
 const selectedLocale = computed<AppLocale>({
-  get: () => locale.value as AppLocale,
+  get: () => resolveLocale(locale.value),
   set: setLocale,
 });
 </script>

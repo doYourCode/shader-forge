@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { i18n } from '@/i18n';
 import {
   MERMAID_SOURCE_ATTRIBUTE,
   MERMAID_STATE_ATTRIBUTE,
@@ -33,6 +34,10 @@ function createRoot(source = SOURCE): {
     diagram: root.querySelector<HTMLElement>('.mermaid-diagram')!,
   };
 }
+
+beforeEach(() => {
+  i18n.global.locale.value = 'en';
+});
 
 afterEach(() => {
   vi.restoreAllMocks();

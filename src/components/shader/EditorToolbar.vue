@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
 import type {
   EditorTab,
   EditorTabGroup,
@@ -19,6 +21,8 @@ const emit = defineEmits<{
   (e: 'switch', id: EditorTabId): void;
   (e: 'load-example', id: string): void;
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -43,7 +47,7 @@ const emit = defineEmits<{
           :class="{ 'editor-toolbar__tab--active': tab.id === props.active }"
           @click="emit('switch', tab.id)"
         >
-          {{ tab.label }}
+          {{ t(tab.labelKey) }}
         </button>
       </div>
     </div>

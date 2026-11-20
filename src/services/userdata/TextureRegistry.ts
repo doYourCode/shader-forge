@@ -6,6 +6,7 @@ import {
 } from '@babylonjs/core';
 import type { PreviewTexture } from '@/core/models/previewTexture';
 import type { SamplerKind, UserTextureSource } from '@/core/models/userUniform';
+import { KeyedLatestLoads, type PendingLoad } from '@/core/async/latestLoad';
 
 /** Creates a Babylon texture and reports its asynchronous load outcome. */
 export type UserTextureFactory = (
@@ -80,11 +81,8 @@ interface LoadedTexture {
 
 interface PendingTexture {
   readonly source: UserTextureSource;
-  readonly promise: Promise<BaseTexture | null>;
-  readonly resolve: (texture: BaseTexture | null) => void;
   texture: BaseTexture | null;
   objectUrl: string | null;
-  settled: boolean;
 }
 
 /**
@@ -102,7 +100,11 @@ export class TextureRegistry implements TextureRegistryPort {
   private readonly objectUrls: ObjectUrlProvider;
   private readonly lookup: TextureLookup;
   private readonly current = new Map<string, LoadedTexture>();
-  private readonly pending = new Map<string, PendingTexture>();
+  private readonly pending = new KeyedLatestLoads<
+    string,
+    BaseTexture | null,
+    PendingTexture
+  >(null);
   private disposed = false;
 
   /**
@@ -134,10 +136,9 @@ export class TextureRegistry implements TextureRegistryPort {
     }
 
     const inFlight = this.pending.get(definitionId);
-    if (inFlight && sameSource(inFlight.source, source)) {
+    if (inFlight && sameSource(inFlight.payload.source, source)) {
       return inFlight.promise;
     }
-    if (inFlight) this.cancelPending(definitionId, inFlight);
 
     let url: string;
     if (source.kind === 'file') {
@@ -158,19 +159,15 @@ export class TextureRegistry implements TextureRegistryPort {
       return Promise.resolve(null);
     }
 
-    let resolveEntry!: (texture: BaseTexture | null) => void;
-    const promise = new Promise<BaseTexture | null>((resolve) => {
-      resolveEntry = resolve;
-    });
     const entry: PendingTexture = {
       source,
-      promise,
-      resolve: resolveEntry,
       texture: null,
       objectUrl: source.kind === 'file' ? url : null,
-      settled: false,
     };
-    this.pending.set(definitionId, entry);
+    // A newer source for the same definition retires the previous request.
+    const load = this.pending.begin(definitionId, entry, (pending) =>
+      this.disposeEntry(pending),
+    );
 
     try {
       // `queueMicrotask` keeps the callback contract asynchronous even when a
@@ -179,19 +176,18 @@ export class TextureRegistry implements TextureRegistryPort {
         this.scene,
         kind,
         url,
-        () => queueMicrotask(() => this.finishLoad(definitionId, entry)),
-        () => queueMicrotask(() => this.finishError(definitionId, entry)),
+        () => queueMicrotask(() => this.finishLoad(definitionId, load)),
+        () => queueMicrotask(() => this.finishError(load)),
       );
     } catch {
-      this.finishError(definitionId, entry);
+      this.finishError(load);
     }
 
-    return promise;
+    return load.promise;
   }
 
   release(definitionId: string): void {
-    const inFlight = this.pending.get(definitionId);
-    if (inFlight) this.cancelPending(definitionId, inFlight);
+    this.pending.cancel(definitionId);
     this.disposeCurrent(definitionId);
   }
 
@@ -203,11 +199,7 @@ export class TextureRegistry implements TextureRegistryPort {
     if (this.disposed) return;
 
     this.disposed = true;
-    for (const entry of this.pending.values()) {
-      this.disposeEntry(entry);
-      this.settle(entry, null);
-    }
-    this.pending.clear();
+    this.pending.dispose();
 
     for (const loaded of this.current.values()) {
       this.disposeLoaded(loaded);
@@ -215,21 +207,19 @@ export class TextureRegistry implements TextureRegistryPort {
     this.current.clear();
   }
 
-  private finishLoad(definitionId: string, entry: PendingTexture): void {
-    if (this.disposed || this.pending.get(definitionId) !== entry) {
-      // A superseded request must not clobber the newer registration.
-      this.disposeEntry(entry);
-      this.settle(entry, null);
-      return;
-    }
+  private finishLoad(
+    definitionId: string,
+    load: PendingLoad<BaseTexture | null, PendingTexture>,
+  ): void {
+    if (this.disposed || !load.isCurrent()) return;
 
+    const entry = load.payload;
     const texture = entry.texture;
     if (!texture) {
-      this.finishError(definitionId, entry);
+      this.finishError(load);
       return;
     }
 
-    this.pending.delete(definitionId);
     this.disposeCurrent(definitionId);
     this.current.set(definitionId, {
       source: entry.source,
@@ -239,25 +229,14 @@ export class TextureRegistry implements TextureRegistryPort {
     // Ownership moved to `current`; a late callback must not release it.
     entry.texture = null;
     entry.objectUrl = null;
-    this.settle(entry, texture);
+    load.settle(texture);
   }
 
-  private finishError(definitionId: string, entry: PendingTexture): void {
-    if (this.pending.get(definitionId) === entry) {
-      this.pending.delete(definitionId);
-    }
-
-    this.disposeEntry(entry);
-    this.settle(entry, null);
-  }
-
-  private cancelPending(definitionId: string, entry: PendingTexture): void {
-    if (this.pending.get(definitionId) === entry) {
-      this.pending.delete(definitionId);
-    }
-
-    this.disposeEntry(entry);
-    this.settle(entry, null);
+  private finishError(
+    load: PendingLoad<BaseTexture | null, PendingTexture>,
+  ): void {
+    // Retiring the load disposes the attempt and revokes its ObjectURL.
+    if (load.isCurrent()) load.settle(null);
   }
 
   private disposeCurrent(definitionId: string): void {
@@ -283,13 +262,6 @@ export class TextureRegistry implements TextureRegistryPort {
       this.objectUrls.revokeObjectUrl(entry.objectUrl);
       entry.objectUrl = null;
     }
-  }
-
-  private settle(entry: PendingTexture, texture: BaseTexture | null): void {
-    if (entry.settled) return;
-
-    entry.settled = true;
-    entry.resolve(texture);
   }
 }
 

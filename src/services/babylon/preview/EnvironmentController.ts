@@ -9,6 +9,7 @@ import {
   type Scene,
 } from '@babylonjs/core';
 import type { PreviewHdri, PreviewHdriFormat } from '@/core/models/previewHdri';
+import { LatestLoad, type PendingLoad } from '@/core/async/latestLoad';
 import {
   createNativeEnvironmentIblFilter,
   type EnvironmentIblFilter,
@@ -139,8 +140,6 @@ export const createEnvironmentBackground: EnvironmentBackgroundFactory = (
 
 interface PendingEnvironment {
   readonly hdriId: string;
-  readonly promise: Promise<boolean>;
-  readonly resolve: (result: boolean) => void;
   /**
    * Whether the texture still needs Babylon's HDR filters. Prefiltered `.env`
    * assets are already convolved and go straight to `finishLoad`.
@@ -151,7 +150,6 @@ interface PendingEnvironment {
   filtering: Promise<void> | null;
   /** Open `env:load` timing sample; ended when the texture reports ready. */
   stopLoadTimer: (() => void) | null;
-  settled: boolean;
 }
 
 /**
@@ -170,7 +168,7 @@ export class EnvironmentController {
   private currentId: string | null = null;
   private background: EnvironmentBackground | null = null;
   private iblFilter: EnvironmentIblFilter | null = null;
-  private pending: PendingEnvironment | null = null;
+  private readonly pending = new LatestLoad<boolean, PendingEnvironment>(false);
   private disposed = false;
 
   constructor(
@@ -201,54 +199,47 @@ export class EnvironmentController {
 
     if (hdri.id === this.currentId) {
       // Selecting the displayed environment also cancels a swap still loading.
-      this.cancelPending();
+      this.pending.cancel();
       return Promise.resolve(true);
     }
 
-    if (this.pending?.hdriId === hdri.id) {
-      return this.pending.promise;
+    const inFlight = this.pending.get();
+    if (inFlight?.payload.hdriId === hdri.id) {
+      return inFlight.promise;
     }
 
-    this.cancelPending();
-
-    let resolveEntry!: (result: boolean) => void;
-    const promise = new Promise<boolean>((resolve) => {
-      resolveEntry = resolve;
-    });
     const entry: PendingEnvironment = {
       hdriId: hdri.id,
-      promise,
-      resolve: resolveEntry,
       needsFiltering: hdri.format === 'hdr',
       texture: null,
       filtering: null,
       stopLoadTimer: this.timer.begin('env:load'),
-      settled: false,
     };
-    this.pending = entry;
+    // Starting a request retires any older one, including its texture.
+    const load = this.pending.begin(entry, (pending) =>
+      this.retireEnvironment(pending),
+    );
 
     try {
-      const texture = this.createTexture(
+      entry.texture = this.createTexture(
         this.scene,
         hdri.url,
         hdri.format,
-        () => queueMicrotask(() => this.onTextureLoaded(entry, hdri)),
-        () => queueMicrotask(() => this.finishError(entry)),
+        () => queueMicrotask(() => this.onTextureLoaded(load, hdri)),
+        () => queueMicrotask(() => this.finishError(load)),
       );
-      entry.texture = texture;
     } catch {
-      this.stopLoadTimer(entry);
-      this.finishError(entry);
+      this.finishError(load);
     }
 
-    return promise;
+    return load.promise;
   }
 
   dispose(): void {
     if (this.disposed) return;
 
     this.disposed = true;
-    this.cancelPending();
+    this.pending.dispose();
     this.background?.dispose();
     this.background = null;
     this.scene.environmentTexture = null;
@@ -263,15 +254,17 @@ export class EnvironmentController {
    * pending entry is processed, and a superseded one is released as soon as its
    * filtering settles, because GPU filtering itself cannot be cancelled.
    */
-  private onTextureLoaded(entry: PendingEnvironment, hdri: PreviewHdri): void {
-    if (this.disposed || this.pending !== entry) {
-      this.disposeTexture(entry);
-      return;
-    }
+  private onTextureLoaded(
+    load: PendingLoad<boolean, PendingEnvironment>,
+    hdri: PreviewHdri,
+  ): void {
+    // A retired request is already settled and released by the slot.
+    if (this.disposed || !load.isCurrent()) return;
 
+    const entry = load.payload;
     const texture = entry.texture;
     if (!texture) {
-      this.finishError(entry);
+      this.finishError(load);
       return;
     }
 
@@ -280,7 +273,7 @@ export class EnvironmentController {
     this.stopLoadTimer(entry);
 
     if (!entry.needsFiltering) {
-      this.finishLoad(entry, hdri);
+      this.finishLoad(load, hdri);
       return;
     }
 
@@ -291,7 +284,7 @@ export class EnvironmentController {
         this.iblFilter!.prefilter(texture),
       );
     } catch {
-      this.finishError(entry);
+      this.finishError(load);
       return;
     }
 
@@ -299,28 +292,28 @@ export class EnvironmentController {
     void filtering.then(
       () => {
         entry.filtering = null;
-        this.finishLoad(entry, hdri);
+        this.finishLoad(load, hdri);
       },
       () => {
         entry.filtering = null;
-        this.finishError(entry);
+        this.finishError(load);
       },
     );
   }
 
-  private finishLoad(entry: PendingEnvironment, hdri: PreviewHdri): void {
-    if (this.disposed || this.pending !== entry) {
-      this.disposeTexture(entry);
-      return;
-    }
+  private finishLoad(
+    load: PendingLoad<boolean, PendingEnvironment>,
+    hdri: PreviewHdri,
+  ): void {
+    if (this.disposed || !load.isCurrent()) return;
 
+    const entry = load.payload;
     const texture = entry.texture;
     if (!texture) {
-      this.finishError(entry);
+      this.finishError(load);
       return;
     }
 
-    this.pending = null;
     this.background ??= this.createBackground(this.scene);
     this.background.setTexture(texture);
     this.scene.environmentTexture = texture;
@@ -329,29 +322,20 @@ export class EnvironmentController {
     this.currentId = hdri.id;
     // The current texture now owns disposal; a late callback must not release it.
     entry.texture = null;
-    this.settle(entry, true);
+    load.settle(true);
   }
 
-  private finishError(entry: PendingEnvironment): void {
-    if (this.pending !== entry) {
-      this.disposeTexture(entry);
-      return;
-    }
-
-    this.pending = null;
-    this.disposeTexture(entry);
-    this.settle(entry, false);
+  private finishError(load: PendingLoad<boolean, PendingEnvironment>): void {
+    if (load.isCurrent()) load.settle(false);
   }
 
-  private cancelPending(): void {
-    const entry = this.pending;
-    if (!entry) return;
+  /**
+   * Releases a retired request. GPU filtering cannot be cancelled, so a texture
+   * that is still being filtered stays alive until the filter settles.
+   */
+  private retireEnvironment(entry: PendingEnvironment): void {
+    this.stopLoadTimer(entry);
 
-    this.pending = null;
-    this.settle(entry, false);
-
-    // A texture being filtered is still read by the GPU; release it only once
-    // the filter settles, otherwise the shader would sample disposed storage.
     if (entry.filtering) {
       void entry.filtering.then(
         () => this.disposeTexture(entry),
@@ -368,13 +352,6 @@ export class EnvironmentController {
     this.stopLoadTimer(entry);
     entry.texture = null;
     texture?.dispose();
-  }
-
-  private settle(entry: PendingEnvironment, result: boolean): void {
-    if (entry.settled) return;
-
-    entry.settled = true;
-    entry.resolve(result);
   }
 
   /** Ends the open env:load sample exactly once. */

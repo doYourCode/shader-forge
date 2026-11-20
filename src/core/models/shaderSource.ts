@@ -1,4 +1,4 @@
-import type { UserDataAssemblyRecord } from '@/core/shader/uniformCodegen';
+import type { UserDataAssemblyRecord } from '@/core/models/userDataAssembly';
 
 /** The two GLSL stages edited by the user. */
 export interface ShaderSource {

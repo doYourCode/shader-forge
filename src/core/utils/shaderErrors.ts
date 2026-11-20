@@ -1,9 +1,9 @@
 import type { ShaderError, ShaderErrorStage } from '@/core/models/shaderError';
-import {
-  locateInjectedBlock,
-  type InjectedBlockRange,
-  type UserDataAssemblyRecord,
-} from '@/core/shader/uniformCodegen';
+import type {
+  InjectedBlockRange,
+  UserDataAssemblyRecord,
+} from '@/core/models/userDataAssembly';
+import { locateInjectedBlock } from '@/core/shader/uniformCodegen';
 import { describeGlslIssue, type GlslVersion } from './glslDiagnostics';
 import { isGlslStackFrame, parseGlslInfoLog } from './glslLogParser';
 import { ShaderLineMap } from './shaderLineMap';

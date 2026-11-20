@@ -1,4 +1,9 @@
 import { uniformKindMeta } from '@/core/constants/userUniformKinds';
+import type {
+  InjectedBlockRange,
+  StageAssemblyRecord,
+  UserDataAssemblyRecord,
+} from '@/core/models/userDataAssembly';
 import { findInjectionLine } from './injectionPoint';
 import {
   isSamplerKind,
@@ -34,26 +39,10 @@ export interface GeneratedUserDataBlock {
 }
 
 /** 1-based, inclusive range of the injected block inside a stage source. */
-export interface InjectedBlockRange {
-  readonly startLine: number;
-  readonly endLine: number;
-}
-
 export interface StageAssembly {
   readonly source: string;
   readonly injected: InjectedBlockRange | null;
   readonly declarationRowByLine: readonly number[];
-}
-
-/** Per-stage diagnostic metadata carried on the material blueprint. */
-export interface StageAssemblyRecord {
-  readonly injected: InjectedBlockRange | null;
-  readonly declarationRowByLine: readonly number[];
-}
-
-export interface UserDataAssemblyRecord {
-  readonly vertex: StageAssemblyRecord | null;
-  readonly fragment: StageAssemblyRecord | null;
 }
 
 export interface UserDataAssembly {
@@ -61,6 +50,13 @@ export interface UserDataAssembly {
   readonly fragment: string;
   readonly record: UserDataAssemblyRecord;
 }
+
+// Keep the assembly metadata importable from the codegen that produces it.
+export type {
+  InjectedBlockRange,
+  StageAssemblyRecord,
+  UserDataAssemblyRecord,
+} from '@/core/models/userDataAssembly';
 
 /**
  * Builds the block for one stage, or null when no definition targets it. The

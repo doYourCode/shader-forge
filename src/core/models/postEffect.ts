@@ -1,4 +1,4 @@
-import type { InjectedBlockRange } from '@/core/shader/uniformCodegen';
+import type { InjectedBlockRange } from '@/core/models/userDataAssembly';
 
 /**
  * Output transform applied by the internal display pass after the effect

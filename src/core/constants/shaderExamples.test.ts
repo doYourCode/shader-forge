@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { GLSL_RESERVED_WORDS } from '@/core/constants/glslReservedWords';
 import {
-  GLSL_RESERVED_WORDS,
   UNIFORM_NAME_PATTERN,
   isValueForKind,
 } from '@/core/models/userUniform';

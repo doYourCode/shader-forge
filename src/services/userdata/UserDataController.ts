@@ -1,6 +1,5 @@
 import {
   createEmptyUserDataDocument,
-  GLSL_RESERVED_WORDS,
   hasTextureContent,
   isSamplerKind,
   isValueForKind,
@@ -14,6 +13,7 @@ import {
   type UserUniformStage,
   type UserUniformValue,
 } from '@/core/models/userUniform';
+import { GLSL_RESERVED_WORDS } from '@/core/constants/glslReservedWords';
 import { defaultUniformValue } from '@/core/constants/userUniformKinds';
 import { POST_EFFECT_RESERVED_NAMES } from '@/core/constants/postEffectAbi';
 import {

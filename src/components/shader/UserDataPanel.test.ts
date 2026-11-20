@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import { i18n } from '@/i18n';
+import { GLSL_RESERVED_WORDS } from '@/core/constants/glslReservedWords';
 import {
-  GLSL_RESERVED_WORDS,
   validateUniformName,
   type NameValidationResult,
   type UserUniformDefinition,

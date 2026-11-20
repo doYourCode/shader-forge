@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { GLSL_RESERVED_WORDS } from '@/core/constants/glslReservedWords';
 import {
   createEmptyUserDataDocument,
-  GLSL_RESERVED_WORDS,
   hasTextureContent,
   isSamplerKind,
   isTextureSource,

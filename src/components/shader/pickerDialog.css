@@ -1,0 +1,113 @@
+/*
+ * Shared shell for the AssetPicker dialogs in TextureSourceInput and
+ * ShaderExamplePicker. Both SFCs import this file from a scoped style block, so
+ * every selector compiles to `.sf-picker__*[data-v-…]`; nothing here is global.
+ * The components keep their own BEM classes for tests and hooks.
+ */
+.sf-picker__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(12, 14, 18, 0.72);
+}
+
+.sf-picker__dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 92vw);
+  height: min(720px, 82vh);
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 18px 48px var(--shadow);
+  outline: none;
+}
+
+.sf-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.sf-picker__title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--fg-strong);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sf-picker__close {
+  flex: none;
+  padding: 0 6px;
+  background: transparent;
+  color: var(--fg-muted);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.sf-picker__close:hover {
+  color: var(--fg-strong);
+  border-color: var(--border);
+}
+
+.sf-picker__body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sf-picker__host {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sf-picker__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--bg-elevated);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.sf-picker__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: sf-picker-spin 0.8s linear infinite;
+}
+
+@keyframes sf-picker-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

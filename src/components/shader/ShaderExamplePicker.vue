@@ -168,25 +168,25 @@ onBeforeUnmount(() => {
   <Teleport to="body">
     <div
       v-if="isOpen"
-      class="example-picker__overlay"
+      class="example-picker__overlay sf-picker__overlay"
       @click.self="closeDialog(true)"
       @keydown.esc.stop.prevent="closeDialog(true)"
     >
       <div
         ref="dialogRef"
-        class="example-picker__dialog"
+        class="example-picker__dialog sf-picker__dialog"
         role="dialog"
         aria-modal="true"
         :aria-label="t('editor.examples.dialog')"
         tabindex="-1"
       >
-        <header class="example-picker__header">
-          <h2 class="example-picker__title">
+        <header class="example-picker__header sf-picker__header">
+          <h2 class="example-picker__title sf-picker__title">
             {{ t('editor.examples.dialog') }}
           </h2>
           <button
             type="button"
-            class="example-picker__close"
+            class="example-picker__close sf-picker__close"
             :aria-label="t('editor.examples.close')"
             @click="closeDialog(true)"
           >
@@ -198,15 +198,24 @@ onBeforeUnmount(() => {
           {{ errorMessage }}
         </p>
 
-        <div class="example-picker__body" :aria-busy="isLoading">
-          <div ref="hostRef" class="example-picker__host assetpicker-theme" />
+        <div
+          class="example-picker__body sf-picker__body"
+          :aria-busy="isLoading"
+        >
+          <div
+            ref="hostRef"
+            class="example-picker__host sf-picker__host assetpicker-theme"
+          />
           <div
             v-if="isLoading"
-            class="example-picker__loading"
+            class="example-picker__loading sf-picker__loading"
             role="status"
             aria-live="polite"
           >
-            <span class="example-picker__spinner" aria-hidden="true" />
+            <span
+              class="example-picker__spinner sf-picker__spinner"
+              aria-hidden="true"
+            />
             <span>{{ t('editor.examples.loading') }}</span>
           </div>
         </div>
@@ -214,6 +223,8 @@ onBeforeUnmount(() => {
     </div>
   </Teleport>
 </template>
+
+<style scoped src="./pickerDialog.css"></style>
 
 <style scoped>
 .example-picker__trigger {
@@ -246,71 +257,6 @@ onBeforeUnmount(() => {
   cursor: default;
 }
 
-.example-picker__overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(12, 14, 18, 0.72);
-}
-
-.example-picker__dialog {
-  display: flex;
-  flex-direction: column;
-  width: min(960px, 92vw);
-  height: min(720px, 82vh);
-  min-height: 0;
-  overflow: hidden;
-  background: var(--bg-elevated);
-  color: var(--fg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 18px 48px var(--shadow);
-  outline: none;
-}
-
-.example-picker__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px 6px 12px;
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--border);
-}
-
-.example-picker__title {
-  margin: 0;
-  overflow: hidden;
-  color: var(--fg-strong);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.example-picker__close {
-  flex: none;
-  padding: 0 6px;
-  background: transparent;
-  color: var(--fg-muted);
-  border: 1px solid transparent;
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 16px;
-  line-height: 1.2;
-  cursor: pointer;
-}
-
-.example-picker__close:hover {
-  color: var(--fg-strong);
-  border-color: var(--border);
-}
-
 .example-picker__error {
   margin: 0;
   padding: 8px 12px;
@@ -320,48 +266,5 @@ onBeforeUnmount(() => {
   font-family: var(--font-sans);
   font-size: 11px;
   line-height: 1.4;
-}
-
-.example-picker__body {
-  position: relative;
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.example-picker__host {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.example-picker__loading {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--bg-elevated);
-  color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-
-.example-picker__spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent-blue);
-  border-radius: 50%;
-  animation: example-picker-spin 0.8s linear infinite;
-}
-
-@keyframes example-picker-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

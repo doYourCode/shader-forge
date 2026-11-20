@@ -298,20 +298,20 @@ onBeforeUnmount(() => {
     <Teleport to="body">
       <div
         v-if="isOpen"
-        class="texture-source__overlay"
+        class="texture-source__overlay sf-picker__overlay"
         @click.self="closeModal(true)"
         @keydown.esc.stop.prevent="closeModal(true)"
       >
         <div
           ref="dialogRef"
-          class="texture-source__dialog"
+          class="texture-source__dialog sf-picker__dialog"
           role="dialog"
           aria-modal="true"
           :aria-label="t('userData.texture.dialog')"
           tabindex="-1"
         >
-          <header class="texture-source__dialog-header">
-            <h2 class="texture-source__dialog-title">
+          <header class="texture-source__dialog-header sf-picker__header">
+            <h2 class="texture-source__dialog-title sf-picker__title">
               {{ t('userData.texture.dialog') }}
               <span v-if="props.label" class="texture-source__dialog-name">
                 · {{ props.label }}
@@ -319,7 +319,7 @@ onBeforeUnmount(() => {
             </h2>
             <button
               type="button"
-              class="texture-source__close"
+              class="texture-source__close sf-picker__close"
               :aria-label="t('userData.texture.close')"
               @click="closeModal(true)"
             >
@@ -327,18 +327,24 @@ onBeforeUnmount(() => {
             </button>
           </header>
 
-          <div class="texture-source__picker-body" :aria-busy="isPickerLoading">
+          <div
+            class="texture-source__picker-body sf-picker__body"
+            :aria-busy="isPickerLoading"
+          >
             <div
               ref="hostRef"
-              class="texture-source__picker assetpicker-theme"
+              class="texture-source__picker sf-picker__host assetpicker-theme"
             />
             <div
               v-if="isPickerLoading"
-              class="texture-source__picker-loading"
+              class="texture-source__picker-loading sf-picker__loading"
               role="status"
               aria-live="polite"
             >
-              <span class="texture-source__picker-spinner" aria-hidden="true" />
+              <span
+                class="texture-source__picker-spinner sf-picker__spinner"
+                aria-hidden="true"
+              />
               <span>{{ t('userData.texture.loading') }}</span>
             </div>
           </div>
@@ -347,6 +353,8 @@ onBeforeUnmount(() => {
     </Teleport>
   </div>
 </template>
+
+<style scoped src="./pickerDialog.css"></style>
 
 <style scoped>
 .texture-source {
@@ -505,116 +513,8 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.texture-source__overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(12, 14, 18, 0.72);
-}
-
-.texture-source__dialog {
-  display: flex;
-  flex-direction: column;
-  width: min(960px, 92vw);
-  height: min(720px, 82vh);
-  min-height: 0;
-  overflow: hidden;
-  background: var(--bg-elevated);
-  color: var(--fg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 18px 48px var(--shadow);
-  outline: none;
-}
-
-.texture-source__dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px 6px 12px;
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--border);
-}
-
-.texture-source__dialog-title {
-  margin: 0;
-  overflow: hidden;
-  color: var(--fg-strong);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .texture-source__dialog-name {
   color: var(--fg-muted);
   font-weight: 400;
-}
-
-.texture-source__close {
-  flex: none;
-  padding: 0 6px;
-  background: transparent;
-  color: var(--fg-muted);
-  border: 1px solid transparent;
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 16px;
-  line-height: 1.2;
-  cursor: pointer;
-}
-
-.texture-source__close:hover {
-  color: var(--fg-strong);
-  border-color: var(--border);
-}
-
-.texture-source__picker-body {
-  position: relative;
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.texture-source__picker-loading {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--bg-elevated);
-  color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-
-.texture-source__picker-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent-blue);
-  border-radius: 50%;
-  animation: texture-source-spin 0.8s linear infinite;
-}
-
-@keyframes texture-source-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.texture-source__picker {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 </style>

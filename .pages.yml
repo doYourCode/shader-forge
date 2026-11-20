@@ -4,7 +4,7 @@
 # Content is organised as parallel per-locale trees (see docs/i18n-content.md).
 # Pages CMS does not resolve translations, so each locale gets its own
 # collection and editors always see the tree for the locale they are editing.
-# The runtime resolves/falls back in src/lib/ContentResolver.ts.
+# The runtime resolves/falls back in src/core/content/ContentResolver.ts.
 
 media:
   - name: content-images

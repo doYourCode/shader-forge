@@ -22,6 +22,13 @@ const { t } = useI18n();
 
 const isChecking = computed(() => props.enabled === null);
 const isDisabled = computed(() => props.enabled === false);
+const isLink = computed(
+  () =>
+    props.card.enabled &&
+    !isChecking.value &&
+    !isDisabled.value &&
+    props.card.to !== undefined,
+);
 
 const noteText = computed(() => {
   if (isChecking.value) return t('landing.status.checking');
@@ -39,13 +46,13 @@ const noteText = computed(() => {
 
 <template>
   <component
-    :is="isDisabled ? 'div' : RouterLink"
-    :to="isDisabled ? undefined : card.to"
+    :is="isLink ? RouterLink : 'div'"
+    :to="isLink ? card.to : undefined"
     class="feature-card"
     :class="{
       'feature-card--disabled': isDisabled,
       'feature-card--checking': isChecking,
-      'feature-card--static': !card.to || isDisabled,
+      'feature-card--static': !isLink,
     }"
   >
     <div class="feature-card__body">

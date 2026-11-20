@@ -32,7 +32,15 @@ export class ShaderLineMap {
     const driverCount = driverLines.length;
 
     if (driverCount === 0 || userCount === 0) return null;
-    if (userCount * driverCount > MAX_DIFF_CELLS) return null;
+    if (userCount * driverCount > MAX_DIFF_CELLS) {
+      if (import.meta.env.DEV) {
+        console.warn(
+          '[ShaderLineMap] Source is too large to diff; driver line numbers ' +
+            'will not be mapped back to editor lines.',
+        );
+      }
+      return null;
+    }
 
     const width = driverCount + 1;
     const lcs = new Uint32Array((userCount + 1) * width);

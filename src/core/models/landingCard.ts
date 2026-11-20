@@ -2,7 +2,12 @@ export interface ILandingCard {
   id: string;
   title: string;
   description: string;
-  /** Where clicking the card navigates. Empty = non-clickable card. */
+  /**
+   * Whether the card has a destination. Announced-only cards stay visible but
+   * are never rendered as links; they omit `to`.
+   */
+  enabled: boolean;
+  /** Route for an enabled card. */
   to?: string;
   /** Optional highlighted description (e.g., disabled reason) */
   note?: string;

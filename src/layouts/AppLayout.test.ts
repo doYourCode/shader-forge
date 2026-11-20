@@ -76,6 +76,29 @@ describe('AppLayout footer', () => {
     wrapper.unmount();
   });
 
+  it('omits the tagline from the landing and knowledge headers', async () => {
+    for (const path of ['/', '/knowledge/the-rendering-pipeline']) {
+      const wrapper = await mountAt(path);
+
+      expect(wrapper.find('.app-header__title').exists()).toBe(false);
+      expect(wrapper.find('.app-header').text()).not.toContain(
+        'Shaders Body of Knowledge',
+      );
+
+      wrapper.unmount();
+    }
+  });
+
+  it('keeps the documentation title in the header', async () => {
+    const wrapper = await mountAt('/docs/shader-editor');
+
+    expect(wrapper.find('.app-header__title').text()).toBe(
+      'Reference & Documentation',
+    );
+
+    wrapper.unmount();
+  });
+
   it('keeps the footer on the other screens', async () => {
     for (const path of [
       '/',

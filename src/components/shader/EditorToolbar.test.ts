@@ -124,17 +124,15 @@ describe('EditorToolbar', () => {
     expect(groupTrigger(wrapper, 'Shader Stages').text()).toBe('Shader Stages');
   });
 
-  it('places the example picker immediately before Compile', () => {
+  it('keeps the example picker as the toolbar action', () => {
     const wrapper = mountToolbar();
 
-    const picker = wrapper.find('.example-picker__trigger').element;
-    const compile = wrapper.find('.editor-toolbar__compile').element;
-
-    const following =
-      picker.compareDocumentPosition(compile) &
-      Node.DOCUMENT_POSITION_FOLLOWING;
-
-    expect(following).toBeTruthy();
+    expect(
+      wrapper
+        .find('.editor-toolbar__actions .example-picker__trigger')
+        .exists(),
+    ).toBe(true);
+    expect(wrapper.find('.editor-toolbar__compile').exists()).toBe(false);
   });
 
   it('forwards the picked example to the editor', async () => {

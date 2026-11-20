@@ -204,7 +204,7 @@ describe('ShaderEditorView user data panel', () => {
 
     // The next explicit compile reflects the edit in the values comment.
     await selectDocument(wrapper, 'Shader Stages', 'Fragment');
-    await wrapper.find('.editor-toolbar__compile').trigger('click');
+    await wrapper.find('.compile-button').trigger('click');
     await flushPromises();
 
     const lastCall = sceneManager.compile.mock.calls[0]![0];
@@ -319,18 +319,56 @@ describe('ShaderEditorView example loader', () => {
 });
 
 describe('ShaderEditorView chrome', () => {
+  beforeEach(() => {
+    i18n.global.locale.value = 'en';
+  });
+
   afterEach(() => {
+    i18n.global.locale.value = 'en';
     document.body.innerHTML = '';
   });
 
-  it('hosts the brand and the language switch inside the editor toolbar', async () => {
+  it('keeps the brand left, with compile and language across the split', async () => {
     const wrapper = await mountView();
 
-    const lead = wrapper.find('.editor-toolbar__lead');
+    const left = wrapper.find('.editor-toolbar');
+    const right = wrapper.find('.viewer-toolbar');
 
     expect(wrapper.find('.app-header').exists()).toBe(false);
-    expect(lead.find('.app-brand').exists()).toBe(true);
-    expect(lead.find('.language-switch').exists()).toBe(true);
+    expect(left.find('.app-brand').exists()).toBe(true);
+    expect(left.find('.language-switch').exists()).toBe(false);
+    expect(left.find('.compile-button').exists()).toBe(false);
+
+    const compile = right.find('.compile-button');
+    const language = right.find('.language-switch');
+
+    expect(compile.exists()).toBe(true);
+    expect(language.exists()).toBe(true);
+
+    const buttons = right.findAll('.viewer-toolbar__btn');
+    const cfg = buttons[0]?.element;
+    const pause = buttons[1]?.element;
+
+    if (!cfg || !pause) throw new Error('viewer controls not found');
+
+    expect(
+      compile.element.compareDocumentPosition(cfg) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      pause.compareDocumentPosition(language.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    wrapper.unmount();
+  });
+
+  it('translates the compile action', async () => {
+    i18n.global.locale.value = 'pt-BR';
+
+    const wrapper = await mountView();
+
+    expect(wrapper.find('.compile-button').text()).toContain('Compilar');
 
     wrapper.unmount();
   });

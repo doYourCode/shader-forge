@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { CirclePlay } from 'lucide-vue-next';
-
 import type {
   EditorTab,
   EditorTabGroup,
@@ -19,7 +17,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'switch', id: EditorTabId): void;
-  (e: 'compile'): void;
   (e: 'load-example', id: string): void;
 }>();
 </script>
@@ -53,15 +50,6 @@ const emit = defineEmits<{
 
     <div class="editor-toolbar__actions">
       <ShaderExamplePicker @pick="emit('load-example', $event)" />
-
-      <button
-        type="button"
-        class="editor-toolbar__compile"
-        @click="emit('compile')"
-      >
-        <CirclePlay :size="13" aria-hidden="true" />
-        <span>Compile</span>
-      </button>
     </div>
   </div>
 </template>
@@ -127,34 +115,5 @@ const emit = defineEmits<{
   align-items: center;
   gap: 6px;
   margin-left: auto;
-}
-
-.editor-toolbar__compile {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 14px;
-  background: var(--action-primary);
-  color: var(--action-primary-contrast);
-  border: 1px solid var(--action-primary);
-  border-radius: 4px;
-  font-family: var(--font-ui);
-  font-size: var(--font-size-ui);
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(152, 195, 121, 0.3);
-  transition:
-    background 0.12s ease,
-    border-color 0.12s ease;
-}
-
-.editor-toolbar__compile:hover {
-  background: var(--action-primary-hover);
-  border-color: var(--action-primary-hover);
-}
-
-.editor-toolbar__compile:active {
-  background: var(--action-primary-active);
-  border-color: var(--action-primary-active);
 }
 </style>

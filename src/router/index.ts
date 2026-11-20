@@ -24,7 +24,7 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'landing',
     component: () => import('@/views/LandingView.vue'),
-    meta: { headerTitleKey: 'app.tagline', id: 'landing' },
+    meta: { id: 'landing' },
   },
   {
     path: '/docs/:slug?',
@@ -36,7 +36,7 @@ const routes: RouteRecordRaw[] = [
     path: '/knowledge/:slug?',
     name: 'knowledge',
     component: () => import('@/views/KnowledgeView.vue'),
-    meta: { headerTitleKey: 'app.tagline', id: 'knowledge' },
+    meta: { id: 'knowledge' },
   },
   {
     path: '/editor',

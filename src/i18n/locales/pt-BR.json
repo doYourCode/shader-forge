@@ -1,7 +1,6 @@
 {
   "app": {
     "title": "shaderForge®",
-    "tagline": "Base de conhecimento sobre shaders",
     "run": "Executar Shader",
     "documentation": "Documentação",
     "home": "Ir para a página inicial",
@@ -62,6 +61,9 @@
     }
   },
   "editor": {
+    "compile": "Compilar",
+    "pause": "Pausar",
+    "resume": "Retomar",
     "status": {
       "idle": "⚪ Ocioso",
       "ready": "🟢 Pronto",

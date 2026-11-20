@@ -21,6 +21,7 @@ import type {
   UserUniformStage,
   UserUniformValue,
 } from '@/core/models/userUniform';
+import CompileButton from '@/components/shader/CompileButton.vue';
 import EditorToolbar from '@/components/shader/EditorToolbar.vue';
 import ViewerToolbar from '@/components/shader/ViewerToolbar.vue';
 import ViewerScenePanel from '@/components/shader/ViewerScenePanel.vue';
@@ -230,12 +231,10 @@ function togglePause() {
         :tabs="editorTabs"
         :active="activeTab"
         @switch="switchTab"
-        @compile="compile"
         @load-example="loadExample"
       >
         <template #brand>
           <AppBrand />
-          <LanguageSwitch />
         </template>
       </EditorToolbar>
       <PostEffectPanel
@@ -279,7 +278,15 @@ function togglePause() {
         :paused="paused"
         @toggle-wireframe="toggleWireframe"
         @toggle-pause="togglePause"
-      />
+      >
+        <template #lead>
+          <CompileButton @compile="compile" />
+        </template>
+
+        <template #trailing>
+          <LanguageSwitch />
+        </template>
+      </ViewerToolbar>
       <div ref="canvasWrapRef" class="shader-editor__canvas-wrap">
         <canvas ref="canvasRef" class="shader-editor__canvas" />
 
@@ -378,6 +385,13 @@ function togglePause() {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+}
+
+/* The split border belongs to the workspace below the toolbar, not to the
+   chrome: the two toolbars form one continuous band across the top. */
+.shader-editor__post-panel,
+.shader-editor__editor-host,
+.shader-editor__user-data {
   border-right: 1px solid var(--border-subtle);
 }
 

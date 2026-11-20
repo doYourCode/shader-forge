@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ChevronDown, Pause, Play, Settings } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -11,6 +12,15 @@ const emit = defineEmits<{
   (e: 'toggle-wireframe'): void;
   (e: 'toggle-pause'): void;
 }>();
+
+defineSlots<{
+  /** Controls pinned to the left edge, before the viewer controls. */
+  lead?: () => unknown;
+  /** Controls pinned after the viewer controls, at the far right. */
+  trailing?: () => unknown;
+}>();
+
+const { t } = useI18n();
 
 const menuId = useId();
 
@@ -104,63 +114,75 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="viewer-toolbar">
-    <div class="viewer-toolbar__group">
-      <div ref="rootRef" class="viewer-toolbar__cfg">
-        <button
-          ref="triggerRef"
-          type="button"
-          class="viewer-toolbar__btn"
-          :class="{ 'viewer-toolbar__btn--active': props.wireframe }"
-          aria-haspopup="menu"
-          :aria-expanded="menuOpen"
-          :aria-controls="menuOpen ? menuId : undefined"
-          @click="toggleMenu"
-          @keydown="handleTriggerKeydown"
-        >
-          <Settings :size="13" aria-hidden="true" />
-          <span>Cfg</span>
-          <ChevronDown
-            class="viewer-toolbar__chevron"
-            :size="11"
-            aria-hidden="true"
-          />
-        </button>
+    <div v-if="$slots.lead" class="viewer-toolbar__lead">
+      <slot name="lead" />
+    </div>
 
-        <ul
-          v-if="menuOpen"
-          :id="menuId"
-          ref="menuRef"
-          class="viewer-toolbar__menu"
-          role="menu"
-          aria-label="Viewer settings"
-          @keydown="handleMenuKeydown"
+    <div class="viewer-toolbar__end">
+      <div class="viewer-toolbar__group">
+        <div ref="rootRef" class="viewer-toolbar__cfg">
+          <button
+            ref="triggerRef"
+            type="button"
+            class="viewer-toolbar__btn"
+            :class="{ 'viewer-toolbar__btn--active': props.wireframe }"
+            aria-haspopup="menu"
+            :aria-expanded="menuOpen"
+            :aria-controls="menuOpen ? menuId : undefined"
+            @click="toggleMenu"
+            @keydown="handleTriggerKeydown"
+          >
+            <Settings :size="13" aria-hidden="true" />
+            <span>Cfg</span>
+            <ChevronDown
+              class="viewer-toolbar__chevron"
+              :size="11"
+              aria-hidden="true"
+            />
+          </button>
+
+          <ul
+            v-if="menuOpen"
+            :id="menuId"
+            ref="menuRef"
+            class="viewer-toolbar__menu"
+            role="menu"
+            aria-label="Viewer settings"
+            @keydown="handleMenuKeydown"
+          >
+            <li role="none">
+              <button
+                type="button"
+                role="menuitemcheckbox"
+                class="viewer-toolbar__menu-item"
+                :aria-checked="props.wireframe"
+                @click="toggleWireframe"
+              >
+                <span class="viewer-toolbar__menu-check" aria-hidden="true">
+                  {{ props.wireframe ? '✓' : '' }}
+                </span>
+                <span>Toggle Wireframe</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <button
+          class="viewer-toolbar__btn"
+          :class="{ 'viewer-toolbar__btn--active': props.paused }"
+          @click="emit('toggle-pause')"
         >
-          <li role="none">
-            <button
-              type="button"
-              role="menuitemcheckbox"
-              class="viewer-toolbar__menu-item"
-              :aria-checked="props.wireframe"
-              @click="toggleWireframe"
-            >
-              <span class="viewer-toolbar__menu-check" aria-hidden="true">
-                {{ props.wireframe ? '✓' : '' }}
-              </span>
-              <span>Toggle Wireframe</span>
-            </button>
-          </li>
-        </ul>
+          <Pause v-if="!props.paused" :size="13" aria-hidden="true" />
+          <Play v-else :size="13" aria-hidden="true" />
+          <span>{{
+            props.paused ? t('editor.resume') : t('editor.pause')
+          }}</span>
+        </button>
       </div>
 
-      <button
-        class="viewer-toolbar__btn"
-        :class="{ 'viewer-toolbar__btn--active': props.paused }"
-        @click="emit('toggle-pause')"
-      >
-        <Pause v-if="!props.paused" :size="13" aria-hidden="true" />
-        <Play v-else :size="13" aria-hidden="true" />
-        <span>{{ props.paused ? 'Resume' : 'Pause' }}</span>
-      </button>
+      <div v-if="$slots.trailing" class="viewer-toolbar__trailing">
+        <slot name="trailing" />
+      </div>
     </div>
   </div>
 </template>
@@ -177,10 +199,29 @@ onBeforeUnmount(() => {
   background: var(--bg-elevated);
 }
 
+.viewer-toolbar__lead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.viewer-toolbar__end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .viewer-toolbar__group {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.viewer-toolbar__trailing {
+  display: flex;
+  align-items: center;
 }
 
 .viewer-toolbar__cfg {

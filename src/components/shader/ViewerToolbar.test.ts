@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 
+import { i18n } from '@/i18n';
 import ViewerToolbar from './ViewerToolbar.vue';
 
 const mounted: ReturnType<typeof mount>[] = [];
@@ -11,12 +12,19 @@ function mountToolbar(wireframe = false, paused = false) {
   const wrapper = mount(ViewerToolbar, {
     props: { wireframe, paused },
     attachTo: document.body,
+    global: { plugins: [i18n] },
   });
   mounted.push(wrapper);
   return wrapper;
 }
 
+beforeEach(() => {
+  i18n.global.locale.value = 'en';
+});
+
 afterEach(() => {
+  i18n.global.locale.value = 'en';
+
   while (mounted.length > 0) {
     mounted.pop()?.unmount();
   }
@@ -31,6 +39,30 @@ describe('ViewerToolbar', () => {
     expect(wrapper.text()).toContain('Cfg');
     expect(wrapper.text()).toContain('Pause');
     expect(wrapper.text()).not.toContain('Social');
+  });
+
+  it('places the lead and trailing slots around the viewer controls', () => {
+    const wrapper = mount(ViewerToolbar, {
+      props: { wireframe: false, paused: false },
+      slots: {
+        lead: '<button class="test-lead">Compile</button>',
+        trailing: '<span class="test-trailing">BR</span>',
+      },
+      attachTo: document.body,
+      global: { plugins: [i18n] },
+    });
+    mounted.push(wrapper);
+
+    const lead = wrapper.find('.test-lead').element;
+    const cfg = wrapper.find('.viewer-toolbar__btn').element;
+    const trailing = wrapper.find('.test-trailing').element;
+
+    expect(
+      lead.compareDocumentPosition(cfg) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      cfg.compareDocumentPosition(trailing) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('moves the wireframe toggle into the Cfg menu', async () => {
@@ -74,6 +106,16 @@ describe('ViewerToolbar', () => {
 
     expect(wrapper.text()).toContain('Resume');
     expect(wrapper.findAll('.viewer-toolbar__btn--active')).toHaveLength(1);
+  });
+
+  it('translates the pause toggle in Portuguese', () => {
+    i18n.global.locale.value = 'pt-BR';
+
+    const running = mountToolbar();
+    const paused = mountToolbar(false, true);
+
+    expect(running.text()).toContain('Pausar');
+    expect(paused.text()).toContain('Retomar');
   });
 
   it('closes on Escape and returns focus to the trigger', async () => {

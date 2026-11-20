@@ -395,7 +395,7 @@ describe('EnvironmentController', () => {
   it('passes the declared asset format to the texture factory', async () => {
     const harness = createHarness();
 
-    harness.controller.load(BAKED);
+    void harness.controller.load(BAKED);
     harness.callbacks.get(BAKED.url)!.onLoad();
     await flush();
 

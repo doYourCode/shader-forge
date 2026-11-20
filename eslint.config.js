@@ -93,10 +93,10 @@ export default tseslint.config(
           ignoreRestSiblings: true,
         },
       ],
-      // High-signal type-aware rules: warnings until the existing backlog is
-      // cleared, so `npm run lint` stays green and non-blocking.
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-misused-promises': 'warn',
+      // Async correctness is blocking: an unhandled or misused promise in the
+      // load/compile pipeline can silently drop a failure.
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/consistent-type-imports': [
         'warn',

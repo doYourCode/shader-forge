@@ -173,7 +173,7 @@ function mountUi(): void {
     URL.revokeObjectURL(url);
   };
 
-  bakeButton?.addEventListener('click', async () => {
+  const runBake = async (): Promise<void> => {
     if (!bakeButton || !results) return;
 
     bakeButton.setAttribute('disabled', 'true');
@@ -203,6 +203,10 @@ function mountUi(): void {
     } finally {
       bakeButton.removeAttribute('disabled');
     }
+  };
+
+  bakeButton?.addEventListener('click', () => {
+    void runBake();
   });
 }
 

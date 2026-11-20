@@ -15,6 +15,7 @@ import {
   setInjectedBlockEffect,
   type EditorDiagnostic,
 } from './editorExtensions';
+import { shaderSyntaxHighlighting } from './syntaxTheme';
 
 export type { EditorDiagnostic } from './editorExtensions';
 
@@ -52,6 +53,7 @@ export class EditorManager {
       keymap.of([...defaultKeymap, ...historyKeymap]),
       glsl(),
       oneDark,
+      shaderSyntaxHighlighting,
       ...diagnosticsExtensions,
       ...injectedBlockExtensions,
       this.readonlyCompartment.of([

@@ -90,8 +90,8 @@ onBeforeUnmount(() => {
 .copy-shader__button:hover,
 .copy-shader__button:focus-visible {
   background: var(--bg-elevated);
-  border-color: rgba(97, 175, 239, 0.55);
-  color: var(--accent-blue);
+  border-color: rgba(152, 195, 121, 0.55);
+  color: var(--accent-ui);
 }
 
 .copy-shader__button--copied {
@@ -116,8 +116,8 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border);
   border-radius: 4px;
   box-shadow: 0 8px 24px var(--shadow);
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   pointer-events: none;
   opacity: 0;
   visibility: hidden;

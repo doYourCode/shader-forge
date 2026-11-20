@@ -1,130 +1,104 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { createI18n } from 'vue-i18n';
+import { nextTick } from 'vue';
 
-import en from '@/i18n/locales/en.json';
 import ViewerToolbar from './ViewerToolbar.vue';
-import type { PreviewHdri } from '@/core/models/previewHdri';
-import type { PreviewModel } from '@/core/models/previewModel';
 
-/**
- * Labels are deliberately not the rendered text: option text must come from
- * the fresh English i18n instance, not from the catalog's English label.
- */
-const MODELS: readonly PreviewModel[] = [
-  { id: 'monkey', label: 'catalog-monkey', url: '/monkey.glb' },
-  { id: 'sphere', label: 'catalog-sphere', url: '/sphere.glb' },
-  { id: 'cube', label: 'catalog-cube', url: '/cube.glb' },
-];
+const mounted: ReturnType<typeof mount>[] = [];
 
-const HDRIS: readonly PreviewHdri[] = [
-  {
-    id: 'wooden-studio-17',
-    label: 'catalog-studio',
-    url: '/studio.env',
-    format: 'env',
-  },
-  {
-    id: 'peppermint-powerplant',
-    label: 'catalog-peppermint',
-    url: '/peppermint.env',
-    format: 'env',
-  },
-];
-
-function mountToolbar(
-  activeModelId = 'monkey',
-  activeHdriId = 'wooden-studio-17',
-) {
-  // The app singleton boots in pt-BR; this test pins a fresh English instance.
-  const i18n = createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: { en },
+function mountToolbar(wireframe = false, paused = false) {
+  const wrapper = mount(ViewerToolbar, {
+    props: { wireframe, paused },
+    attachTo: document.body,
   });
-
-  return mount(ViewerToolbar, {
-    props: {
-      models: MODELS,
-      activeModelId,
-      hdris: HDRIS,
-      activeHdriId,
-      wireframe: false,
-      paused: false,
-    },
-    global: { plugins: [i18n] },
-  });
+  mounted.push(wrapper);
+  return wrapper;
 }
 
+afterEach(() => {
+  while (mounted.length > 0) {
+    mounted.pop()?.unmount();
+  }
+});
+
 describe('ViewerToolbar', () => {
-  it('renders translated models in a dropdown inside the Models fieldset', () => {
-    const wrapper = mountToolbar();
-    const fieldset = wrapper.find('fieldset.viewer-toolbar__models');
-    const select = fieldset.find('select.viewer-toolbar__model-select');
-
-    expect(fieldset.exists()).toBe(true);
-    expect(fieldset.find('legend').text()).toBe('Models');
-    expect(select.exists()).toBe(true);
-    expect(fieldset.findAll('button')).toHaveLength(0);
-    expect(select.findAll('option').map((option) => option.text())).toEqual([
-      'Monkey',
-      'Sphere',
-      'Cube',
-    ]);
-    expect((select.element as HTMLSelectElement).value).toBe('monkey');
-  });
-
-  it('emits the selected model id when the dropdown changes', async () => {
-    const wrapper = mountToolbar('sphere');
-    const select = wrapper.find('select.viewer-toolbar__model-select');
-
-    expect((select.element as HTMLSelectElement).value).toBe('sphere');
-
-    await select.setValue('cube');
-
-    expect(wrapper.emitted('select-model')?.[0]).toEqual(['cube']);
-  });
-
-  it('renders translated HDRIs in a dropdown inside the HDRI fieldset', () => {
-    const wrapper = mountToolbar();
-    const fieldset = wrapper.find('fieldset.viewer-toolbar__hdri');
-    const select = fieldset.find('select.viewer-toolbar__hdri-select');
-
-    expect(fieldset.exists()).toBe(true);
-    expect(fieldset.find('legend').text()).toBe('HDRI');
-    expect(select.exists()).toBe(true);
-    expect(fieldset.findAll('button')).toHaveLength(0);
-    expect(select.findAll('option').map((option) => option.text())).toEqual([
-      'Wooden Studio 17',
-      'Peppermint Powerplant',
-    ]);
-    expect((select.element as HTMLSelectElement).value).toBe(
-      'wooden-studio-17',
-    );
-  });
-
-  it('emits the selected HDRI id when the dropdown changes', async () => {
-    const wrapper = mountToolbar();
-    const select = wrapper.find('select.viewer-toolbar__hdri-select');
-
-    expect((select.element as HTMLSelectElement).value).toBe(
-      'wooden-studio-17',
-    );
-
-    await select.setValue('peppermint-powerplant');
-
-    expect(wrapper.emitted('select-hdri')?.[0]).toEqual([
-      'peppermint-powerplant',
-    ]);
-  });
-
-  it('leaves the legends and buttons untranslated', () => {
+  it('renders only the viewer controls, with no asset selectors', () => {
     const wrapper = mountToolbar();
 
-    expect(wrapper.text()).toContain('Models');
-    expect(wrapper.text()).toContain('HDRI');
-    expect(wrapper.text()).toContain('Wireframe');
+    expect(wrapper.findAll('fieldset')).toHaveLength(0);
+    expect(wrapper.findAll('select')).toHaveLength(0);
+    expect(wrapper.text()).toContain('Cfg');
     expect(wrapper.text()).toContain('Pause');
+    expect(wrapper.text()).not.toContain('Social');
+  });
+
+  it('moves the wireframe toggle into the Cfg menu', async () => {
+    const wrapper = mountToolbar(false);
+
+    await wrapper.find('.viewer-toolbar__btn').trigger('click');
+    await nextTick();
+
+    const items = wrapper.findAll('[role="menuitemcheckbox"]');
+
+    expect(items).toHaveLength(1);
+    expect(items[0]!.text()).toBe('Toggle Wireframe');
+    expect(items[0]!.attributes('aria-checked')).toBe('false');
+  });
+
+  it('reflects the wireframe state on the menu item', async () => {
+    const wrapper = mountToolbar(true);
+
+    await wrapper.find('.viewer-toolbar__btn').trigger('click');
+    await nextTick();
+
+    const item = wrapper.find('[role="menuitemcheckbox"]');
+
+    expect(item.attributes('aria-checked')).toBe('true');
+    expect(item.text()).toBe('✓Toggle Wireframe');
+  });
+
+  it('emits toggle-wireframe and closes the menu', async () => {
+    const wrapper = mountToolbar();
+
+    await wrapper.find('.viewer-toolbar__btn').trigger('click');
+    await nextTick();
+    await wrapper.find('[role="menuitemcheckbox"]').trigger('click');
+
+    expect(wrapper.emitted('toggle-wireframe')).toHaveLength(1);
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false);
+  });
+
+  it('reflects the paused state on the pause toggle', () => {
+    const wrapper = mountToolbar(false, true);
+
+    expect(wrapper.text()).toContain('Resume');
+    expect(wrapper.findAll('.viewer-toolbar__btn--active')).toHaveLength(1);
+  });
+
+  it('closes on Escape and returns focus to the trigger', async () => {
+    const wrapper = mountToolbar();
+
+    const trigger = wrapper.find('.viewer-toolbar__btn');
+    await trigger.trigger('click');
+    await nextTick();
+
+    await wrapper.find('[role="menu"]').trigger('keydown', { key: 'Escape' });
+    await nextTick();
+
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false);
+    expect(document.activeElement).toBe(trigger.element);
+  });
+
+  it('closes when a pointer goes down outside the menu', async () => {
+    const wrapper = mountToolbar();
+
+    await wrapper.find('.viewer-toolbar__btn').trigger('click');
+    await nextTick();
+
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    await nextTick();
+
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false);
   });
 });

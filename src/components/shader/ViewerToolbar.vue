@@ -1,95 +1,157 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
-
-import { assetLabelKey } from '@/core/assets/labels';
-import type { PreviewHdri } from '@/core/models/previewHdri';
-import type { PreviewModel } from '@/core/models/previewModel';
-import { Pause, Play, Settings } from 'lucide-vue-next';
-
-const { t } = useI18n();
+import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue';
+import { ChevronDown, Pause, Play, Settings } from 'lucide-vue-next';
 
 const props = defineProps<{
-  models: readonly PreviewModel[];
-  activeModelId: string;
-  hdris: readonly PreviewHdri[];
-  activeHdriId: string;
   wireframe: boolean;
   paused: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: 'select-model', id: string): void;
-  (e: 'select-hdri', id: string): void;
   (e: 'toggle-wireframe'): void;
   (e: 'toggle-pause'): void;
 }>();
 
-function handleModelChange(event: Event): void {
-  const select = event.currentTarget;
-  if (!(select instanceof HTMLSelectElement)) return;
+const menuId = useId();
 
-  emit('select-model', select.value);
+const rootRef = ref<HTMLElement | null>(null);
+const triggerRef = ref<HTMLButtonElement | null>(null);
+const menuRef = ref<HTMLUListElement | null>(null);
+
+const menuOpen = ref(false);
+
+function focusMenuItem(): void {
+  menuRef.value
+    ?.querySelector<HTMLButtonElement>('[role="menuitemcheckbox"]')
+    ?.focus();
 }
 
-function handleHdriChange(event: Event): void {
-  const select = event.currentTarget;
-  if (!(select instanceof HTMLSelectElement)) return;
+function openMenu(): void {
+  if (!menuOpen.value) {
+    menuOpen.value = true;
+  }
 
-  emit('select-hdri', select.value);
+  void nextTick(focusMenuItem);
 }
+
+function closeMenu(restoreFocus = false): void {
+  if (!menuOpen.value) return;
+
+  menuOpen.value = false;
+
+  if (restoreFocus) {
+    triggerRef.value?.focus();
+  }
+}
+
+function toggleMenu(): void {
+  if (menuOpen.value) {
+    closeMenu();
+    return;
+  }
+
+  openMenu();
+}
+
+function toggleWireframe(): void {
+  emit('toggle-wireframe');
+  closeMenu(true);
+}
+
+function handleTriggerKeydown(event: KeyboardEvent): void {
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault();
+      openMenu();
+      break;
+    case 'Escape':
+      closeMenu();
+      break;
+  }
+}
+
+function handleMenuKeydown(event: KeyboardEvent): void {
+  switch (event.key) {
+    case 'Escape':
+      event.preventDefault();
+      closeMenu(true);
+      break;
+    case 'Tab':
+      closeMenu(true);
+      break;
+  }
+}
+
+function handleDocumentPointerDown(event: PointerEvent): void {
+  if (!menuOpen.value) return;
+
+  const root = rootRef.value;
+  if (root && event.target instanceof Node && root.contains(event.target)) {
+    return;
+  }
+
+  closeMenu();
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown);
+});
 </script>
 
 <template>
   <div class="viewer-toolbar">
     <div class="viewer-toolbar__group">
-      <fieldset class="viewer-toolbar__models">
-        <legend class="viewer-toolbar__models-legend">Models</legend>
-
-        <select
-          class="viewer-toolbar__model-select"
-          aria-label="Preview model"
-          :value="props.activeModelId"
-          @change="handleModelChange"
+      <div ref="rootRef" class="viewer-toolbar__cfg">
+        <button
+          ref="triggerRef"
+          type="button"
+          class="viewer-toolbar__btn"
+          :class="{ 'viewer-toolbar__btn--active': props.wireframe }"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen"
+          :aria-controls="menuOpen ? menuId : undefined"
+          @click="toggleMenu"
+          @keydown="handleTriggerKeydown"
         >
-          <option
-            v-for="model in props.models"
-            :key="model.id"
-            :value="model.id"
-          >
-            {{ t(assetLabelKey('models', model.id)) }}
-          </option>
-        </select>
-      </fieldset>
+          <Settings :size="13" aria-hidden="true" />
+          <span>Cfg</span>
+          <ChevronDown
+            class="viewer-toolbar__chevron"
+            :size="11"
+            aria-hidden="true"
+          />
+        </button>
 
-      <fieldset class="viewer-toolbar__hdri">
-        <legend class="viewer-toolbar__hdri-legend">HDRI</legend>
-
-        <select
-          class="viewer-toolbar__hdri-select"
-          aria-label="Preview HDRI"
-          :value="props.activeHdriId"
-          @change="handleHdriChange"
+        <ul
+          v-if="menuOpen"
+          :id="menuId"
+          ref="menuRef"
+          class="viewer-toolbar__menu"
+          role="menu"
+          aria-label="Viewer settings"
+          @keydown="handleMenuKeydown"
         >
-          <option v-for="hdri in props.hdris" :key="hdri.id" :value="hdri.id">
-            {{ t(assetLabelKey('hdris', hdri.id)) }}
-          </option>
-        </select>
-      </fieldset>
-    </div>
+          <li role="none">
+            <button
+              type="button"
+              role="menuitemcheckbox"
+              class="viewer-toolbar__menu-item"
+              :aria-checked="props.wireframe"
+              @click="toggleWireframe"
+            >
+              <span class="viewer-toolbar__menu-check" aria-hidden="true">
+                {{ props.wireframe ? '✓' : '' }}
+              </span>
+              <span>Toggle Wireframe</span>
+            </button>
+          </li>
+        </ul>
+      </div>
 
-    <div class="viewer-toolbar__group">
-      <button
-        class="viewer-toolbar__btn"
-        :class="{ 'viewer-toolbar__btn--active': props.wireframe }"
-        @click="emit('toggle-wireframe')"
-      >
-        Wireframe
-      </button>
-      <button class="viewer-toolbar__btn">
-        <Settings :size="13" aria-hidden="true" />
-        <span>Cfg</span>
-      </button>
-      <button class="viewer-toolbar__btn">Social</button>
       <button
         class="viewer-toolbar__btn"
         :class="{ 'viewer-toolbar__btn--active': props.paused }"
@@ -107,7 +169,7 @@ function handleHdriChange(event: Event): void {
 .viewer-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-wrap: wrap;
   row-gap: 4px;
   padding: 6px 10px;
@@ -121,59 +183,8 @@ function handleHdriChange(event: Event): void {
   gap: 4px;
 }
 
-.viewer-toolbar__models,
-.viewer-toolbar__hdri {
-  margin: 0;
-  padding: 0 4px 2px;
-  min-inline-size: 0;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-}
-
-.viewer-toolbar__hdri {
-  max-width: 190px;
-}
-
-.viewer-toolbar__models-legend,
-.viewer-toolbar__hdri-legend {
-  padding: 0 4px;
-  margin-left: 3px;
-  color: var(--fg-subtle);
-  font-family: var(--font-mono);
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-  user-select: none;
-  transition: color 0.12s ease;
-}
-
-.viewer-toolbar__model-select,
-.viewer-toolbar__hdri-select {
-  padding: 5px 12px;
-  background: transparent;
-  color: var(--fg-muted);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  cursor: pointer;
-  transition:
-    color 0.12s ease,
-    background 0.12s ease,
-    border-color 0.12s ease;
-}
-
-.viewer-toolbar__hdri-select {
-  max-width: 100%;
-}
-
-.viewer-toolbar__model-select:hover,
-.viewer-toolbar__hdri-select:hover {
-  border-color: #4b5263;
-  color: var(--fg-strong);
+.viewer-toolbar__cfg {
+  position: relative;
 }
 
 .viewer-toolbar__btn {
@@ -185,8 +196,8 @@ function handleHdriChange(event: Event): void {
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui);
   cursor: pointer;
   transition:
     color 0.12s ease,
@@ -202,7 +213,57 @@ function handleHdriChange(event: Event): void {
 
 .viewer-toolbar__btn--active {
   background: #404754;
-  border-color: var(--accent-blue);
+  border-color: var(--accent-ui);
   color: var(--fg-strong);
+}
+
+.viewer-toolbar__chevron {
+  flex: none;
+}
+
+.viewer-toolbar__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 184px;
+  margin: 0;
+  padding: 3px;
+  list-style: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+.viewer-toolbar__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.viewer-toolbar__menu-item:hover,
+.viewer-toolbar__menu-item:focus-visible {
+  background: var(--bg-raised);
+  color: var(--fg-strong);
+  outline: none;
+}
+
+.viewer-toolbar__menu-check {
+  width: 10px;
+  flex: none;
+  color: var(--accent-ui);
+  font-size: 11px;
+  line-height: 1;
 }
 </style>

@@ -6,6 +6,9 @@ import { previewModels } from './previewModels';
 /** The glob map is the authority on which mesh files exist. */
 const MESH_URLS = assetUrlMaps.meshes;
 
+/** The glob map is the authority on which model previews exist. */
+const MODEL_THUMBNAILS = assetUrlMaps.modelThumbnails;
+
 describe('previewModels', () => {
   it('uses unique ids', () => {
     const ids = previewModels.all.map((model) => model.id);
@@ -34,6 +37,14 @@ describe('previewModels', () => {
     // Both directions: no dead catalog entry and no orphan bundled file.
     expect(new Set(claimedUrls)).toEqual(new Set(bundledUrls));
     expect(new Set(claimedUrls).size).toBe(claimedUrls.length);
+  });
+
+  it('maps every catalog thumbnail to a bundled PNG and claims every file', () => {
+    const bundledUrls = Object.values(MODEL_THUMBNAILS);
+    const claimedUrls = previewModels.all.map((model) => model.thumbnailUrl);
+
+    expect(claimedUrls.every((url) => Boolean(url))).toBe(true);
+    expect(new Set(claimedUrls)).toEqual(new Set(bundledUrls));
   });
 
   it('has a stable id contract', () => {

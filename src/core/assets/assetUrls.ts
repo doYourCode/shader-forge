@@ -23,7 +23,22 @@ const MESH_URLS = import.meta.glob('/src/assets/meshes/*.glb', {
   eager: true,
 }) as Readonly<Record<string, string>>;
 
+const MODEL_THUMBNAIL_URLS = import.meta.glob(
+  '/src/assets/meshes/thumbs/*.png',
+  {
+    query: '?url&no-inline',
+    import: 'default',
+    eager: true,
+  },
+) as Readonly<Record<string, string>>;
+
 const ENVIRONMENT_URLS = import.meta.glob('/src/assets/hdri/env/*.env', {
+  query: '?url&no-inline',
+  import: 'default',
+  eager: true,
+}) as Readonly<Record<string, string>>;
+
+const HDRI_THUMBNAIL_URLS = import.meta.glob('/src/assets/hdri/thumbs/*.png', {
   query: '?url&no-inline',
   import: 'default',
   eager: true,
@@ -63,7 +78,9 @@ const EXAMPLE_THUMBNAIL_URLS = import.meta.glob(
  */
 export const assetUrlMaps = Object.freeze({
   meshes: Object.freeze(MESH_URLS),
+  modelThumbnails: Object.freeze(MODEL_THUMBNAIL_URLS),
   environments: Object.freeze(ENVIRONMENT_URLS),
+  hdriThumbnails: Object.freeze(HDRI_THUMBNAIL_URLS),
   textures: Object.freeze(TEXTURE_URLS),
   textureThumbnails: Object.freeze(TEXTURE_THUMBNAIL_URLS),
   exampleThumbnails: Object.freeze(EXAMPLE_THUMBNAIL_URLS),
@@ -74,9 +91,19 @@ export function resolveMeshUrl(path: string): string {
   return resolveAssetUrl(MESH_URLS, path);
 }
 
+/** Resolves a model preview path such as `meshes/thumbs/monkey.png`. */
+export function resolveModelThumbnailUrl(path: string): string {
+  return resolveAssetUrl(MODEL_THUMBNAIL_URLS, path);
+}
+
 /** Resolves a baked environment path such as `hdri/env/wooden-studio-17.env`. */
 export function resolveEnvUrl(path: string): string {
   return resolveAssetUrl(ENVIRONMENT_URLS, path);
+}
+
+/** Resolves an environment preview path such as `hdri/thumbs/mossy_forest.png`. */
+export function resolveHdriThumbnailUrl(path: string): string {
+  return resolveAssetUrl(HDRI_THUMBNAIL_URLS, path);
 }
 
 /** Resolves a texture path such as `textures/Uv_checker_01.png`. */

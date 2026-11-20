@@ -350,7 +350,7 @@ function onNewKindChange(event: Event): void {
 .user-data__title {
   margin: 0;
   color: var(--fg-strong);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -379,8 +379,8 @@ function onNewKindChange(event: Event): void {
 .user-data__add-title {
   margin: 0 4px 0 0;
   color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -421,15 +421,15 @@ function onNewKindChange(event: Event): void {
   color: var(--fg-strong);
   border: 1px solid #4b5263;
   border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   cursor: pointer;
 }
 
 .user-data__add-button:hover,
 .user-data__remove:hover {
   background: #4b5263;
-  border-color: var(--accent-blue);
+  border-color: var(--accent-ui);
 }
 
 .user-data__add-error,
@@ -466,8 +466,8 @@ function onNewKindChange(event: Event): void {
   padding: 6px 8px;
   color: var(--fg-subtle);
   border-bottom: 1px solid var(--border);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-align: left;
@@ -524,8 +524,8 @@ function onNewKindChange(event: Event): void {
 .user-data__generated-title {
   margin: 0;
   color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -554,8 +554,8 @@ function onNewKindChange(event: Event): void {
 .user-data__generated-stage {
   margin: 0;
   color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   font-weight: 600;
 }
 

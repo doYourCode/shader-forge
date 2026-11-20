@@ -56,12 +56,22 @@ describe('AppLayout footer', () => {
     i18n.global.locale.value = 'en';
   });
 
-  it('does not render the footer on the editor page', async () => {
+  it('does not render the header or the footer on the editor page', async () => {
     const wrapper = await mountAt('/editor');
 
     expect(wrapper.find('.app-footer').exists()).toBe(false);
-    expect(wrapper.find('.app-header').exists()).toBe(true);
+    expect(wrapper.find('.app-header').exists()).toBe(false);
     expect(wrapper.find('.routed-view').exists()).toBe(true);
+
+    wrapper.unmount();
+  });
+
+  it('keeps the branded header on the other screens', async () => {
+    const wrapper = await mountAt('/docs/shader-editor');
+
+    expect(wrapper.find('.app-header').exists()).toBe(true);
+    expect(wrapper.find('.app-brand').exists()).toBe(true);
+    expect(wrapper.find('.language-switch').exists()).toBe(true);
 
     wrapper.unmount();
   });

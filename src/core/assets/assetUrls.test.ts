@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   resolveEnvUrl,
   resolveExampleThumbnailUrl,
+  resolveHdriThumbnailUrl,
   resolveMeshUrl,
+  resolveModelThumbnailUrl,
   resolveTextureThumbnailUrl,
   resolveTextureUrl,
 } from './assetUrls';
@@ -14,7 +16,19 @@ const MESHES = import.meta.glob('/src/assets/meshes/*.glb', {
   eager: true,
 }) as Record<string, string>;
 
+const MODEL_THUMBNAILS = import.meta.glob('/src/assets/meshes/thumbs/*.png', {
+  query: '?url&no-inline',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
 const ENVIRONMENTS = import.meta.glob('/src/assets/hdri/env/*.env', {
+  query: '?url&no-inline',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
+const HDRI_THUMBNAILS = import.meta.glob('/src/assets/hdri/thumbs/*.png', {
   query: '?url&no-inline',
   import: 'default',
   eager: true,
@@ -52,8 +66,14 @@ describe('asset URL resolvers', () => {
     expect(resolveMeshUrl('meshes/monkey.glb')).toBe(
       MESHES['/src/assets/meshes/monkey.glb'],
     );
+    expect(resolveModelThumbnailUrl('meshes/thumbs/monkey.png')).toBe(
+      MODEL_THUMBNAILS['/src/assets/meshes/thumbs/monkey.png'],
+    );
     expect(resolveEnvUrl('hdri/env/wooden-studio-17.env')).toBe(
       ENVIRONMENTS['/src/assets/hdri/env/wooden-studio-17.env'],
+    );
+    expect(resolveHdriThumbnailUrl('hdri/thumbs/wooden_studio_17.png')).toBe(
+      HDRI_THUMBNAILS['/src/assets/hdri/thumbs/wooden_studio_17.png'],
     );
     expect(resolveTextureUrl('textures/Uv_checker_01.png')).toBe(
       TEXTURES['/src/assets/textures/Uv_checker_01.png'],
@@ -69,8 +89,14 @@ describe('asset URL resolvers', () => {
     for (const [key, url] of Object.entries(MESHES)) {
       expect(resolveMeshUrl(pathOf(key))).toBe(url);
     }
+    for (const [key, url] of Object.entries(MODEL_THUMBNAILS)) {
+      expect(resolveModelThumbnailUrl(pathOf(key))).toBe(url);
+    }
     for (const [key, url] of Object.entries(ENVIRONMENTS)) {
       expect(resolveEnvUrl(pathOf(key))).toBe(url);
+    }
+    for (const [key, url] of Object.entries(HDRI_THUMBNAILS)) {
+      expect(resolveHdriThumbnailUrl(pathOf(key))).toBe(url);
     }
     for (const [key, url] of Object.entries(TEXTURES)) {
       expect(resolveTextureUrl(pathOf(key))).toBe(url);

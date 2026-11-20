@@ -236,8 +236,8 @@ onBeforeUnmount(() => {
   color: var(--fg-muted);
   border: 1px solid transparent;
   border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui);
   cursor: pointer;
   transition:
     color 0.12s ease,

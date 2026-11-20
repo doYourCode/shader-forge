@@ -9,11 +9,11 @@ import { TEXTURE_PICKER } from '@/components/shader/texturePickerContext';
 import { EXAMPLE_PICKER } from '@/components/shader/examplePickerContext';
 import { useShaderEditor } from '@/composables/useShaderEditor';
 import {
-  builtInTabGroup,
-  editableTabs,
+  dataTabGroup,
   postTab,
-  userDataTab,
+  stageTabGroup,
   type EditorTab,
+  type EditorTabGroup,
 } from '@/core/models/editorTab';
 import type { ShaderError } from '@/core/models/shaderError';
 import type {
@@ -23,6 +23,9 @@ import type {
 } from '@/core/models/userUniform';
 import EditorToolbar from '@/components/shader/EditorToolbar.vue';
 import ViewerToolbar from '@/components/shader/ViewerToolbar.vue';
+import ViewerScenePanel from '@/components/shader/ViewerScenePanel.vue';
+import AppBrand from '@/components/layout/AppBrand.vue';
+import LanguageSwitch from '@/components/layout/LanguageSwitch.vue';
 import StatusBar from '@/components/shader/StatusBar.vue';
 import UserDataPanel from '@/components/shader/UserDataPanel.vue';
 import PostEffectPanel from '@/components/shader/PostEffectPanel.vue';
@@ -32,6 +35,9 @@ const { t, locale } = useI18n();
 
 const editorHostRef = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+const canvasWrapRef = ref<HTMLElement | null>(null);
+
+let canvasResizeObserver: ResizeObserver | null = null;
 
 /**
  * One picker instance for the view's lifetime: it lazily imports AssetPicker
@@ -60,12 +66,11 @@ const examplePicker = new AssetPickerExamplePicker({
 });
 provide(EXAMPLE_PICKER, examplePicker);
 
-/** The structured user-data tab lives beside the text documents. */
-const editorTabs: readonly EditorTab[] = [
-  ...editableTabs,
-  postTab,
-  userDataTab,
-];
+/** The documents that stand on their own; the rest live in dropdown groups. */
+const editorTabs: readonly EditorTab[] = [postTab];
+
+/** Presentation order: shader stages, then shader data. */
+const editorGroups: readonly EditorTabGroup[] = [stageTabGroup, dataTabGroup];
 
 const {
   activeTab,
@@ -191,11 +196,19 @@ onMounted(() => {
   if (canvasRef.value) {
     mountCanvas(canvasRef.value);
   }
+  // The canvas box can change without a window resize (the viewer toolbar and
+  // the overlay controls reflow at narrow pane widths), and the engine only
+  // resizes on demand.
+  if (canvasWrapRef.value) {
+    canvasResizeObserver = new ResizeObserver(handleResize);
+    canvasResizeObserver.observe(canvasWrapRef.value);
+  }
   window.addEventListener('resize', handleResize);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+  canvasResizeObserver?.disconnect();
   texturePicker.dispose();
   examplePicker.dispose();
 });
@@ -213,13 +226,18 @@ function togglePause() {
   <div class="shader-editor">
     <div class="shader-editor__left">
       <EditorToolbar
+        :groups="editorGroups"
         :tabs="editorTabs"
-        :built-in="builtInTabGroup"
         :active="activeTab"
         @switch="switchTab"
         @compile="compile"
         @load-example="loadExample"
-      />
+      >
+        <template #brand>
+          <AppBrand />
+          <LanguageSwitch />
+        </template>
+      </EditorToolbar>
       <PostEffectPanel
         v-if="activeTab === 'post'"
         class="shader-editor__post-panel"
@@ -257,19 +275,22 @@ function togglePause() {
 
     <div class="shader-editor__right">
       <ViewerToolbar
-        :models="models"
-        :active-model-id="activeModelId"
-        :hdris="hdris"
-        :active-hdri-id="activeHdriId"
         :wireframe="wireframe"
         :paused="paused"
-        @select-model="selectModel"
-        @select-hdri="selectHdri"
         @toggle-wireframe="toggleWireframe"
         @toggle-pause="togglePause"
       />
-      <div class="shader-editor__canvas-wrap">
+      <div ref="canvasWrapRef" class="shader-editor__canvas-wrap">
         <canvas ref="canvasRef" class="shader-editor__canvas" />
+
+        <ViewerScenePanel
+          :models="models"
+          :active-model-id="activeModelId"
+          :hdris="hdris"
+          :active-hdri-id="activeHdriId"
+          @select-model="selectModel"
+          @select-hdri="selectHdri"
+        />
 
         <div
           v-if="loadingText"
@@ -417,8 +438,8 @@ function togglePause() {
   gap: 8px;
   background: rgba(33, 37, 43, 0.72);
   color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui);
   pointer-events: none;
   z-index: 1;
 }
@@ -427,7 +448,7 @@ function togglePause() {
   width: 12px;
   height: 12px;
   border: 2px solid var(--border-subtle);
-  border-top-color: var(--accent-blue);
+  border-top-color: var(--accent-ui);
   border-radius: 50%;
   animation: shader-editor-spin 0.8s linear infinite;
 }
@@ -452,8 +473,8 @@ function togglePause() {
   border-radius: 4px;
   box-shadow: 0 8px 24px var(--shadow);
   color: var(--fg);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui);
 }
 
 .shader-editor__errors-header {
@@ -531,7 +552,7 @@ function togglePause() {
   border-radius: 3px;
   background: rgba(224, 108, 117, 0.14);
   color: var(--accent-red);
-  font-size: 9px;
+  font-size: var(--font-size-label);
   font-weight: 700;
   letter-spacing: 0.06em;
   line-height: 1.5;
@@ -577,22 +598,23 @@ function togglePause() {
 
 .shader-editor__error-title {
   color: var(--fg-strong);
-  font-family: var(--font-sans);
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui);
   font-weight: 600;
 }
 
 .shader-editor__error-message {
   color: var(--fg);
-  font-size: 11.5px;
+  font-family: var(--font-code);
+  font-size: var(--font-size-ui);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .shader-editor__error-advice {
   color: var(--fg-muted);
-  font-family: var(--font-sans);
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   line-height: 1.45;
 }
 

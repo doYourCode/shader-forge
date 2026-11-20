@@ -207,8 +207,8 @@ function onAlphaInput(event: Event): void {
 
 .uniform-value__component-label {
   color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
 }
 
 .uniform-value__color {

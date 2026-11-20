@@ -24,8 +24,44 @@
   --accent-purple: #c678dd;
   --accent-cyan: #56b6c2;
 
+  /* Chrome accent: one hue for the primary action, focus and active state.
+     Blue stays reserved for links and syntax, so the interface reads as
+     monochrome and attention has a single place to go. */
+  --accent-ui: var(--accent-green);
+  --accent-ui-strong: #b8dd9d;
+
+  /* Syntax palette: hue carries meaning; red means error and nothing else. */
+  --syntax-keyword: var(--accent-purple);
+  --syntax-type: var(--accent-yellow);
+  --syntax-function: var(--accent-blue);
+  --syntax-literal: var(--accent-green);
+  --syntax-variable: var(--fg);
+  --syntax-property: var(--fg-strong);
+  --syntax-comment: var(--fg-subtle);
+  --syntax-operator: var(--fg-strong);
+  --syntax-error: var(--accent-red);
+
+  /* Primary-action accent, reserved for the most frequent action (Compile).
+     Never reuse it for links or secondary buttons; the tints are the palette
+     green lightened/darkened so the action stays in the palette. */
+  --action-primary: var(--accent-ui);
+  --action-primary-hover: #a8cf8c;
+  --action-primary-active: #85b566;
+  --action-primary-contrast: var(--bg-input);
+
+  /* The 3D viewport sits a step darker than the chrome so the subject reads as
+     the focal surface. Kept in sync with the scene clear color. */
+  --viewport-bg: #1a1d23;
+
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* UI chrome is proportional; monospace is reserved for code and values. */
+  --font-ui: var(--font-sans);
+  --font-code: var(--font-mono);
+
+  --font-size-label: 11px;
+  --font-size-ui: 12px;
 
   color-scheme: dark;
 }
@@ -65,7 +101,7 @@ a:hover {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent-blue);
+  outline: 2px solid var(--accent-ui);
   outline-offset: 2px;
 }
 
@@ -111,17 +147,17 @@ a:hover {
   --ap-border: var(--border);
   --ap-border-subtle: var(--border-subtle);
   --ap-border-strong: #4b5263;
-  --ap-border-hover: var(--accent-blue);
+  --ap-border-hover: var(--accent-ui);
 
   --ap-text: var(--fg);
   --ap-text-strong: var(--fg-strong);
   --ap-text-muted: var(--fg-muted);
   --ap-text-subtle: var(--fg-subtle);
 
-  --ap-accent: var(--accent-blue);
-  --ap-accent-strong: #7fc4f7;
+  --ap-accent: var(--accent-ui);
+  --ap-accent-strong: var(--accent-ui-strong);
   --ap-accent-contrast: var(--bg-input);
-  --ap-accent-soft: rgba(97, 175, 239, 0.28);
+  --ap-accent-soft: rgba(152, 195, 121, 0.28);
 
   --ap-tree-selected-surface: var(--bg-selected);
   --ap-tree-selected-text: var(--fg-strong);

@@ -3,19 +3,18 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
+import AppBrand from '@/components/layout/AppBrand.vue';
+import LanguageSwitch from '@/components/layout/LanguageSwitch.vue';
+
 const route = useRoute();
-const { locale, t } = useI18n();
+const { t } = useI18n();
 
 const headerTitle = computed(() => {
   const key = route.meta.headerTitleKey;
   return key ? t(key) : '';
 });
 
-const appTitle = computed(() => t('app.title'));
-
 const footerText = computed(() => t('app.footer'));
-
-import { setLocale, type AppLocale } from '@/i18n/setLocale';
 
 const fillViewport = computed(() => route.meta.id === 'editor');
 
@@ -23,39 +22,24 @@ const fillViewport = computed(() => route.meta.id === 'editor');
 // and the tab panel the remaining viewport height. Other screens keep it.
 const showFooter = computed(() => route.meta.id !== 'editor');
 
-const selectedLocale = computed<AppLocale>({
-  get: () => locale.value as AppLocale,
-  set: setLocale,
-});
+// The editor hosts the brand and the language switch inside its own toolbar,
+// so the workspace starts after a single chrome row.
+const showHeader = computed(() => route.meta.id !== 'editor');
 </script>
 
 <template>
   <div class="app-shell" :class="{ 'app-shell--fill': fillViewport }">
     <!-- HEADER -->
 
-    <header class="app-header">
-      <RouterLink to="/" class="app-header__brand" :aria-label="t('app.home')">
-        <img
-          src="@/assets/images/favicon.ico"
-          alt=""
-          class="app-header__logo"
-        />
-        <span class="app-header__name">{{ appTitle }}</span>
-      </RouterLink>
+    <header v-if="showHeader" class="app-header">
+      <AppBrand />
 
       <div class="app-header__actions">
         <span v-if="headerTitle" class="app-header__title">
           {{ headerTitle }}
         </span>
 
-        <select
-          v-model="selectedLocale"
-          class="app-header__language"
-          :aria-label="t('app.language')"
-        >
-          <option value="en">English</option>
-          <option value="pt-BR">Português</option>
-        </select>
+        <LanguageSwitch />
       </div>
     </header>
 
@@ -110,56 +94,6 @@ const selectedLocale = computed<AppLocale>({
   gap: 1rem;
 }
 
-.app-header__language {
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg-input);
-  color: var(--fg);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.app-header__language:focus-visible {
-  outline: 2px solid var(--accent-blue);
-  outline-offset: 2px;
-}
-
-.app-header__brand {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  text-decoration: none;
-  color: var(--fg);
-}
-
-.app-header__brand:hover {
-  color: var(--fg);
-}
-
-.app-header__logo {
-  width: 32px;
-  height: 32px;
-  image-rendering: pixelated;
-}
-
-.app-header__name {
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--fg-strong);
-}
-
-.app-header__brand:hover .app-header__name {
-  color: var(--accent-blue);
-}
-
-.app-header__title {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--fg-muted);
-}
-
 /* ---------- Body ---------- */
 .app-body {
   flex: 1 1 auto;
@@ -190,7 +124,7 @@ const selectedLocale = computed<AppLocale>({
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
   color: var(--fg-muted);
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-family: var(--font-code);
   font-size: 0.8rem;
   padding: 1rem 1.5rem;
   white-space: pre-wrap;

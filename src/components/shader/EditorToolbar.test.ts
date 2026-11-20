@@ -7,8 +7,9 @@ import { i18n } from '@/i18n';
 import EditorToolbar from './EditorToolbar.vue';
 import { EXAMPLE_PICKER } from './examplePickerContext';
 import {
-  builtInTabGroup,
-  editableTabs,
+  dataTabGroup,
+  postTab,
+  stageTabGroup,
   type EditorTabId,
 } from '@/core/models/editorTab';
 import type {
@@ -40,8 +41,8 @@ function mountToolbar(
 ) {
   return mount(EditorToolbar, {
     props: {
-      tabs: editableTabs,
-      builtIn: builtInTabGroup,
+      groups: [stageTabGroup, dataTabGroup],
+      tabs: [postTab],
       active,
     },
     global: {
@@ -51,43 +52,76 @@ function mountToolbar(
   });
 }
 
+function groupTrigger(wrapper: ReturnType<typeof mountToolbar>, label: string) {
+  const match = wrapper
+    .findAll('.tab-group__trigger')
+    .find((trigger) => trigger.text().includes(label));
+
+  if (!match) throw new Error(`group ${label} not found`);
+  return match;
+}
+
+async function openGroup(
+  wrapper: ReturnType<typeof mountToolbar>,
+  label: string,
+): Promise<void> {
+  await groupTrigger(wrapper, label).trigger('click');
+  await nextTick();
+}
+
 describe('EditorToolbar', () => {
-  it('renders the editable tabs and one collapsed built-in tab', () => {
+  it('renders the two document groups before the standalone tab', () => {
     const wrapper = mountToolbar();
 
-    const tabLabels = wrapper
-      .findAll('.editor-toolbar__tab')
-      .map((tab) => tab.text());
+    const triggers = wrapper
+      .findAll('.tab-group__trigger')
+      .map((trigger) => trigger.text());
 
-    expect(tabLabels).toEqual(['Vertex', 'Fragment', 'Uniforms']);
-    expect(wrapper.find('.editor-toolbar__builtin-label').text()).toBe(
-      'Built-in',
-    );
+    expect(triggers[0]).toContain('Shader Stages');
+    expect(triggers[1]).toContain('Shader Data');
+    expect(
+      wrapper.findAll('.editor-toolbar__tab').map((tab) => tab.text()),
+    ).toEqual(['Post effect']);
   });
 
-  it('opens the built-in menu and switches the active document', async () => {
+  it('puts Vertex and Fragment behind the Shader Stages menu', async () => {
     const wrapper = mountToolbar();
 
-    await wrapper.find('.editor-toolbar__tab--builtin').trigger('click');
-    await nextTick();
-
-    expect(wrapper.emitted('switch')?.[0]).toEqual(['uniforms']);
+    await openGroup(wrapper, 'Shader Stages');
 
     const items = wrapper.findAll('[role="menuitemradio"]');
-    expect(items).toHaveLength(2);
+
+    expect(items.map((item) => item.text())).toEqual(['✓Vertex', 'Fragment']);
 
     await items[1]!.trigger('click');
 
-    expect(wrapper.emitted('switch')?.[1]).toEqual(['io']);
+    expect(wrapper.emitted('switch')?.[0]).toEqual(['fragment']);
     expect(wrapper.find('[role="menu"]').exists()).toBe(false);
   });
 
-  it('shows the active built-in document on the trigger', () => {
+  it('puts user data, attributes and uniforms behind the Shader Data menu', async () => {
+    const wrapper = mountToolbar();
+
+    await openGroup(wrapper, 'Shader Data');
+
+    const items = wrapper.findAll('[role="menuitemradio"]');
+
+    expect(items.map((item) => item.text())).toEqual([
+      'User data',
+      'Attributes',
+      'Uniforms',
+    ]);
+
+    await items[1]!.trigger('click');
+
+    expect(wrapper.emitted('switch')?.[0]).toEqual(['io']);
+  });
+
+  it('shows the open document on the group that holds it', () => {
     const wrapper = mountToolbar('io');
 
-    expect(wrapper.find('.editor-toolbar__tab--builtin').text()).toContain(
-      'Attributes',
-    );
+    expect(groupTrigger(wrapper, 'Shader Data').text()).toContain('Attributes');
+    expect(groupTrigger(wrapper, 'Shader Stages').text()).toBe('Shader Stages');
   });
 
   it('places the example picker immediately before Compile', () => {

@@ -1,4 +1,7 @@
-import { resolveEnvUrl } from '@/core/assets/assetUrls';
+import {
+  resolveEnvUrl,
+  resolveHdriThumbnailUrl,
+} from '@/core/assets/assetUrls';
 import { createCatalog, withDefault } from '@/core/assets/catalog';
 import type { DefaultedCatalog } from '@/core/assets/catalog';
 import { assetLabel } from '@/core/assets/labels';
@@ -15,6 +18,8 @@ interface PreviewHdriRecord {
   readonly id: string;
   /** Repo-relative path under `src/assets` to the baked `.env`. */
   readonly path: string;
+  /** Repo-relative path of the square preview under `src/assets`. */
+  readonly thumbnailPath: string;
   readonly format: PreviewHdriFormat;
   /** Repo-relative path under `src/assets` to the source panorama. */
   readonly sourcePath?: string;
@@ -31,30 +36,35 @@ const records: readonly PreviewHdriRecord[] = [
   {
     id: 'wooden-studio-17',
     path: 'hdri/env/wooden-studio-17.env',
+    thumbnailPath: 'hdri/thumbs/wooden_studio_17.png',
     format: 'env',
     sourcePath: 'hdri/wooden_studio_17_2k.hdr',
   },
   {
     id: 'peppermint-powerplant',
     path: 'hdri/env/peppermint-powerplant.env',
+    thumbnailPath: 'hdri/thumbs/peppermint_powerplant.png',
     format: 'env',
     sourcePath: 'hdri/peppermint_powerplant_2k.hdr',
   },
   {
     id: 'pergola-walkway',
     path: 'hdri/env/pergola-walkway.env',
+    thumbnailPath: 'hdri/thumbs/pergola_walkway.png',
     format: 'env',
     sourcePath: 'hdri/pergola_walkway_2k.hdr',
   },
   {
     id: 'qwantani-sunrise',
     path: 'hdri/env/qwantani-sunrise.env',
+    thumbnailPath: 'hdri/thumbs/qwantani_sunrise.png',
     format: 'env',
     sourcePath: 'hdri/qwantani_sunrise_2k.hdr',
   },
   {
     id: 'mossy-forest',
     path: 'hdri/env/mossy-forest.env',
+    thumbnailPath: 'hdri/thumbs/mossy_forest.png',
     format: 'env',
     sourcePath: 'hdri/mossy_forest_2k.hdr',
   },
@@ -64,6 +74,7 @@ const entries: readonly PreviewHdri[] = records.map((record) => ({
   id: record.id,
   label: assetLabel('hdris', record.id),
   url: resolveEnvUrl(record.path),
+  thumbnailUrl: resolveHdriThumbnailUrl(record.thumbnailPath),
   format: record.format,
 }));
 

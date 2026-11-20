@@ -6,6 +6,9 @@ import { hdriBakeSources, previewHdris } from './previewHdris';
 /** The glob map is the authority on which baked environments exist. */
 const ENV_URLS = assetUrlMaps.environments;
 
+/** The glob map is the authority on which environment previews exist. */
+const HDRI_THUMBNAILS = assetUrlMaps.hdriThumbnails;
+
 describe('previewHdris', () => {
   it('uses unique ids', () => {
     const ids = previewHdris.all.map((hdri) => hdri.id);
@@ -40,6 +43,14 @@ describe('previewHdris', () => {
     // Both directions: no dead catalog entry and no orphan bundled file.
     expect(new Set(claimedUrls)).toEqual(new Set(bundledUrls));
     expect(new Set(claimedUrls).size).toBe(claimedUrls.length);
+  });
+
+  it('maps every catalog thumbnail to a bundled PNG and claims every file', () => {
+    const bundledUrls = Object.values(HDRI_THUMBNAILS);
+    const claimedUrls = previewHdris.all.map((hdri) => hdri.thumbnailUrl);
+
+    expect(claimedUrls.every((url) => Boolean(url))).toBe(true);
+    expect(new Set(claimedUrls)).toEqual(new Set(bundledUrls));
   });
 
   it('declares a source panorama for the bakeable environments', () => {

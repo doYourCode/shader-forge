@@ -149,15 +149,15 @@ const {
   color: var(--fg-strong);
   border: 1px solid var(--border);
   border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-code);
+  font-size: var(--font-size-label);
   line-height: 1.2;
   cursor: pointer;
 }
 
 .user-color-picker__trigger:hover,
 .user-color-picker__trigger--open {
-  border-color: var(--accent-blue);
+  border-color: var(--accent-ui);
 }
 
 .user-color-picker__swatch {
@@ -189,7 +189,7 @@ const {
 
 .user-color-picker__alpha-value {
   color: var(--fg-subtle);
-  font-size: 10px;
+  font-size: var(--font-size-label);
 }
 
 .user-color-picker__panel {
@@ -207,8 +207,8 @@ const {
   border: 1px solid var(--border);
   border-radius: 5px;
   box-shadow: 0 10px 28px var(--shadow);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui);
 }
 
 .user-color-picker__header {
@@ -222,7 +222,7 @@ const {
 .user-color-picker__name {
   overflow: hidden;
   color: var(--fg-muted);
-  font-size: 10px;
+  font-size: var(--font-size-label);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-overflow: ellipsis;
@@ -237,7 +237,7 @@ const {
   color: var(--fg-muted);
   border: 1px solid transparent;
   border-radius: 3px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.2;
   cursor: pointer;
@@ -261,7 +261,7 @@ const {
 
 .user-color-picker__hex-label {
   color: var(--fg-subtle);
-  font-size: 10px;
+  font-size: var(--font-size-label);
 }
 
 .user-color-picker__hex-input {

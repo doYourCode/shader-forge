@@ -44,8 +44,8 @@
   margin: 0;
   overflow: hidden;
   color: var(--fg-strong);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui);
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -58,7 +58,7 @@
   color: var(--fg-muted);
   border: 1px solid transparent;
   border-radius: 3px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 16px;
   line-height: 1.2;
   cursor: pointer;
@@ -93,15 +93,15 @@
   gap: 8px;
   background: var(--bg-elevated);
   color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
 }
 
 .sf-picker__spinner {
   width: 14px;
   height: 14px;
   border: 2px solid var(--border);
-  border-top-color: var(--accent-blue);
+  border-top-color: var(--accent-ui);
   border-radius: 50%;
   animation: sf-picker-spin 0.8s linear infinite;
 }

@@ -386,8 +386,8 @@ onBeforeUnmount(() => {
   max-width: 170px;
   overflow: hidden;
   color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-code);
+  font-size: var(--font-size-label);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -403,15 +403,15 @@ onBeforeUnmount(() => {
   color: var(--fg-strong);
   border: 1px solid #4b5263;
   border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   cursor: pointer;
 }
 
 .texture-source__choose:hover,
 .texture-source__clear:hover {
   background: #4b5263;
-  border-color: var(--accent-blue);
+  border-color: var(--accent-ui);
 }
 
 .texture-source__choose:disabled,
@@ -450,8 +450,8 @@ onBeforeUnmount(() => {
 
 .texture-source__advanced-summary {
   color: var(--fg-subtle);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   cursor: pointer;
   user-select: none;
 }
@@ -473,8 +473,8 @@ onBeforeUnmount(() => {
 
 .texture-source__field-label {
   color: var(--fg-muted);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
 }
 
 .texture-source__url {
@@ -508,8 +508,8 @@ onBeforeUnmount(() => {
   color: var(--fg-strong);
   border: 1px solid #4b5263;
   border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   cursor: pointer;
 }
 

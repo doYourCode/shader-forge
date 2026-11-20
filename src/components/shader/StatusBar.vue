@@ -37,12 +37,14 @@ const statusLabel = computed(() => t(`editor.status.${props.status}`));
   padding: 4px 10px;
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-ui);
   color: var(--fg-muted);
 }
 
 .status-bar__pos {
+  font-family: var(--font-code);
+  font-size: var(--font-size-label);
   opacity: 0.85;
 }
 

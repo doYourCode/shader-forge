@@ -144,7 +144,7 @@ function onTonemap(event: Event): void {
 .post-effects__title {
   margin: 0;
   color: var(--fg-strong);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -166,14 +166,14 @@ function onTonemap(event: Event): void {
   color: var(--fg-strong);
   border: 1px solid #4b5263;
   border-radius: 3px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 11px;
   cursor: pointer;
 }
 
 .post-effects__add:hover {
   background: #4b5263;
-  border-color: var(--accent-blue);
+  border-color: var(--accent-ui);
 }
 
 .post-effects__list {
@@ -195,8 +195,8 @@ function onTonemap(event: Event): void {
 }
 
 .post-effects__item--active {
-  background: rgba(97, 175, 239, 0.1);
-  border-color: rgba(97, 175, 239, 0.35);
+  background: rgba(152, 195, 121, 0.1);
+  border-color: rgba(152, 195, 121, 0.35);
 }
 
 .post-effects__enabled {
@@ -212,7 +212,7 @@ function onTonemap(event: Event): void {
   background: transparent;
   color: var(--fg);
   border: none;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 12px;
   text-align: left;
   text-overflow: ellipsis;
@@ -226,8 +226,8 @@ function onTonemap(event: Event): void {
 
 .post-effects__disabled {
   color: var(--fg-subtle);
-  font-family: var(--font-mono);
-  font-size: 9px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -246,14 +246,14 @@ function onTonemap(event: Event): void {
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 3px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 11px;
   line-height: 1;
   cursor: pointer;
 }
 
 .post-effects__action:hover:not(:disabled) {
-  border-color: var(--accent-blue);
+  border-color: var(--accent-ui);
   color: var(--fg-strong);
 }
 
@@ -272,7 +272,7 @@ function onTonemap(event: Event): void {
   align-items: center;
   gap: 8px;
   color: var(--fg-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 11px;
 }
 
@@ -282,7 +282,7 @@ function onTonemap(event: Event): void {
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 3px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 11px;
 }
 </style>

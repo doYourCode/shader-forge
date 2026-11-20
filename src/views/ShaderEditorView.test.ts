@@ -79,18 +79,36 @@ vi.mock('@/services/codemirror/EditorManager', () => ({
 
 async function mountView() {
   const wrapper = mount(ShaderEditorView, {
-    global: { plugins: [i18n] },
+    global: {
+      plugins: [i18n],
+      // The brand is a RouterLink; this view test mounts without a router.
+      stubs: { RouterLink: { template: '<a><slot /></a>' } },
+    },
   });
   await flushPromises();
   return wrapper;
 }
 
-function tab(wrapper: ReturnType<typeof mount>, label: string) {
-  const match = wrapper
-    .findAll('.editor-toolbar__tab')
-    .find((button) => button.text() === label);
-  if (!match) throw new Error(`tab ${label} not found`);
-  return match;
+async function selectDocument(
+  wrapper: ReturnType<typeof mount>,
+  groupLabel: string,
+  label: string,
+): Promise<void> {
+  const trigger = wrapper
+    .findAll('.tab-group__trigger')
+    .find((button) => button.text().includes(groupLabel));
+  if (!trigger) throw new Error(`group ${groupLabel} not found`);
+
+  await trigger.trigger('click');
+  await nextTick();
+
+  const item = wrapper
+    .findAll('[role="menuitemradio"]')
+    .find((button) => button.text().includes(label));
+  if (!item) throw new Error(`tab ${label} not found`);
+
+  await item.trigger('click');
+  await nextTick();
 }
 
 describe('ShaderEditorView user data panel', () => {
@@ -115,7 +133,7 @@ describe('ShaderEditorView user data panel', () => {
         .display,
     ).not.toBe('none');
 
-    await tab(wrapper, 'User data').trigger('click');
+    await selectDocument(wrapper, 'Shader Data', 'User data');
 
     expect(wrapper.find('.user-data').exists()).toBe(true);
     expect(
@@ -129,7 +147,7 @@ describe('ShaderEditorView user data panel', () => {
 
   it('adds a uniform and recompiles with the generated declaration', async () => {
     const wrapper = await mountView();
-    await tab(wrapper, 'User data').trigger('click');
+    await selectDocument(wrapper, 'Shader Data', 'User data');
 
     await wrapper.find('.user-data__new-name').setValue('tint');
     await wrapper.find('.user-data__new-kind').setValue('color');
@@ -164,7 +182,7 @@ describe('ShaderEditorView user data panel', () => {
 
   it('binds a value edit live without recompiling', async () => {
     const wrapper = await mountView();
-    await tab(wrapper, 'User data').trigger('click');
+    await selectDocument(wrapper, 'Shader Data', 'User data');
 
     await wrapper.find('.user-data__new-name').setValue('tint');
     await wrapper.find('.user-data__new-kind').setValue('color');
@@ -185,7 +203,7 @@ describe('ShaderEditorView user data panel', () => {
     expect(sceneManager.compile).not.toHaveBeenCalled();
 
     // The next explicit compile reflects the edit in the values comment.
-    await tab(wrapper, 'Fragment').trigger('click');
+    await selectDocument(wrapper, 'Shader Stages', 'Fragment');
     await wrapper.find('.editor-toolbar__compile').trigger('click');
     await flushPromises();
 
@@ -198,7 +216,7 @@ describe('ShaderEditorView user data panel', () => {
 
   it('rejects an invalid name before creating a row', async () => {
     const wrapper = await mountView();
-    await tab(wrapper, 'User data').trigger('click');
+    await selectDocument(wrapper, 'Shader Data', 'User data');
 
     await wrapper.find('.user-data__new-name').setValue('9lives');
     await wrapper.find('.user-data__add').trigger('submit');
@@ -271,7 +289,7 @@ describe('ShaderEditorView example loader', () => {
 
     // The declarations are previewed read-only next to the fragment source; the
     // document itself only ever holds the example's text.
-    await tab(wrapper, 'Fragment').trigger('click');
+    await selectDocument(wrapper, 'Shader Stages', 'Fragment');
     await nextTick();
 
     const blockCalls = editorManager.setInjectedBlock.mock.calls;
@@ -286,7 +304,7 @@ describe('ShaderEditorView example loader', () => {
     expect(editorManager.setValue).toHaveBeenCalledWith(phong.fragment);
 
     // The User data tab lists the example's parameters.
-    await tab(wrapper, 'User data').trigger('click');
+    await selectDocument(wrapper, 'Shader Data', 'User data');
     await nextTick();
 
     expect(wrapper.findAll('.user-data__row')).toHaveLength(3);
@@ -295,6 +313,24 @@ describe('ShaderEditorView example loader', () => {
         .findAll('.user-data__name')
         .map((input) => (input.element as HTMLInputElement).value),
     ).toEqual(['albedo', 'specularColor', 'shininess']);
+
+    wrapper.unmount();
+  });
+});
+
+describe('ShaderEditorView chrome', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('hosts the brand and the language switch inside the editor toolbar', async () => {
+    const wrapper = await mountView();
+
+    const lead = wrapper.find('.editor-toolbar__lead');
+
+    expect(wrapper.find('.app-header').exists()).toBe(false);
+    expect(lead.find('.app-brand').exists()).toBe(true);
+    expect(lead.find('.language-switch').exists()).toBe(true);
 
     wrapper.unmount();
   });

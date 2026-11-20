@@ -24,7 +24,9 @@ export function createPreviewScene(
   canvas: HTMLCanvasElement,
 ): PreviewScene {
   const scene = new Scene(engine);
-  scene.clearColor = Color4.FromHexString('#282c34ff');
+  // Same value as `--viewport-bg` in style.css: one step darker than the UI
+  // chrome, so the model reads as the subject instead of blending into it.
+  scene.clearColor = Color4.FromHexString('#1a1d23ff');
 
   const camera = new ArcRotateCamera(
     'camera',

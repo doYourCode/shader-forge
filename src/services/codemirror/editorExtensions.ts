@@ -239,9 +239,9 @@ function injectionOffset(doc: Text): number {
 const injectedBlockTheme = EditorView.theme({
   '.cm-injected-block': {
     margin: '4px 0 8px',
-    background: 'rgba(97, 175, 239, 0.08)',
-    border: '1px solid rgba(97, 175, 239, 0.35)',
-    borderLeft: '3px solid var(--accent-blue)',
+    background: 'rgba(152, 195, 121, 0.08)',
+    border: '1px solid rgba(152, 195, 121, 0.35)',
+    borderLeft: '3px solid var(--accent-ui)',
     borderRadius: '3px',
     // The preview is not part of the document: clicks fall through to the
     // editor (so the caret lands next to it, not inside it) and its text can
@@ -251,9 +251,9 @@ const injectedBlockTheme = EditorView.theme({
   },
   '.cm-injected-block__badge': {
     padding: '3px 8px 0',
-    color: 'var(--accent-blue)',
-    fontFamily: 'var(--font-mono)',
-    fontSize: '9px',
+    color: 'var(--syntax-function)',
+    fontFamily: 'var(--font-ui)',
+    fontSize: 'var(--font-size-label)',
     fontWeight: '700',
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
@@ -263,7 +263,7 @@ const injectedBlockTheme = EditorView.theme({
     margin: '0',
     padding: '2px 8px 6px',
     color: 'var(--fg-muted)',
-    fontFamily: 'var(--font-mono)',
+    fontFamily: 'var(--font-code)',
     fontSize: '12px',
     lineHeight: '1.5',
     // Wrapped instead of scrolled: the block cannot receive pointer events to

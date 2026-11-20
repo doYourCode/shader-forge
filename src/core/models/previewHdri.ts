@@ -12,10 +12,15 @@ export type PreviewHdriFormat = 'env' | 'hdr';
 export interface PreviewHdri {
   /** Stable identifier used by the viewer selection. */
   readonly id: string;
-  /** Human-readable name shown in the HDRI fieldset. */
+  /** Human-readable name shown in the environment picker. */
   readonly label: string;
   /** Bundled asset URL. */
   readonly url: string;
+  /**
+   * Small preview (Vite build-time URL) shown beside the label in the picker.
+   * Catalogs provide one; the picker falls back to a label-only entry.
+   */
+  readonly thumbnailUrl?: string;
   /** Storage format, which selects the loader and the load-time work. */
   readonly format: PreviewHdriFormat;
 }

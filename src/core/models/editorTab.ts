@@ -8,11 +8,13 @@ export interface EditorTab {
 }
 
 /**
- * A set of related tabs collapsed into one dropdown trigger. The label is
- * rendered around the trigger so the group's purpose stays visible while the
- * individual documents are hidden behind the menu.
+ * A set of related tabs collapsed into one dropdown trigger. The label names
+ * the group (for example "Shader Stages") while the individual documents live
+ * behind the menu.
  */
 export interface EditorTabGroup {
+  /** Stable key used for rendering and focus handling. */
+  id: string;
   label: string;
   tabs: readonly EditorTab[];
 }
@@ -47,10 +49,26 @@ export const postTab: EditorTab = {
   readOnly: false,
 };
 
-export const builtInTabGroup: EditorTabGroup = {
-  label: 'Built-in',
+/**
+ * The two shader stages, collapsed into the toolbar's first dropdown. They stay
+ * the editable text documents; only their presentation is grouped.
+ */
+export const stageTabGroup: EditorTabGroup = {
+  id: 'stages',
+  label: 'Shader Stages',
+  tabs: editableTabs,
+};
+
+/**
+ * Everything that describes the shader's data: the structured user-data panel
+ * plus the read-only built-in reference documents.
+ */
+export const dataTabGroup: EditorTabGroup = {
+  id: 'data',
+  label: 'Shader Data',
   tabs: [
-    { id: 'uniforms', label: 'Uniforms', readOnly: true },
+    userDataTab,
     { id: 'io', label: 'Attributes', readOnly: true },
+    { id: 'uniforms', label: 'Uniforms', readOnly: true },
   ],
 };

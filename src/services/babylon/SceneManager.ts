@@ -57,6 +57,10 @@ import type {
   PreviewSnapshot,
   PreviewSnapshotFactory,
 } from './preview/snapshot/PreviewSnapshot';
+import {
+  GenerationTracker,
+  type GenerationScope,
+} from '@/core/async/generation';
 
 export { assertWebGl2 } from './preview/PreviewEngine';
 export type {
@@ -139,6 +143,24 @@ const defaultDeps: SceneManagerDeps = {
 };
 
 /**
+ * Overlays provided factories on the defaults. Only defined keys override, so
+ * an explicit `undefined` in a partial dependency object cannot erase a
+ * default.
+ */
+function mergeDeps(deps: Partial<SceneManagerDeps>): SceneManagerDeps {
+  const merged: SceneManagerDeps = { ...defaultDeps };
+
+  for (const key of Object.keys(deps) as (keyof SceneManagerDeps)[]) {
+    const value = deps[key];
+    if (value !== undefined) {
+      Object.assign(merged, { [key]: value });
+    }
+  }
+
+  return merged;
+}
+
+/**
  * Thin facade that wires the preview collaborators together and keeps the
  * public API of the original monolithic manager.
  */
@@ -160,12 +182,12 @@ export class SceneManager {
   private postEffects: PostEffectPipeline | null = null;
   private wireframe = false;
   /**
-   * Monotonic token identifying the current init session. Any `await` resumes
-   * only if its token is still current; dispose or a newer init supersedes it.
+   * One tracker identifies the current init session; a second independently
+   * cancels in-flight model swaps inside that session. Any `await` resumes only
+   * while its captured scope is current.
    */
-  private session = 0;
-  /** Separately cancels in-flight model swaps inside the current session. */
-  private modelRequest = 0;
+  private readonly sessions = new GenerationTracker();
+  private readonly modelRequests = new GenerationTracker();
 
   /**
    * Bake-only image capture, present only when a snapshot factory was
@@ -196,28 +218,7 @@ export class SceneManager {
         getMesh: () => this.mesh,
         getMaterial: () => this.materials?.activeMaterial ?? null,
       }) ?? null;
-    this.deps = {
-      createEngine: deps.createEngine ?? defaultDeps.createEngine,
-      createScene: deps.createScene ?? defaultDeps.createScene,
-      createMaterialController:
-        deps.createMaterialController ?? defaultDeps.createMaterialController,
-      createAnimator: deps.createAnimator ?? defaultDeps.createAnimator,
-      createCompiler: deps.createCompiler ?? defaultDeps.createCompiler,
-      createDiagnostics:
-        deps.createDiagnostics ?? defaultDeps.createDiagnostics,
-      createEnvironmentController:
-        deps.createEnvironmentController ??
-        defaultDeps.createEnvironmentController,
-      createTextureRegistry:
-        deps.createTextureRegistry ?? defaultDeps.createTextureRegistry,
-      createUniformBinder:
-        deps.createUniformBinder ?? defaultDeps.createUniformBinder,
-      createUniformBindingTarget:
-        deps.createUniformBindingTarget ??
-        defaultDeps.createUniformBindingTarget,
-      createPostEffects:
-        deps.createPostEffects ?? defaultDeps.createPostEffects,
-    };
+    this.deps = mergeDeps(deps);
     this.timer = timer;
   }
 
@@ -231,7 +232,7 @@ export class SceneManager {
   ): Promise<void> {
     this.dispose();
     this.userData = userData;
-    const session = this.session;
+    const session = this.sessions.begin();
 
     const previewEngine = this.deps.createEngine((errors) =>
       this.onError(errors),
@@ -275,7 +276,7 @@ export class SceneManager {
       );
     } catch (error) {
       // A superseded/disposed init must not tear down a newer session.
-      if (!this.isCurrent(session)) return;
+      if (!session.isCurrent()) return;
 
       // Bail out cleanly if loading fails.
       this.dispose();
@@ -284,7 +285,7 @@ export class SceneManager {
     }
 
     // If init() was superseded or disposed while we awaited the loader.
-    if (!this.isCurrent(session)) {
+    if (!session.isCurrent()) {
       mesh.dispose();
       return;
     }
@@ -342,7 +343,7 @@ export class SceneManager {
     // loading overlay only hides once the environment is ready as well.
 
     await environmentReady;
-    if (!this.isCurrent(session)) return;
+    if (!session.isCurrent()) return;
 
     previewEngine.start();
   }
@@ -354,7 +355,7 @@ export class SceneManager {
   async loadModel(model: PreviewModel): Promise<boolean> {
     if (model.id === this.model?.id) {
       // Selecting the displayed model also cancels a swap that is still loading.
-      this.modelRequest += 1;
+      this.modelRequests.invalidate();
       return true;
     }
 
@@ -364,8 +365,8 @@ export class SceneManager {
 
     if (!scene || !currentMesh || !materials) return false;
 
-    const session = this.session;
-    const request = ++this.modelRequest;
+    const session = this.sessions.current();
+    const request = this.modelRequests.begin();
 
     let nextMesh: Mesh;
     try {
@@ -373,7 +374,7 @@ export class SceneManager {
         this.meshProviderFactory(model).load(scene),
       );
     } catch (error) {
-      if (!this.isCurrent(session) || request !== this.modelRequest) {
+      if (!session.isCurrent() || !request.isCurrent()) {
         return false;
       }
 
@@ -381,7 +382,7 @@ export class SceneManager {
       return false;
     }
 
-    if (!this.isCurrent(session) || request !== this.modelRequest) {
+    if (!session.isCurrent() || !request.isCurrent()) {
       nextMesh.dispose();
       return false;
     }
@@ -416,7 +417,7 @@ export class SceneManager {
   }
 
   async compile(blueprint: MaterialBlueprint): Promise<CompileResult> {
-    const session = this.session;
+    const session = this.sessions.current();
     const mesh = this.mesh;
     const materials = this.materials;
     const compiler = this.compiler;
@@ -428,7 +429,7 @@ export class SceneManager {
       !materials ||
       !compiler ||
       !diagnostics ||
-      !this.isCurrent(session)
+      !session.isCurrent()
     ) {
       return { status: 'unavailable', reason: 'scene-not-initialized' };
     }
@@ -437,7 +438,7 @@ export class SceneManager {
       compiler.tryCompile(blueprint, mesh),
     );
 
-    if (!this.isCurrent(session)) {
+    if (!session.isCurrent()) {
       attempt.release(true);
       return { status: 'unavailable', reason: 'scene-disposed' };
     }
@@ -471,15 +472,15 @@ export class SceneManager {
    */
   async compilePostEffects(stack: PostEffectStack): Promise<CompileResult> {
     const pipeline = this.postEffects;
-    const session = this.session;
+    const session = this.sessions.current();
 
-    if (!pipeline || !this.isCurrent(session)) {
+    if (!pipeline || !session.isCurrent()) {
       return { status: 'unavailable', reason: 'scene-not-initialized' };
     }
 
     const result = await pipeline.compile(stack);
 
-    if (!this.isCurrent(session) || this.postEffects !== pipeline) {
+    if (!session.isCurrent() || this.postEffects !== pipeline) {
       return { status: 'unavailable', reason: 'scene-disposed' };
     }
 
@@ -497,13 +498,13 @@ export class SceneManager {
    */
   private async compileInitialPostEffects(
     stack: PostEffectStack,
-    session: number,
+    session: GenerationScope,
   ): Promise<void> {
     const pipeline = this.postEffects;
     if (!pipeline) return;
 
     const result = await pipeline.compile(stack);
-    if (!this.isCurrent(session) || this.postEffects !== pipeline) return;
+    if (!session.isCurrent() || this.postEffects !== pipeline) return;
 
     if (result.status === 'failed' && result.errors.length > 0) {
       this.onError([...result.errors]);
@@ -520,8 +521,8 @@ export class SceneManager {
   }
 
   dispose(): void {
-    this.session += 1;
-    this.modelRequest += 1;
+    this.sessions.invalidate();
+    this.modelRequests.invalidate();
 
     // Detach before the scene dies: the controller keeps its document but must
     // never hold a registry or binder from a disposed scene.
@@ -557,10 +558,6 @@ export class SceneManager {
     this.model = null;
     // Intentional-for-now: the original manager reset this flag on dispose.
     this.wireframe = false;
-  }
-
-  private isCurrent(session: number): boolean {
-    return session === this.session;
   }
 
   /**

@@ -71,7 +71,7 @@ export interface EditorNavigationDeps {
 export function useEditorNavigation(deps: EditorNavigationDeps) {
   const { editorManager, userDataDoc, errors, postEffects, compilation } = deps;
 
-  const activeTab = ref<EditorTabId>('vertex');
+  const activeTab = ref<EditorTabId>('fragment');
   const cursorLine = ref(1);
   const cursorCol = ref(1);
   const highlightedUserRow = ref<number | null>(null);
@@ -228,9 +228,13 @@ export function useEditorNavigation(deps: EditorNavigationDeps) {
   watch(() => userDataDoc.revision, updateInjectedBlock);
 
   function mountEditor(host: HTMLElement): void {
+    const initialTab = isEditableTab(activeTab.value)
+      ? activeTab.value
+      : 'vertex';
+
     editorManager.mount(
       host,
-      tabDocs.vertex,
+      tabDocs[initialTab],
       (pos) => {
         cursorLine.value = pos.line;
         cursorCol.value = pos.col;

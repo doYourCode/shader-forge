@@ -5,6 +5,7 @@ import { nextTick } from 'vue';
 
 import { i18n } from '@/i18n';
 import UserColorPicker from '@/components/shader/UserColorPicker.vue';
+import { defaultFragmentShader } from '@/core/constants/defaultShaders';
 import { findShaderExample } from '@/core/constants/shaderExamples';
 import ShaderEditorView from './ShaderEditorView.vue';
 
@@ -33,10 +34,15 @@ const { sceneManager, editorManager, examplePicker } = vi.hoisted(() => {
     setPaused: vi.fn(),
     dispose: vi.fn(),
   };
+  let editorValue = '';
   const editorManager = {
-    mount: vi.fn(),
-    getValue: vi.fn(() => ''),
-    setValue: vi.fn(),
+    mount: vi.fn((_parent: unknown, initialDoc: string) => {
+      editorValue = initialDoc;
+    }),
+    getValue: vi.fn(() => editorValue),
+    setValue: vi.fn((value: string) => {
+      editorValue = value;
+    }),
     setReadOnly: vi.fn(),
     setDiagnostics: vi.fn(),
     setInjectedBlock: vi.fn(),
@@ -259,8 +265,8 @@ describe('ShaderEditorView example loader', () => {
     expect(examplePicker.open).toHaveBeenCalledTimes(1);
     expect(dispose).toHaveBeenCalledTimes(1);
 
-    // The vertex buffer is loaded into the editor...
-    expect(editorManager.setValue).toHaveBeenCalledWith(phong.vertex);
+    // The fragment buffer is loaded into the editor...
+    expect(editorManager.setValue).toHaveBeenCalledWith(phong.fragment);
 
     // ...and the pair is compiled as one blueprint, with the generated block
     // prepended to the fragment stage.
@@ -279,8 +285,7 @@ describe('ShaderEditorView example loader', () => {
     expect(blueprint.fragment).toContain(
       '// current values: albedo = (0.72, 0.31, 0.22)',
     );
-    // The fragment editor document is carried untouched for diagnostics; the
-    // active vertex tab is overwritten by the mocked editor's empty buffer.
+    // The fragment document is carried into the blueprint for diagnostics.
     expect(blueprint.editorSource.fragment).toBe(phong.fragment);
 
     expect(wrapper.find('.status-bar__message').text()).toContain(
@@ -326,6 +331,20 @@ describe('ShaderEditorView chrome', () => {
   afterEach(() => {
     i18n.global.locale.value = 'en';
     document.body.innerHTML = '';
+  });
+
+  it('mounts the fragment document by default', async () => {
+    editorManager.mount.mockClear();
+    const wrapper = await mountView();
+
+    expect(editorManager.mount).toHaveBeenCalledWith(
+      expect.anything(),
+      defaultFragmentShader,
+      expect.any(Function),
+      false,
+    );
+
+    wrapper.unmount();
   });
 
   it('keeps the brand left, with compile and language across the split', async () => {

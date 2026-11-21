@@ -9,7 +9,6 @@
     "preview": "vite preview",
     "bake:env": "vite --open /bake.html",
     "bake:examples": "vite --open /example-thumb-bake.html",
-    "bench:load": "node perf/bench-load.mjs",
     "postinstall": "patch-package",
     "test": "vitest run",
     "test:watch": "vitest",

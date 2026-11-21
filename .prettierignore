@@ -6,7 +6,6 @@ content
 docs
 public
 patches
-perf
 package-lock.json
 *.min.*
 *.glsl

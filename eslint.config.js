@@ -55,7 +55,6 @@ export default tseslint.config(
       'docs/**',
       'public/**',
       'patches/**',
-      'perf/**',
     ],
   },
   {

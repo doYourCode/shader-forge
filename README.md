@@ -49,12 +49,15 @@ npm run dev
 | `npm run lint`          | Run ESLint, including the architecture import boundaries. |
 | `npm run format`        | Format with Prettier.                                     |
 | `npm run format:check`  | Check formatting without writing.                         |
-| `npm run bench:load`    | Run the load-time benchmark.                              |
 | `npm run bake:env`      | Open the HDRI-to-`.env` baking tool.                      |
 | `npm run bake:examples` | Open the example-thumbnail baking tool.                   |
 
+See [docs/environment-baking.md](docs/environment-baking.md) for the environment
+bake workflow.
+
 Append `?perf` to the editor URL to expose load timings through
-`window.__shaderForgePerf`.
+`window.__shaderForgePerf`. See [docs/performance.md](docs/performance.md) for
+the phase reference.
 
 ## Project layout
 

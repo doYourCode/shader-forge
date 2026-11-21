@@ -5,7 +5,7 @@
  * factory, mesh provider, GPU filters, shader compile). Rather than scattering
  * `performance.now()` calls through them, they receive this narrow port and
  * report named phases. The profiler only records; deciding what to do with the
- * samples (console table, `?perf` overlay, benchmark harness) stays outside.
+ * samples (console table, `?perf` overlay) stays outside.
  */
 export interface LoadPhaseSample {
   /** Stable, kebab/colon separated phase name, e.g. `env:filter`. */
@@ -106,7 +106,7 @@ export class LoadProfiler implements LoadTimer {
 
 /**
  * Publishes the profiler on `window` so it can be inspected from the console
- * (`window.__shaderForgePerf.report()`), and used by the benchmark harness.
+ * (`window.__shaderForgePerf.report()`).
  */
 export interface PerfGlobal {
   report(): string;

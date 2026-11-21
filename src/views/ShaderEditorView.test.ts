@@ -6,6 +6,7 @@ import { nextTick } from 'vue';
 import { i18n } from '@/i18n';
 import UserColorPicker from '@/components/shader/UserColorPicker.vue';
 import { defaultFragmentShader } from '@/core/constants/defaultShaders';
+import { defaultPostEffectFragment } from '@/core/constants/postEffects';
 import { findShaderExample } from '@/core/constants/shaderExamples';
 import ShaderEditorView from './ShaderEditorView.vue';
 
@@ -83,8 +84,9 @@ vi.mock('@/services/codemirror/EditorManager', () => ({
   },
 }));
 
-async function mountView() {
+async function mountView(props: { initialTab?: 'post' } = {}) {
   const wrapper = mount(ShaderEditorView, {
+    props,
     global: {
       plugins: [i18n],
       // The brand is a RouterLink; this view test mounts without a router.
@@ -342,6 +344,21 @@ describe('ShaderEditorView chrome', () => {
       defaultFragmentShader,
       expect.any(Function),
       false,
+    );
+
+    wrapper.unmount();
+  });
+
+  it('opens the requested post document on mount', async () => {
+    editorManager.setValue.mockClear();
+    const wrapper = await mountView({ initialTab: 'post' });
+
+    expect(wrapper.find('.post-effects').exists()).toBe(true);
+    expect(wrapper.find('.editor-toolbar__tab--active').text()).toBe(
+      'Post effect',
+    );
+    expect(editorManager.setValue).toHaveBeenCalledWith(
+      defaultPostEffectFragment,
     );
 
     wrapper.unmount();

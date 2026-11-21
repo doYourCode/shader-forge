@@ -53,6 +53,21 @@
      the focal surface. Kept in sync with the scene clear color. */
   --viewport-bg: #1a1d23;
 
+  /* Landing-only visual language. The greys come straight from One Dark Pro so
+     the landing and the editor feel like the same product; the neon accents and
+     serif subtitle stay isolated behind --landing-*. */
+  --landing-bg: #282c34;
+  --landing-bg-deep: #1b1d23;
+  --landing-surface: #21252b;
+  --landing-surface-raised: #2c313c;
+  --landing-surface-deep: #1d1f23;
+  --landing-border: #3e4452;
+  --landing-cyan: #76f9ff;
+  --landing-text: #d7dae0;
+  --landing-muted: #abb2bf;
+  --landing-faint: #7f848e;
+  --landing-display: var(--font-ui);
+
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 

@@ -45,6 +45,18 @@ const routes: RouteRecordRaw[] = [
     meta: { headerTitleKey: '', id: 'editor' },
   },
   {
+    path: '/sandbox',
+    name: 'sandbox',
+    component: () => import('@/views/SandboxEditorView.vue'),
+    meta: { headerTitleKey: '', id: 'editor' },
+  },
+  {
+    path: '/screen-space',
+    name: 'screen-space',
+    component: () => import('@/views/ScreenSpaceEditorView.vue'),
+    meta: { headerTitleKey: '', id: 'editor' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/',
   },

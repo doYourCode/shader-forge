@@ -14,6 +14,7 @@ import {
   stageTabGroup,
   type EditorTab,
   type EditorTabGroup,
+  type EditorTabId,
 } from '@/core/models/editorTab';
 import type { ShaderError } from '@/core/models/shaderError';
 import CompileButton from '@/components/shader/CompileButton.vue';
@@ -26,6 +27,16 @@ import StatusBar from '@/components/shader/StatusBar.vue';
 import UserDataPanel from '@/components/shader/UserDataPanel.vue';
 import PostEffectPanel from '@/components/shader/PostEffectPanel.vue';
 import CopyShaderButton from '@/components/shader/CopyShaderButton.vue';
+
+const props = withDefaults(
+  defineProps<{
+    /** Document to open on mount; the screen-space harness starts on Post. */
+    initialTab?: EditorTabId;
+  }>(),
+  {
+    initialTab: 'fragment',
+  },
+);
 
 const { t, locale } = useI18n();
 
@@ -106,7 +117,7 @@ const {
   setTonemap,
   userDataCommands,
   clipboardSource,
-} = useShaderEditor();
+} = useShaderEditor({ initialTab: props.initialTab });
 
 const statusText = computed(() => {
   const message = statusMessage.value;

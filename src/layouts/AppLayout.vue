@@ -25,10 +25,20 @@ const showFooter = computed(() => route.meta.id !== 'editor');
 // The editor hosts the brand and the language switch inside its own toolbar,
 // so the workspace starts after a single chrome row.
 const showHeader = computed(() => route.meta.id !== 'editor');
+
+// The landing is the only screen that gets the deep-space shell: its artwork
+// continues behind the header and footer instead of stopping at the body.
+const isLanding = computed(() => route.meta.id === 'landing');
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'app-shell--fill': fillViewport }">
+  <div
+    class="app-shell"
+    :class="{
+      'app-shell--fill': fillViewport,
+      'app-shell--landing': isLanding,
+    }"
+  >
     <!-- HEADER -->
 
     <header v-if="showHeader" class="app-header">
@@ -62,6 +72,31 @@ const showHeader = computed(() => route.meta.id !== 'editor');
   min-height: 100vh;
   color: var(--fg);
   background: var(--bg);
+}
+
+/* Landing chrome is a tinted pane over the page artwork. Everything else keeps
+   the opaque One Dark Pro header/footer. */
+.app-shell--landing {
+  background: var(--landing-bg);
+}
+
+.app-shell--landing .app-header,
+.app-shell--landing .app-footer {
+  background: rgba(33, 37, 43, 0.72);
+  border-color: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+.app-shell--landing .app-header {
+  padding: 0.5rem 1.25rem;
+}
+
+.app-shell--landing .app-footer {
+  color: var(--landing-faint);
+  font-family: var(--font-code);
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+  padding: 0.75rem 1.25rem;
 }
 
 /* The editor is a full-bleed workspace: size the shell to the viewport so the

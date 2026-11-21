@@ -114,6 +114,20 @@ describe('AppLayout footer', () => {
     }
   });
 
+  it('uses the deep-space shell only on the landing', async () => {
+    const landing = await mountAt('/');
+    expect(landing.find('.app-shell').classes()).toContain(
+      'app-shell--landing',
+    );
+    landing.unmount();
+
+    const docs = await mountAt('/docs/shader-editor');
+    expect(docs.find('.app-shell').classes()).not.toContain(
+      'app-shell--landing',
+    );
+    docs.unmount();
+  });
+
   it('keeps the editor shell full-bleed with the footer removed', async () => {
     const wrapper = await mountAt('/editor');
 

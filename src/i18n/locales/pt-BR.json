@@ -31,32 +31,30 @@
     "documentation": "Referência e documentação"
   },
   "landing": {
+    "hero": {
+      "title": "Aprenda GLSL",
+      "subtitle": "explorando exemplos"
+    },
     "status": {
       "checking": "Verificando disponibilidade...",
       "unavailable": "Indisponível."
     },
     "cards": {
       "glsl": {
-        "title": "Editor GLSL",
-        "description": "Escreva, edite e experimente shaders GLSL.",
-        "note": "Crie e visualize shaders."
-      },
-      "wgsl": {
-        "title": "Editor WGSL (em breve)",
-        "description": "Escreva shaders WGSL utilizando o backend WebGPU.",
-        "note": "Requer suporte a WebGPU."
-      },
-      "docs": {
-        "title": "Referência e Documentação (em breve)",
-        "description": "Referência da API, guias e listas de funções integradas."
-      },
-      "knowledge": {
-        "title": "Base de Conhecimento (em breve)",
-        "description": "Artigos selecionados sobre técnicas gráficas e teoria de shaders."
+        "title": "Editor GLSL 3D",
+        "description": "Edite shaders e teste-os em malhas 3D e ambientes HDRI."
       },
       "sandbox": {
-        "title": "Sandbox 2D (em breve)",
-        "description": "Experimente shaders de fragmento em um ambiente isolado."
+        "title": "Sandbox GLSL 2D",
+        "description": "Um editor de fragmentos em tela cheia para experimentar programação gráfica."
+      },
+      "screenSpace": {
+        "title": "Editor GLSL de Tela",
+        "description": "Edite efeitos de pós-processamento sobre cenas 3D completas, com um G-Buffer rico em dados para experimentação."
+      },
+      "docs": {
+        "title": "Documentação e Tutoriais",
+        "description": "Referência completa, guias de API e recursos interativos de aprendizagem."
       }
     }
   },

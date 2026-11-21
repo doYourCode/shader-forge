@@ -2,6 +2,7 @@ import { computed, onBeforeUnmount, reactive, ref, type Ref } from 'vue';
 
 import { EditorManager } from '@/services/codemirror/EditorManager';
 import { SceneManager } from '@/services/babylon/SceneManager';
+import type { EditorTabId } from '@/core/models/editorTab';
 import type { MaterialBlueprint } from '@/core/models/shaderSource';
 import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
 import type { PreviewHdri } from '@/core/models/previewHdri';
@@ -28,6 +29,11 @@ import {
 
 export type { EditorStatus } from './useShaderCompilation';
 
+export interface UseShaderEditorOptions {
+  /** Document to show when the editor mounts; defaults to the fragment stage. */
+  readonly initialTab?: EditorTabId;
+}
+
 /**
  * Composition root of the editor screen.
  *
@@ -36,7 +42,7 @@ export type { EditorStatus } from './useShaderCompilation';
  * the post-effect stack and the user-data command surface. It deliberately does
  * not implement those concerns itself.
  */
-export function useShaderEditor() {
+export function useShaderEditor(options: UseShaderEditorOptions = {}) {
   const editorManager = new EditorManager();
   /**
    * Load-phase instrumentation lives at the composition root: the manager and
@@ -205,6 +211,7 @@ export function useShaderEditor() {
       setIdle: compilation.setIdle,
       setReady: compilation.setReady,
     },
+    initialTab: options.initialTab,
   });
 
   function currentPostStack(): PostEffectStack {

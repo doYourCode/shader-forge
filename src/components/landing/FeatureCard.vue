@@ -2,7 +2,9 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import type { ILandingCard } from '@/core/models/landingCard';
+import { Box, FileCode2, MonitorUp, Scan } from 'lucide-vue-next';
+import type { ILandingCard, LandingIconName } from '@/core/models/landingCard';
+import LandingCardMedia from './LandingCardMedia.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -19,6 +21,15 @@ const props = withDefaults(
 );
 
 const { t } = useI18n();
+
+const iconComponents = {
+  cube: Box,
+  scan: Scan,
+  screen: MonitorUp,
+  docs: FileCode2,
+} satisfies Record<LandingIconName, typeof Box>;
+
+const iconComponent = computed(() => iconComponents[props.card.icon]);
 
 const isChecking = computed(() => props.enabled === null);
 const isDisabled = computed(() => props.enabled === false);
@@ -49,96 +60,242 @@ const noteText = computed(() => {
     :is="isLink ? RouterLink : 'div'"
     :to="isLink ? card.to : undefined"
     class="feature-card"
-    :class="{
-      'feature-card--disabled': isDisabled,
-      'feature-card--checking': isChecking,
-      'feature-card--static': !isLink,
-    }"
+    :class="[
+      `feature-card--accent-${card.accent}`,
+      {
+        'feature-card--disabled': isDisabled,
+        'feature-card--checking': isChecking,
+        'feature-card--static': !isLink,
+      },
+    ]"
   >
-    <div class="feature-card__body">
-      <h3 class="feature-card__title">{{ t(card.title) }}</h3>
-      <p class="feature-card__description">
-        {{ t(card.description) }}
-      </p>
+    <span class="feature-card__sheen" aria-hidden="true" />
+
+    <div class="feature-card__top">
+      <span class="feature-card__icon" aria-hidden="true">
+        <component :is="iconComponent" :size="16" :stroke-width="1.7" />
+      </span>
     </div>
 
-    <p v-if="noteText" class="feature-card__note">
-      {{ noteText }}
-    </p>
+    <LandingCardMedia :kind="card.media" class="feature-card__media" />
+
+    <div class="feature-card__body">
+      <h3 class="feature-card__title">{{ t(card.title) }}</h3>
+      <p class="feature-card__description">{{ t(card.description) }}</p>
+      <p v-if="noteText" class="feature-card__note">{{ noteText }}</p>
+    </div>
   </component>
 </template>
 
 <style scoped>
 .feature-card {
+  --card-edge: rgba(118, 249, 255, 0.38);
+  --card-edge-2: rgba(84, 240, 200, 0.26);
+  --card-glow: rgba(82, 220, 255, 0.22);
+  --card-accent: #76f9ff;
+
+  position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 0.75rem;
   height: 100%;
-  border: 2px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--fg);
+  padding: 0.75rem;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+        155deg,
+        var(--landing-surface-raised) 0%,
+        var(--landing-surface) 52%,
+        var(--landing-surface-deep) 100%
+      )
+      padding-box,
+    linear-gradient(
+        135deg,
+        var(--card-edge) 0%,
+        var(--landing-border) 35%,
+        var(--landing-border) 65%,
+        var(--card-edge-2) 100%
+      )
+      border-box;
+  box-shadow:
+    0 28px 60px -36px rgba(0, 0, 0, 0.9),
+    0 22px 48px -30px var(--card-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  color: var(--landing-text);
+  font-family: var(--font-ui);
   text-decoration: none;
-  padding: 1rem;
-  font-family: var(--font-mono);
   transition:
-    transform 0.12s ease,
-    box-shadow 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease;
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
 }
 
-.feature-card:not(.feature-card--static):not(.feature-card--disabled):hover {
-  transform: translateY(-2px);
-  border-color: var(--accent-blue);
-  box-shadow: 4px 4px 0 var(--border-subtle);
-  color: var(--fg);
+.feature-card--accent-cyan {
+  --card-edge: rgba(118, 249, 255, 0.36);
+  --card-edge-2: rgba(84, 240, 200, 0.24);
+  --card-glow: rgba(82, 220, 255, 0.28);
+  --card-accent: #76f9ff;
 }
 
-.feature-card:not(.feature-card--static):not(.feature-card--disabled):hover
-  .feature-card__title {
-  color: var(--accent-blue);
+.feature-card--accent-violet {
+  --card-edge: rgba(187, 151, 255, 0.34);
+  --card-edge-2: rgba(241, 166, 255, 0.22);
+  --card-glow: rgba(176, 112, 255, 0.3);
+  --card-accent: #d0a7ff;
+}
+
+.feature-card--accent-teal {
+  --card-edge: rgba(142, 243, 255, 0.34);
+  --card-edge-2: rgba(84, 240, 200, 0.25);
+  --card-glow: rgba(84, 240, 200, 0.26);
+  --card-accent: #8ef3ff;
+}
+
+/* A one-pixel filament on the top edge catches the light the same way the
+   mockup's glass cards do without requiring a second border element. */
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 9%;
+  left: 9%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--card-accent),
+    transparent
+  );
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.feature-card__sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      120% 52% at 50% -8%,
+      rgba(215, 218, 224, 0.08),
+      transparent 62%
+    ),
+    radial-gradient(80% 42% at 50% 108%, var(--card-glow), transparent 68%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.feature-card__top,
+.feature-card__media,
+.feature-card__body {
+  position: relative;
+  z-index: 1;
+}
+
+.feature-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 30px;
+}
+
+.feature-card__icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  color: var(--card-accent);
+}
+
+.feature-card__media {
+  transition: transform 0.35s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+
+.feature-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.35rem 0.15rem 0.25rem;
 }
 
 .feature-card__title {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-  color: var(--fg-strong);
-  border-bottom: 2px solid var(--border);
-  padding-bottom: 0.5rem;
-  transition: color 0.12s ease;
+  margin: 0;
+  color: var(--landing-text);
+  font-family: var(--font-ui);
+  font-size: clamp(1.08rem, 1.45vw, 1.24rem);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.18;
+  text-wrap: balance;
 }
 
 .feature-card__description {
   margin: 0;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  color: var(--fg);
+  color: var(--landing-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .feature-card__note {
-  margin: 1rem 0 0;
-  font-size: 0.75rem;
+  margin: auto 0 0;
+  color: var(--landing-faint);
+  font-size: 0.72rem;
   font-style: italic;
-  color: var(--accent-orange);
+  line-height: 1.45;
+}
+
+.feature-card:not(.feature-card--static):not(.feature-card--disabled):hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 34px 70px -36px rgba(0, 0, 0, 0.95),
+    0 28px 58px -26px var(--card-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.feature-card:not(.feature-card--static):not(.feature-card--disabled):hover
+  .feature-card__media {
+  transform: scale(1.025);
+}
+
+.feature-card:not(.feature-card--static):not(
+    .feature-card--disabled
+  ):focus-visible {
+  outline: 2px solid var(--card-accent);
+  outline-offset: 4px;
 }
 
 .feature-card--disabled {
-  background: var(--bg-input);
-  color: var(--fg-subtle);
-  border-color: var(--border-subtle);
+  opacity: 0.6;
   cursor: not-allowed;
-}
-
-.feature-card--disabled .feature-card__title {
-  color: var(--accent-red);
-  border-bottom-color: var(--accent-red);
-}
-
-.feature-card--disabled .feature-card__description {
-  color: var(--fg-subtle);
+  filter: saturate(0.6);
 }
 
 .feature-card--checking {
-  opacity: 0.6;
+  opacity: 0.72;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feature-card,
+  .feature-card__media {
+    transition: none;
+  }
+
+  .feature-card:not(.feature-card--static):not(.feature-card--disabled):hover {
+    transform: none;
+  }
+
+  .feature-card:not(.feature-card--static):not(.feature-card--disabled):hover
+    .feature-card__media {
+    transform: none;
+  }
 }
 </style>

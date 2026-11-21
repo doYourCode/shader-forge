@@ -56,6 +56,8 @@ export interface EditorNavigationDeps {
   readonly errors: Readonly<Ref<readonly ShaderError[]>>;
   readonly postEffects: EditorNavigationPostEffects;
   readonly compilation: EditorNavigationCompilation;
+  /** Document opened when the editor mounts. Defaults to the fragment stage. */
+  readonly initialTab?: EditorTabId;
 }
 
 /**
@@ -71,7 +73,7 @@ export interface EditorNavigationDeps {
 export function useEditorNavigation(deps: EditorNavigationDeps) {
   const { editorManager, userDataDoc, errors, postEffects, compilation } = deps;
 
-  const activeTab = ref<EditorTabId>('fragment');
+  const activeTab = ref<EditorTabId>(deps.initialTab ?? 'fragment');
   const cursorLine = ref(1);
   const cursorCol = ref(1);
   const highlightedUserRow = ref<number | null>(null);
@@ -228,21 +230,27 @@ export function useEditorNavigation(deps: EditorNavigationDeps) {
   watch(() => userDataDoc.revision, updateInjectedBlock);
 
   function mountEditor(host: HTMLElement): void {
-    const initialTab = isEditableTab(activeTab.value)
-      ? activeTab.value
-      : 'vertex';
+    const initialTab = activeTab.value;
+    const documentTab = isEditableTab(initialTab) ? initialTab : 'vertex';
 
     editorManager.mount(
       host,
-      tabDocs[initialTab],
+      tabDocs[documentTab],
       (pos) => {
         cursorLine.value = pos.line;
         cursorCol.value = pos.col;
       },
-      false,
+      !isEditableTab(initialTab),
     );
 
-    updateInjectedBlock();
+    if (isEditableTab(initialTab)) {
+      updateInjectedBlock();
+    } else {
+      // The editor starts on a generated or structured document (for example
+      // the post-effect tab). Apply it after mounting so the buffer, target and
+      // diagnostics all agree with the visible tab.
+      applyTab(initialTab);
+    }
 
     compilation.setReady({ key: 'editor.status.messages.editorReady' });
   }

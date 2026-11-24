@@ -25,6 +25,9 @@
     "textures": {
       "uv-checker-01": "UV Checker 01",
       "uv-checker-02": "UV Checker 02"
+    },
+    "scenes": {
+      "bistro": "Bistro"
     }
   },
   "navigation": {
@@ -238,6 +241,41 @@
       "none": "Nenhuma (linear para sRGB)",
       "reinhard": "Reinhard",
       "aces": "ACES filmic"
+    }
+  },
+  "screenSpace": {
+    "tabs": {
+      "label": "Painéis do editor",
+      "post": "Pós-efeito",
+      "userData": "Dados do usuário",
+      "gbuffer": "G-Buffer"
+    },
+    "scene": "Cena",
+    "environment": "Ambiente",
+    "effects": {
+      "title": "Efeitos de tela",
+      "description": "Passes em tela cheia rodam na ordem da pilha sobre a cena HDR. Cada passe lê o anterior, a cor original da cena e o G-Buffer da cena."
+    },
+    "fpsHint": "Clique na viewport para olhar. WASD para mover, Q/E para descer/subir, Shift para acelerar.",
+    "stats": "{fps} fps · {ms} ms / {budget} ms · {width}×{height} · {drawCalls} draws",
+    "loading": {
+      "scene": "Carregando cena…",
+      "sceneProgress": "Carregando cena… {loaded}/{total} MB",
+      "environment": "Carregando ambiente…"
+    },
+    "debug": {
+      "title": "Debug do G-Buffer",
+      "description": "Inspecione os dados da cena disponíveis aos efeitos. As visões de debug ignoram a saída da pilha de efeitos.",
+      "overlay": "G-Buffer",
+      "off": "Imagem final",
+      "scene": "Cor da cena",
+      "depth": "Profundidade",
+      "normal": "Normal",
+      "albedo": "Albedo",
+      "material": "Rugosidade / metálico",
+      "velocity": "Vetores de movimento",
+      "objectId": "ID do objeto",
+      "transparent": "Sobreposição transparente"
     }
   }
 }

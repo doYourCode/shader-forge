@@ -8,6 +8,8 @@ export interface PostEffectStackDeps {
   readonly onBeforeEdit: () => void;
   /** Apply the output transform to the preview (no recompile needed). */
   readonly applyTonemap: (mode: TonemapMode) => void;
+  /** Overrides the starter document (the screen-space editor has another ABI). */
+  readonly createEffect?: (id: string, name?: string) => PostEffectDocument;
 }
 
 /**
@@ -18,9 +20,8 @@ export interface PostEffectStackDeps {
  * flush hook and requests the recompile.
  */
 export function usePostEffects(deps: PostEffectStackDeps) {
-  const effects = reactive<PostEffectDocument[]>([
-    createDefaultPostEffect('effect-1'),
-  ]);
+  const createEffect = deps.createEffect ?? createDefaultPostEffect;
+  const effects = reactive<PostEffectDocument[]>([createEffect('effect-1')]);
   const activeId = ref('effect-1');
   const tonemap = ref<TonemapMode>('none');
   let counter = 1;
@@ -48,10 +49,7 @@ export function usePostEffects(deps: PostEffectStackDeps) {
     deps.onBeforeEdit();
 
     counter += 1;
-    const effect = createDefaultPostEffect(
-      `effect-${counter}`,
-      `Effect ${counter}`,
-    );
+    const effect = createEffect(`effect-${counter}`, `Effect ${counter}`);
 
     effects.push(effect);
     activeId.value = effect.id;
@@ -68,9 +66,7 @@ export function usePostEffects(deps: PostEffectStackDeps) {
     // The Post effect tab always needs a document to edit.
     if (effects.length === 0) {
       counter += 1;
-      effects.push(
-        createDefaultPostEffect(`effect-${counter}`, `Effect ${counter}`),
-      );
+      effects.push(createEffect(`effect-${counter}`, `Effect ${counter}`));
     }
 
     if (activeId.value === id) {

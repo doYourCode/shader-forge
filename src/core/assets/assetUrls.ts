@@ -32,6 +32,12 @@ const MODEL_THUMBNAIL_URLS = import.meta.glob(
   },
 ) as Readonly<Record<string, string>>;
 
+const SCENE_URLS = import.meta.glob('/src/assets/scenes/*.glb', {
+  query: '?url&no-inline',
+  import: 'default',
+  eager: true,
+}) as Readonly<Record<string, string>>;
+
 const ENVIRONMENT_URLS = import.meta.glob('/src/assets/hdri/env/*.env', {
   query: '?url&no-inline',
   import: 'default',
@@ -78,6 +84,7 @@ const EXAMPLE_THUMBNAIL_URLS = import.meta.glob(
  */
 export const assetUrlMaps = Object.freeze({
   meshes: Object.freeze(MESH_URLS),
+  scenes: Object.freeze(SCENE_URLS),
   modelThumbnails: Object.freeze(MODEL_THUMBNAIL_URLS),
   environments: Object.freeze(ENVIRONMENT_URLS),
   hdriThumbnails: Object.freeze(HDRI_THUMBNAIL_URLS),
@@ -89,6 +96,11 @@ export const assetUrlMaps = Object.freeze({
 /** Resolves a mesh path such as `meshes/monkey.glb`. */
 export function resolveMeshUrl(path: string): string {
   return resolveAssetUrl(MESH_URLS, path);
+}
+
+/** Resolves a whole-scene path such as `scenes/bistro_compressed.glb`. */
+export function resolveSceneUrl(path: string): string {
+  return resolveAssetUrl(SCENE_URLS, path);
 }
 
 /** Resolves a model preview path such as `meshes/thumbs/monkey.png`. */

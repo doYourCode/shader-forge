@@ -7,11 +7,20 @@ import {
   type TonemapMode,
 } from '@/core/models/postEffect';
 
-const props = defineProps<{
-  effects: readonly PostEffectDocument[];
-  activeId: string;
-  tonemap: TonemapMode;
-}>();
+const props = withDefaults(
+  defineProps<{
+    effects: readonly PostEffectDocument[];
+    activeId: string;
+    tonemap: TonemapMode;
+    /** Screen-space effects get their own copy; defaults keep the 3D editor. */
+    titleKey?: string;
+    descriptionKey?: string;
+  }>(),
+  {
+    titleKey: 'postEffects.title',
+    descriptionKey: 'postEffects.description',
+  },
+);
 
 const emit = defineEmits<{
   (e: 'select', id: string): void;
@@ -40,12 +49,12 @@ function onTonemap(event: Event): void {
 </script>
 
 <template>
-  <section class="post-effects" :aria-label="t('postEffects.title')">
+  <section class="post-effects" :aria-label="t(props.titleKey)">
     <header class="post-effects__header">
       <div class="post-effects__heading">
-        <h2 class="post-effects__title">{{ t('postEffects.title') }}</h2>
+        <h2 class="post-effects__title">{{ t(props.titleKey) }}</h2>
         <p class="post-effects__description">
-          {{ t('postEffects.description') }}
+          {{ t(props.descriptionKey) }}
         </p>
       </div>
 

@@ -25,6 +25,9 @@
     "textures": {
       "uv-checker-01": "UV Checker 01",
       "uv-checker-02": "UV Checker 02"
+    },
+    "scenes": {
+      "bistro": "Bistro"
     }
   },
   "navigation": {
@@ -238,6 +241,41 @@
       "none": "None (linear to sRGB)",
       "reinhard": "Reinhard",
       "aces": "ACES filmic"
+    }
+  },
+  "screenSpace": {
+    "tabs": {
+      "label": "Editor panes",
+      "post": "Post effect",
+      "userData": "User data",
+      "gbuffer": "G-Buffer"
+    },
+    "scene": "Scene",
+    "environment": "Environment",
+    "effects": {
+      "title": "Screen-space effects",
+      "description": "Full-screen passes run in stack order over the HDR scene. Each pass reads the previous pass, the original scene colour and the scene G-buffer."
+    },
+    "fpsHint": "Click the viewport to look around. WASD to move, Q/E down/up, Shift to boost.",
+    "stats": "{fps} fps · {ms} ms / {budget} ms · {width}×{height} · {drawCalls} draws",
+    "loading": {
+      "scene": "Loading scene…",
+      "sceneProgress": "Loading scene… {loaded}/{total} MB",
+      "environment": "Loading environment…"
+    },
+    "debug": {
+      "title": "G-Buffer debug",
+      "description": "Inspect the scene data available to effects. Debug views bypass the effect stack output.",
+      "overlay": "G-Buffer",
+      "off": "Final image",
+      "scene": "Scene colour",
+      "depth": "Depth",
+      "normal": "Normal",
+      "albedo": "Albedo",
+      "material": "Roughness / metallic",
+      "velocity": "Motion vectors",
+      "objectId": "Object id",
+      "transparent": "Transparent overlay"
     }
   }
 }

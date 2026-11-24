@@ -139,5 +139,5 @@ mechanism.
 4. Add two collections (e.g. `docs_xx`, `knowledge_xx`) to `.pages.yml` with
    the same field schema as the existing ones.
 5. Add the UI-string messages under `src/i18n/locales/` and the option in the
-   header selector in `src/layouts/AppLayout.vue`.
+   header selector in `src/components/layout/AppLayout.vue`.
 6. Run `npm test` and `npm run build`.

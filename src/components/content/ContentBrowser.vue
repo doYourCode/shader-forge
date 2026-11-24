@@ -3,7 +3,7 @@ import { computed, onUnmounted, shallowRef, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
-import SplitViewLayout from '@/layouts/SplitViewLayout.vue';
+import SplitViewLayout from '@/components/layout/SplitViewLayout.vue';
 import TreeView from './TreeView.vue';
 import ContentPane from './ContentPane.vue';
 import FallbackNotice from './FallbackNotice.vue';

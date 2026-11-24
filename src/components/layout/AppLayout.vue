@@ -3,8 +3,8 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
-import AppBrand from '@/components/layout/AppBrand.vue';
-import LanguageSwitch from '@/components/layout/LanguageSwitch.vue';
+import AppBrand from './AppBrand.vue';
+import LanguageSwitch from './LanguageSwitch.vue';
 
 const route = useRoute();
 const { t } = useI18n();

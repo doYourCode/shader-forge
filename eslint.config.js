@@ -30,13 +30,12 @@ const CORE_NO_OUTER = {
     '@/components/*',
     '@/composables/*',
     '@/views/*',
-    '@/layouts/*',
   ],
   message: 'src/core must not depend on outer layers. Invert the dependency.',
 };
 
 const SERVICES_NO_UI = {
-  group: ['@/components/*', '@/views/*', '@/layouts/*', '@/composables/*'],
+  group: ['@/components/*', '@/views/*', '@/composables/*'],
   message: 'Services must not depend on UI layers.',
 };
 
@@ -138,7 +137,6 @@ export default tseslint.config(
     files: [
       'src/components/**/*.{ts,vue}',
       'src/views/**/*.{ts,vue}',
-      'src/layouts/**/*.{ts,vue}',
     ],
     rules: {
       '@typescript-eslint/no-restricted-imports': [

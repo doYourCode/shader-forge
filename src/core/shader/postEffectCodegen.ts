@@ -5,8 +5,13 @@ import type {
 import {
   isSamplerKind,
   type UserDataDocument,
+  type UserUniformDefinition,
 } from '@/core/models/userUniform';
-import { assembleStage, generateBlock } from './uniformCodegen';
+import {
+  assembleStage,
+  generateBlock,
+  generateSandboxPostBlock,
+} from './uniformCodegen';
 
 /**
  * Projects a post-effect document onto the fragment handed to the driver:
@@ -20,11 +25,37 @@ export function buildPostEffectSource(
   document: UserDataDocument,
   effect: PostEffectDocument,
 ): PostEffectSource {
-  const block = generateBlock(document, 'post');
-  const assembly = assembleStage(effect.fragment, block);
-  const targeted = document.definitions.filter(
-    (definition) => definition.stages === 'post',
+  return buildPostEffectSourceFrom(
+    effect,
+    generateBlock(document, 'post'),
+    document.definitions.filter((definition) => definition.stages === 'post'),
   );
+}
+
+/**
+ * Sandbox variant: there is no vertex stage, so `both` means "base fragment and
+ * post effects" and must also be injected and bound in every post pass.
+ */
+export function buildSandboxPostEffectSource(
+  document: UserDataDocument,
+  effect: PostEffectDocument,
+): PostEffectSource {
+  return buildPostEffectSourceFrom(
+    effect,
+    generateSandboxPostBlock(document),
+    document.definitions.filter(
+      (definition) =>
+        definition.stages === 'post' || definition.stages === 'both',
+    ),
+  );
+}
+
+function buildPostEffectSourceFrom(
+  effect: PostEffectDocument,
+  block: ReturnType<typeof generateBlock>,
+  targeted: readonly UserUniformDefinition[],
+): PostEffectSource {
+  const assembly = assembleStage(effect.fragment, block);
 
   return {
     id: effect.id,

@@ -13,7 +13,8 @@ import type {
 } from '@/core/models/userUniform';
 import {
   generateBlock,
-  generateSandboxBlock,
+  generateSandboxFragmentBlock,
+  generateSandboxPostBlock,
 } from '@/core/shader/uniformCodegen';
 import UniformValueInput from './UniformValueInput.vue';
 
@@ -32,8 +33,8 @@ const props = defineProps<{
   /** Stages whose generated block is previewed; defaults to all three. */
   previewStages?: readonly PreviewStage[];
   /**
-   * How the preview block is projected. The sandbox has one fragment document,
-   * so its fragment/post/both definitions share a single generated block.
+   * How the preview block is projected. The sandbox has a base fragment
+   * document and a post-effect chain, so it previews both blocks.
    */
   blockMode?: 'material' | 'sandbox';
 }>();
@@ -83,8 +84,15 @@ const generatedBlocks = computed(() => {
   const document = { revision: 0, definitions: [...props.definitions] };
 
   if (props.blockMode === 'sandbox') {
-    const block = generateSandboxBlock(document);
-    return block ? [{ stage: 'fragment' as const, lines: block.lines }] : [];
+    const fragment = generateSandboxFragmentBlock(document);
+    const post = generateSandboxPostBlock(document);
+
+    return [
+      ...(fragment
+        ? [{ stage: 'fragment' as const, lines: fragment.lines }]
+        : []),
+      ...(post ? [{ stage: 'post' as const, lines: post.lines }] : []),
+    ];
   }
 
   return previewStages.value.flatMap((stage) => {

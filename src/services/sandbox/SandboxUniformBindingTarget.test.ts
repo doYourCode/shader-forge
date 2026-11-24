@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { SandboxUniformBindingTarget } from './SandboxUniformBindingTarget';
+import { TextureUnitAllocator } from './TextureUnitAllocator';
 
 const TEXTURE0 = 0x84c0;
 const TEXTURE_2D = 0x0de1;
 
-function createHarness(missing: readonly string[] = []) {
+function createHarness(missing: readonly string[] = [], firstUnit = 0) {
   const locations = new Map<string, WebGLUniformLocation | null>();
   const calls = {
     uniform1f: vi.fn(),
@@ -34,7 +35,11 @@ function createHarness(missing: readonly string[] = []) {
   } as unknown as WebGL2RenderingContext;
 
   const program = {} as WebGLProgram;
-  const target = new SandboxUniformBindingTarget(gl, program);
+  const target = new SandboxUniformBindingTarget(
+    gl,
+    program,
+    new TextureUnitAllocator(firstUnit),
+  );
 
   return { target, gl, program, calls };
 }
@@ -86,6 +91,15 @@ describe('SandboxUniformBindingTarget', () => {
     target.setFloat('unused', 2);
 
     expect(calls.uniform1f).not.toHaveBeenCalled();
+  });
+
+  it('starts user samplers after the reserved post-effect units', () => {
+    const { target, calls } = createHarness([], 3);
+
+    target.setTexture('albedo', {} as WebGLTexture);
+
+    expect(calls.activeTexture).toHaveBeenCalledWith(TEXTURE0 + 3);
+    expect(calls.uniform1i).toHaveBeenCalledWith(expect.anything(), 3);
   });
 
   it('allocates a texture unit per sampler and binds the texture', () => {

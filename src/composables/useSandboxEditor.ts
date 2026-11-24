@@ -2,41 +2,40 @@ import { onBeforeUnmount, reactive, ref, watch } from 'vue';
 
 import type { CompileResult } from '@/core/models/compileResult';
 import type { EditorTabId } from '@/core/models/editorTab';
+import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
 import type { ShaderError } from '@/core/models/shaderError';
-import type { MaterialBlueprint } from '@/core/models/shaderSource';
 import {
   SANDBOX_RESERVED_UNIFORM_NAMES,
   defaultSandboxFragmentShader,
   sandboxVertexSource,
 } from '@/core/constants/sandbox';
 import { createEmptyUserDataDocument } from '@/core/models/userUniform';
+import { buildSandboxPostEffectSource } from '@/core/shader/postEffectCodegen';
+import {
+  generateSandboxFragmentBlock,
+  generateSandboxPostBlock,
+} from '@/core/shader/uniformCodegen';
 import { buildSandboxBlueprint } from '@/core/userdata/userData';
-import { generateSandboxBlock } from '@/core/shader/uniformCodegen';
 import { EditorManager } from '@/services/codemirror/EditorManager';
-import { internalError } from '@/services/babylon/preview/errors/shaderErrorFactory';
 import { SandboxPreview } from '@/services/sandbox/SandboxPreview';
 import { UserDataController } from '@/services/userdata/UserDataController';
+import { usePostEffects } from './usePostEffects';
+import { useShaderCompilation } from './useShaderCompilation';
 import { useUserDataCommands } from './useUserDataCommands';
-import type { EditorStatus, EditorStatusMessage } from './useShaderCompilation';
 
-/** The sandbox only exposes its fragment document and the user-data panel. */
-export type SandboxTabId = Extract<EditorTabId, 'fragment' | 'user_data'>;
+/** The sandbox documents: base fragment, user-data panel and post effects. */
+export type SandboxTabId = 'fragment' | 'user_data' | 'post';
 
 /**
  * State and lifecycle for the 2D sandbox harness. It owns the text editor, the
- * fullscreen preview and the same user-data document the 3D editor uses.
+ * fullscreen preview, the user-data document and the post-effect stack.
  *
- * The user-data controller is platform-neutral; the WebGL texture registry and
- * uniform target are created by `SandboxPreview`, which owns the GL context.
- * Fragment, post and "both" definitions all target the sandbox's single
- * fragment pass, so `buildSandboxBlueprint` is the projection strategy.
+ * The shared compilation queue and post-effect stack are the same ones the 3D
+ * editor uses; only the renderer (WebGL instead of Babylon) differs.
  */
 export function useSandboxEditor() {
   const editorManager = new EditorManager();
 
-  const status = ref<EditorStatus>('idle');
-  const statusMessage = ref<EditorStatusMessage | null>(null);
-  const errors = ref<ShaderError[]>([]);
   const paused = ref(false);
   const cursorLine = ref(1);
   const cursorCol = ref(1);
@@ -44,109 +43,285 @@ export function useSandboxEditor() {
   const highlightedUserRow = ref<number | null>(null);
 
   const userDataDoc = reactive(createEmptyUserDataDocument());
+  let fragmentDoc = defaultSandboxFragmentShader;
   let preview: SandboxPreview | null = null;
 
   const userData = new UserDataController<WebGLTexture>(
     {
       getSources: () => ({
         vertex: sandboxVertexSource,
-        fragment: editorManager.getValue(),
+        fragment:
+          activeTab.value === 'fragment'
+            ? editorManager.getValue()
+            : fragmentDoc,
       }),
       buildBlueprint: buildSandboxBlueprint,
       reservedNames: SANDBOX_RESERVED_UNIFORM_NAMES,
-      onCompileRequested: (blueprint) => compileBlueprint(blueprint),
+      onCompileRequested: (blueprint) => {
+        void compilation.compileMaterial(blueprint).then(() => {
+          // Do not let a successful post compile hide a base-shader failure.
+          if (compilation.status.value === 'ready') {
+            void compilation.compilePostEffects();
+          }
+        });
+      },
     },
     userDataDoc,
   );
-  const userDataCommands = useUserDataCommands(userData);
 
-  function setDiagnostics(): void {
-    editorManager.setDiagnostics(
-      errors.value
+  const postEffects = usePostEffects({
+    onBeforeEdit: () => storeActiveDocument(),
+    applyTonemap: (mode) => preview?.setTonemap(mode),
+  });
+
+  const compilation = useShaderCompilation({
+    compileMaterial: (blueprint) =>
+      Promise.resolve(
+        preview
+          ? preview.compile(blueprint)
+          : unavailable('scene-not-initialized'),
+      ),
+    compilePostEffects: (stack) =>
+      Promise.resolve(
+        preview
+          ? preview.compilePostEffects(stack)
+          : unavailable('scene-not-initialized'),
+      ),
+    getMaterialBlueprint: () => userData.buildBlueprint(),
+    getPostStack: currentPostStack,
+    onBeforeCompile: storeActiveDocument,
+    onOutcome: applyOutcome,
+    onExternalErrors: (errors) => {
+      highlightedUserRow.value = firstUserDataRow(errors);
+      setDiagnostics();
+    },
+  });
+
+  const userDataCommands = useUserDataCommands(userData);
+  const status = compilation.status;
+  const statusMessage = compilation.statusMessage;
+  const errors = compilation.errors;
+
+  function storeActiveDocument(): void {
+    if (activeTab.value === 'fragment') {
+      fragmentDoc = editorManager.getValue();
+      return;
+    }
+
+    if (activeTab.value === 'post') {
+      const effect = postEffects.active.value;
+      if (effect) effect.fragment = editorManager.getValue();
+    }
+  }
+
+  function currentPostStack(): PostEffectStack {
+    return {
+      tonemap: postEffects.tonemap.value,
+      effects: postEffects.effects
+        .filter((effect) => effect.enabled)
+        .map((effect) => buildSandboxPostEffectSource(userDataDoc, effect)),
+    };
+  }
+
+  function toDiagnostic(error: ShaderError & { line: number }) {
+    return {
+      line: error.line,
+      column: error.column,
+      message: [error.title, error.message, error.advice]
+        .filter((part): part is string => Boolean(part))
+        .join('\n'),
+    };
+  }
+
+  function diagnosticsFor(tab: SandboxTabId) {
+    if (tab === 'post') {
+      return errors.value
+        .filter(
+          (error): error is ShaderError & { line: number } =>
+            error.stage === 'post' &&
+            error.effectId === postEffects.activeId.value &&
+            error.line !== null,
+        )
+        .map(toDiagnostic);
+    }
+
+    if (tab === 'fragment') {
+      return errors.value
         .filter(
           (error): error is ShaderError & { line: number } =>
             error.stage === 'fragment' && error.line !== null,
         )
-        .map((error) => ({
-          line: error.line,
-          column: error.column,
-          message: [error.title, error.message, error.advice]
-            .filter((part): part is string => Boolean(part))
-            .join('\n'),
-        })),
-    );
+        .map(toDiagnostic);
+    }
+
+    return [];
   }
 
-  /**
-   * Lines the editor previews above the source: the same generated block the
-   * compile pipeline injects. Kept in sync with value edits as well as
-   * structural ones, so the read-only preview never drifts.
-   */
+  function setDiagnostics(): void {
+    editorManager.setDiagnostics(diagnosticsFor(activeTab.value));
+  }
+
   function updateInjectedBlock(): void {
-    editorManager.setInjectedBlock(
-      generateSandboxBlock(userDataDoc)?.lines ?? null,
+    if (activeTab.value === 'fragment') {
+      editorManager.setInjectedBlock(
+        generateSandboxFragmentBlock(userDataDoc)?.lines ?? null,
+      );
+      return;
+    }
+
+    if (activeTab.value === 'post') {
+      editorManager.setInjectedBlock(
+        generateSandboxPostBlock(userDataDoc)?.lines ?? null,
+      );
+      return;
+    }
+
+    editorManager.setInjectedBlock(null);
+  }
+
+  function isLocatedError(
+    error: ShaderError,
+  ): error is ShaderError & { line: number; stage: 'fragment' | 'post' } {
+    return (
+      error.line !== null &&
+      (error.stage === 'fragment' || error.stage === 'post')
     );
   }
 
-  function applyResult(result: CompileResult): void {
-    if (result.status === 'ok') {
-      errors.value = [];
-      highlightedUserRow.value = null;
-      status.value = 'ready';
-      statusMessage.value = { key: 'editor.status.messages.compiled' };
-      setDiagnostics();
-      return;
-    }
-
-    if (result.status === 'unavailable') {
-      errors.value = [];
-      highlightedUserRow.value = null;
-      status.value = 'error';
-      statusMessage.value = {
-        key: 'editor.status.messages.unavailable.sceneNotInitialized',
-      };
-      setDiagnostics();
-      return;
-    }
-
-    errors.value = [...result.errors];
-    highlightedUserRow.value =
-      result.errors.find(
+  function firstUserDataRow(
+    shaderErrors: readonly ShaderError[],
+  ): number | null {
+    return (
+      shaderErrors.find(
         (error) => error.stage === 'user_data' && error.row != null,
-      )?.row ?? null;
-    status.value = 'error';
-    statusMessage.value = {
-      key: 'editor.status.messages.shaderErrors',
-      params: { count: result.errors.length },
-    };
-    setDiagnostics();
+      )?.row ?? null
+    );
   }
 
-  function compileBlueprint(blueprint: MaterialBlueprint): void {
-    if (!preview) {
-      errors.value = [
-        internalError('The sandbox preview is not initialized yet.'),
-      ];
-      status.value = 'error';
-      statusMessage.value = {
-        key: 'editor.status.messages.unavailable.sceneNotInitialized',
-      };
+  function applyOutcome(result: CompileResult): void {
+    highlightedUserRow.value =
+      result.status === 'failed' ? firstUserDataRow(result.errors) : null;
+
+    if (result.status !== 'failed') {
+      setDiagnostics();
       return;
     }
 
-    status.value = 'compiling';
-    statusMessage.value = { key: 'editor.status.messages.compiling' };
-    applyResult(preview.compile(blueprint));
+    const firstLocated = result.errors.find(isLocatedError);
+    if (!firstLocated) {
+      setDiagnostics();
+      return;
+    }
+
+    storeActiveDocument();
+
+    if (firstLocated.stage === 'post') {
+      if (firstLocated.effectId && postEffects.has(firstLocated.effectId)) {
+        postEffects.select(firstLocated.effectId);
+      }
+      applyTab('post');
+      editorManager.setDiagnostics(diagnosticsFor('post'));
+      editorManager.revealPosition(firstLocated.line, firstLocated.column);
+      return;
+    }
+
+    if (activeTab.value !== 'fragment') applyTab('fragment');
+    editorManager.setDiagnostics(diagnosticsFor('fragment'));
+    editorManager.revealPosition(firstLocated.line, firstLocated.column);
+  }
+
+  function applyTab(tab: SandboxTabId): void {
+    activeTab.value = tab;
+
+    if (tab === 'post') {
+      compilation.setTarget('post');
+      editorManager.setValue(postEffects.active.value?.fragment ?? '');
+      editorManager.setReadOnly(false);
+      editorManager.setDiagnostics(diagnosticsFor('post'));
+      editorManager.setInjectedBlock(
+        generateSandboxPostBlock(userDataDoc)?.lines ?? null,
+      );
+      return;
+    }
+
+    if (tab === 'user_data') {
+      editorManager.setReadOnly(true);
+      editorManager.setInjectedBlock(null);
+      return;
+    }
+
+    compilation.setTarget('material');
+    editorManager.setValue(fragmentDoc);
+    editorManager.setReadOnly(false);
+    editorManager.setDiagnostics(diagnosticsFor('fragment'));
+    editorManager.setInjectedBlock(
+      generateSandboxFragmentBlock(userDataDoc)?.lines ?? null,
+    );
+  }
+
+  function switchTab(tab: EditorTabId): void {
+    if (tab !== 'fragment' && tab !== 'user_data' && tab !== 'post') return;
+    if (tab === activeTab.value) return;
+
+    storeActiveDocument();
+    applyTab(tab);
+    compilation.setIdle({
+      key: 'editor.status.messages.switchedTab',
+      params: { tab },
+    });
   }
 
   function compile(): void {
-    compileBlueprint(userData.buildBlueprint());
+    void compilation.compile();
+  }
+
+  function compilePostEffects(): void {
+    void compilation.compilePostEffects();
+  }
+
+  function selectPostEffect(id: string): void {
+    if (!postEffects.has(id)) return;
+    if (id === postEffects.activeId.value && activeTab.value === 'post') {
+      return;
+    }
+
+    postEffects.select(id);
+    applyTab('post');
+    compilation.setIdle({ key: 'editor.status.messages.postEffectSelected' });
+  }
+
+  function addPostEffect(): void {
+    postEffects.add();
+    applyTab('post');
+    void compilation.compilePostEffects();
+  }
+
+  function removePostEffect(id: string): void {
+    if (!postEffects.remove(id)) return;
+    if (activeTab.value === 'post') applyTab('post');
+    void compilation.compilePostEffects();
+  }
+
+  function movePostEffect(id: string, offset: number): void {
+    if (postEffects.move(id, offset)) {
+      void compilation.compilePostEffects();
+    }
+  }
+
+  function setPostEffectEnabled(id: string, enabled: boolean): void {
+    if (postEffects.setEnabled(id, enabled)) {
+      void compilation.compilePostEffects();
+    }
+  }
+
+  function setTonemap(mode: TonemapMode): void {
+    postEffects.setTonemap(mode);
   }
 
   function mountEditor(host: HTMLElement): void {
     editorManager.mount(
       host,
-      defaultSandboxFragmentShader,
+      fragmentDoc,
       (position) => {
         cursorLine.value = position.line;
         cursorCol.value = position.col;
@@ -154,33 +329,51 @@ export function useSandboxEditor() {
       false,
     );
 
+    activeTab.value = 'fragment';
+    compilation.setTarget('material');
+    compilation.setReady({ key: 'editor.status.messages.editorReady' });
     updateInjectedBlock();
-    status.value = 'ready';
-    statusMessage.value = { key: 'editor.status.messages.editorReady' };
   }
 
   function mountCanvas(canvas: HTMLCanvasElement): void {
     preview?.dispose();
     preview = new SandboxPreview(canvas);
     preview.attachUserData(userData);
-    compile();
-  }
 
-  function switchTab(tab: EditorTabId): void {
-    if (tab !== 'fragment' && tab !== 'user_data') return;
-    activeTab.value = tab;
+    void compilation.compileMaterial().then(() => {
+      if (compilation.status.value === 'ready') {
+        void compilation.compilePostEffects();
+      }
+    });
   }
 
   function revealError(error: ShaderError): void {
     if (error.stage === 'user_data') {
       if (error.row == null) return;
+      storeActiveDocument();
       activeTab.value = 'user_data';
+      editorManager.setReadOnly(true);
+      editorManager.setInjectedBlock(null);
       highlightedUserRow.value = error.row;
       return;
     }
 
+    if (error.stage === 'post') {
+      if (error.line === null) return;
+
+      storeActiveDocument();
+      if (error.effectId && postEffects.has(error.effectId)) {
+        postEffects.select(error.effectId);
+      }
+      applyTab('post');
+      editorManager.revealPosition(error.line, error.column);
+      return;
+    }
+
     if (error.stage !== 'fragment' || error.line === null) return;
-    activeTab.value = 'fragment';
+
+    storeActiveDocument();
+    applyTab('fragment');
     editorManager.revealPosition(error.line, error.column);
   }
 
@@ -211,11 +404,27 @@ export function useSandboxEditor() {
     highlightedUserRow,
     userDataDoc,
     userDataCommands,
+    postEffects: postEffects.effects,
+    activePostEffectId: postEffects.activeId,
+    tonemap: postEffects.tonemap,
     compile,
+    compilePostEffects,
     mountEditor,
     mountCanvas,
     switchTab,
     revealError,
     togglePaused,
+    selectPostEffect,
+    addPostEffect,
+    removePostEffect,
+    movePostEffect,
+    setPostEffectEnabled,
+    setTonemap,
   };
+}
+
+function unavailable(
+  reason: 'scene-not-initialized' | 'scene-disposed',
+): CompileResult {
+  return { status: 'unavailable', reason };
 }

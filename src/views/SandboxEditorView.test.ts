@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 
 import { i18n } from '@/i18n';
+import { defaultPostEffectFragment } from '@/core/constants/postEffects';
 import { defaultSandboxFragmentShader } from '@/core/constants/sandbox';
 import type { CompileResult } from '@/core/models/compileResult';
 import type { MaterialBlueprint } from '@/core/models/shaderSource';
@@ -12,13 +13,19 @@ import SandboxEditorView from './SandboxEditorView.vue';
 
 const { preview, editorManager, texturePicker } = vi.hoisted(() => {
   let result: CompileResult = { status: 'ok' };
+  let postResult: CompileResult = { status: 'ok' };
   const preview = {
     attachUserData: vi.fn(),
     compile: vi.fn((_blueprint: MaterialBlueprint) => result),
+    compilePostEffects: vi.fn(() => postResult),
+    setTonemap: vi.fn(),
     setPaused: vi.fn(),
     dispose: vi.fn(),
     setResult(next: CompileResult) {
       result = next;
+    },
+    setPostResult(next: CompileResult) {
+      postResult = next;
     },
   };
   let editorValue = '';
@@ -109,14 +116,31 @@ function lastBlueprint(): MaterialBlueprint {
   return call[0];
 }
 
+async function selectTab(
+  wrapper: ReturnType<typeof mount>,
+  label: string,
+): Promise<void> {
+  const tab = wrapper
+    .findAll('.editor-toolbar__tab')
+    .find((button) => button.text().includes(label));
+  if (!tab) throw new Error(`tab ${label} not found`);
+
+  await tab.trigger('click');
+  await nextTick();
+}
+
 describe('SandboxEditorView user data', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en';
     preview.compile.mockClear();
+    preview.compilePostEffects.mockClear();
+    preview.setTonemap.mockClear();
     preview.attachUserData.mockClear();
     editorManager.mount.mockClear();
     editorManager.setInjectedBlock.mockClear();
+    editorManager.revealPosition.mockClear();
     preview.setResult({ status: 'ok' });
+    preview.setPostResult({ status: 'ok' });
     vi.useFakeTimers();
   });
 
@@ -210,7 +234,7 @@ describe('SandboxEditorView user data', () => {
     wrapper.unmount();
   });
 
-  it('previews post and both definitions in the single fragment block', async () => {
+  it('previews post definitions in the post block', async () => {
     const wrapper = await mountView();
     await selectDocument(wrapper, 'Shader Data', 'User data');
 
@@ -301,6 +325,112 @@ describe('SandboxEditorView user data', () => {
     );
     const errorButton = wrapper.find('.sandbox-editor__error');
     expect(errorButton.text()).toContain('row 1');
+
+    wrapper.unmount();
+  });
+});
+
+describe('SandboxEditorView post effects', () => {
+  beforeEach(() => {
+    i18n.global.locale.value = 'en';
+    preview.compile.mockClear();
+    preview.compilePostEffects.mockClear();
+    preview.setTonemap.mockClear();
+    editorManager.mount.mockClear();
+    editorManager.setInjectedBlock.mockClear();
+    editorManager.revealPosition.mockClear();
+    preview.setResult({ status: 'ok' });
+    preview.setPostResult({ status: 'ok' });
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    document.body.innerHTML = '';
+  });
+
+  it('opens the post-effect stack in its own tab', async () => {
+    const wrapper = await mountView();
+
+    expect(wrapper.find('.post-effects').exists()).toBe(false);
+    await selectTab(wrapper, 'Post effect');
+
+    expect(wrapper.find('.post-effects').exists()).toBe(true);
+    expect(wrapper.findAll('.post-effects__item')).toHaveLength(1);
+    expect(editorManager.setValue).toHaveBeenLastCalledWith(
+      defaultPostEffectFragment,
+    );
+
+    wrapper.unmount();
+  });
+
+  it('adds an effect and recompiles the post stack', async () => {
+    const wrapper = await mountView();
+    await selectTab(wrapper, 'Post effect');
+    preview.compilePostEffects.mockClear();
+
+    await wrapper.find('.post-effects__add').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.findAll('.post-effects__item')).toHaveLength(2);
+    expect(preview.compilePostEffects).toHaveBeenCalledTimes(1);
+
+    wrapper.unmount();
+  });
+
+  it('changes the tonemap without recompiling', async () => {
+    const wrapper = await mountView();
+    await selectTab(wrapper, 'Post effect');
+    preview.compilePostEffects.mockClear();
+
+    await wrapper.find('.post-effects__tonemap select').setValue('aces');
+
+    expect(preview.setTonemap).toHaveBeenCalledWith('aces');
+    expect(preview.compilePostEffects).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
+  it('preserves the fragment and effect buffers across tabs', async () => {
+    const wrapper = await mountView();
+
+    editorManager.setValue('// custom fragment');
+    await selectTab(wrapper, 'Post effect');
+    editorManager.setValue('// custom effect');
+
+    await selectDocument(wrapper, 'Shader Stages', 'Fragment');
+
+    expect(editorManager.setValue).toHaveBeenLastCalledWith(
+      '// custom fragment',
+    );
+
+    wrapper.unmount();
+  });
+
+  it('reveals a post-effect diagnostic in its effect', async () => {
+    preview.setPostResult({
+      status: 'failed',
+      errors: [
+        {
+          stage: 'post',
+          line: 1,
+          column: 2,
+          kind: 'type',
+          title: 'Type mismatch',
+          message: 'cannot convert',
+          advice: null,
+          effectId: 'effect-1',
+        },
+      ],
+    });
+
+    const wrapper = await mountView();
+
+    expect(wrapper.find('.post-effects').exists()).toBe(true);
+    expect(editorManager.revealPosition).toHaveBeenCalledWith(1, 2);
+    expect(wrapper.find('.sandbox-editor__error').text()).toContain(
+      'Post effect',
+    );
 
     wrapper.unmount();
   });

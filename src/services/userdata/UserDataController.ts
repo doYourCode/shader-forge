@@ -138,10 +138,14 @@ export class UserDataController<TTexture> {
   }
 
   /**
-   * Binds the new material after every `MaterialController.apply`. The binder
-   * re-applies the whole document so a fresh effect never keeps GPU defaults.
+   * Binds the document to a live target without releasing retired textures.
+   *
+   * The sandbox has two program families (base and post effects) that compile
+   * separately; applying bindings after each one is safe, but disposing a
+   * retired texture before the second family has been rebuilt would break the
+   * chain that is still on screen.
    */
-  onMaterialApplied(target: UniformBindingTarget<TTexture> | null): void {
+  applyBindings(target: UniformBindingTarget<TTexture> | null): void {
     if (this.disposed) return;
 
     const gpu = this.gpu;
@@ -149,7 +153,25 @@ export class UserDataController<TTexture> {
 
     gpu.binder.attach(target);
     gpu.binder.applyAll(this.bindings());
-    this.flushTextureReleases(gpu);
+  }
+
+  /**
+   * Binds the new material after every `MaterialController.apply`. The binder
+   * re-applies the whole document so a fresh effect never keeps GPU defaults.
+   */
+  onMaterialApplied(target: UniformBindingTarget<TTexture> | null): void {
+    if (this.disposed) return;
+
+    this.applyBindings(target);
+    this.commitTextureReleases();
+  }
+
+  /** Releases textures retired by structural edits once every target is live. */
+  commitTextureReleases(): void {
+    if (this.disposed) return;
+
+    const gpu = this.gpu;
+    if (gpu) this.flushTextureReleases(gpu);
   }
 
   /**

@@ -34,6 +34,7 @@ import { SandboxPreview } from './SandboxPreview';
 
 function createCanvas() {
   const gl = {
+    getExtension: vi.fn(() => null),
     createVertexArray: vi.fn(() => ({})),
     bindVertexArray: vi.fn(),
     deleteVertexArray: vi.fn(),
@@ -72,6 +73,7 @@ describe('SandboxPreview user data', () => {
     const renderOnce = vi.spyOn(preview, 'renderOnce');
     const controller = {
       attachGpu: vi.fn(),
+      applyBindings: vi.fn(),
       onMaterialApplied: vi.fn(),
     } as unknown as UserDataController<WebGLTexture>;
 

@@ -20,7 +20,7 @@ import {
 import {
   assembleStage,
   assembleUserData,
-  generateSandboxBlock,
+  generateSandboxFragmentBlock,
   toStageAssemblyRecord,
 } from '@/core/shader/uniformCodegen';
 
@@ -89,12 +89,12 @@ export function buildUserDataBlueprint(
 }
 
 /**
- * Projects the document onto the sandbox's single fragment document.
+ * Projects the document onto the sandbox's base fragment document.
  *
- * Fragment, post and "both" definitions all belong to that fullscreen pass;
- * there is no separate vertex or post pipeline to assemble. The internal
- * vertex source travels unchanged so the generic diagnostic contract still has
- * a source pair to map.
+ * `fragment` and `both` definitions belong here; `post` definitions are
+ * assembled into every post-effect pass instead. The internal vertex source
+ * travels unchanged so the generic diagnostic contract still has a source pair
+ * to map.
  */
 export function buildSandboxBlueprint(
   document: UserDataDocument,
@@ -102,7 +102,7 @@ export function buildSandboxBlueprint(
 ): MaterialBlueprint {
   const fragment = assembleStage(
     sources.fragment,
-    generateSandboxBlock(document),
+    generateSandboxFragmentBlock(document),
   );
 
   return {

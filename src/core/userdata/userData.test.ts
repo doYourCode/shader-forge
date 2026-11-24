@@ -8,6 +8,8 @@ import {
   validateUserDataName,
 } from './userData';
 import { SANDBOX_RESERVED_UNIFORM_NAMES } from '@/core/constants/sandbox';
+import { buildSandboxPostEffectSource } from '@/core/shader/postEffectCodegen';
+import { createDefaultPostEffect } from '@/core/constants/postEffects';
 
 const DOCUMENT: UserDataDocument = {
   revision: 2,
@@ -153,15 +155,29 @@ describe('buildSandboxBlueprint', () => {
     ],
   };
 
-  it('injects fragment, post and both definitions into the fragment stage', () => {
+  it('injects fragment and both definitions into the base stage', () => {
     const blueprint = buildSandboxBlueprint(SANDBOX_DOCUMENT, SOURCES);
 
     expect(blueprint.fragment).toContain('uniform vec3 tint;');
-    expect(blueprint.fragment).toContain('uniform float glow;');
+    expect(blueprint.fragment).not.toContain('uniform float glow;');
     expect(blueprint.fragment).toContain('uniform vec2 scale;');
     expect(blueprint.fragment).not.toContain('uniform float ignored;');
-    expect(blueprint.fragment).toContain('glow = 2');
+    expect(blueprint.fragment).not.toContain('glow = 2');
     expect(blueprint.fragment).toContain('scale = (1, 2)');
+  });
+
+  it('injects post and both definitions into every post effect', () => {
+    const effect = createDefaultPostEffect('effect-1');
+    const source = buildSandboxPostEffectSource(SANDBOX_DOCUMENT, effect);
+
+    expect(source.fragment).toContain('uniform float glow;');
+    expect(source.fragment).toContain('uniform vec2 scale;');
+    expect(source.fragment).not.toContain('uniform vec3 tint;');
+    expect(source.fragment).not.toContain('uniform float ignored;');
+    expect(source.fragment).toContain('glow = 2');
+    expect(source.fragment).toContain('scale = (1, 2)');
+    expect(source.editorSource).toBe(effect.fragment);
+    expect(source.injected).not.toBeNull();
   });
 
   it('leaves the internal vertex stage and the editor source untouched', () => {

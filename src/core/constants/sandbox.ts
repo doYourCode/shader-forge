@@ -1,6 +1,7 @@
 import sandboxVertexShader from '@/assets/internal-shaders/sandbox.vert.glsl?raw';
 import sandboxFragmentShader from '@/assets/internal-shaders/sandbox.frag.glsl?raw';
 import { GLSL_RESERVED_WORDS } from '@/core/constants/glslReservedWords';
+import { POST_EFFECT_RESERVED_NAMES } from '@/core/constants/postEffectAbi';
 import type {
   UserUniformKind,
   UserUniformStage,
@@ -22,10 +23,10 @@ export const defaultSandboxFragmentShader = sandboxFragmentShader;
  */
 export const SANDBOX_RESERVED_UNIFORM_NAMES: ReadonlySet<string> = new Set([
   ...GLSL_RESERVED_WORDS,
+  ...POST_EFFECT_RESERVED_NAMES,
   'uResolution',
   'uTime',
   'vUv',
-  'fragColor',
 ]);
 
 /**
@@ -45,8 +46,9 @@ export const SANDBOX_USER_DATA_KINDS: readonly UserUniformKind[] = [
 ];
 
 /**
- * The sandbox is one fullscreen fragment pass, so fragment, post and the
- * combined option all address that pass. The vertex stage does not exist here.
+ * The sandbox has a base fragment pass and a post-effect chain. `fragment`
+ * targets the base, `post` targets every effect pass, and `both` targets both.
+ * The vertex stage does not exist here.
  */
 export const SANDBOX_USER_DATA_STAGES: readonly UserUniformStage[] = [
   'fragment',

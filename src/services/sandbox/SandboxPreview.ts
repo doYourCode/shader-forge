@@ -1,4 +1,5 @@
 import type { CompileResult } from '@/core/models/compileResult';
+import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
 import type { ShaderError } from '@/core/models/shaderError';
 import type { MaterialBlueprint } from '@/core/models/shaderSource';
 import { previewTextureCatalog } from '@/core/constants/previewTextures';
@@ -7,13 +8,18 @@ import {
   internalError,
   webGl2RequiredError,
 } from '@/services/babylon/preview/errors/shaderErrorFactory';
+import { CompositeUniformBindingTarget } from '@/services/userdata/CompositeUniformBindingTarget';
 import { UniformBinder } from '@/services/userdata/UniformBinding';
 import type { UserDataController } from '@/services/userdata/UserDataController';
 import { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
+import { SandboxPostPipeline } from './SandboxPostPipeline';
 import { SandboxTextureRegistry } from './SandboxTextureRegistry';
 import { SandboxUniformBindingTarget } from './SandboxUniformBindingTarget';
+import { TextureUnitAllocator } from './TextureUnitAllocator';
 
 const MAX_DEVICE_PIXEL_RATIO = 2;
+/** Post built-ins use 0–2; user samplers are shared from 3 upward. */
+const USER_SAMPLER_FIRST_UNIT = 3;
 
 /**
  * Minimal WebGL 2 renderer for the 2D sandbox.
@@ -31,9 +37,14 @@ export class SandboxPreview {
   private readonly contextError: ShaderError | null = null;
   private readonly vao: WebGLVertexArrayObject | null = null;
 
+  private readonly postPipeline: SandboxPostPipeline | null = null;
+  private readonly textureUnits = new TextureUnitAllocator(
+    USER_SAMPLER_FIRST_UNIT,
+  );
   private program: WebGLProgram | null = null;
   private resolutionLocation: WebGLUniformLocation | null = null;
   private timeLocation: WebGLUniformLocation | null = null;
+  private baseBindingTarget: SandboxUniformBindingTarget | null = null;
   private userData: UserDataController<WebGLTexture> | null = null;
   private textures: SandboxTextureRegistry | null = null;
   private animationFrame: number | null = null;
@@ -60,10 +71,16 @@ export class SandboxPreview {
 
     this.gl = gl;
     this.recorder = new ShaderLogRecorder(gl);
+    this.postPipeline = new SandboxPostPipeline(
+      gl,
+      this.recorder,
+      this.textureUnits,
+    );
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);
+    gl.disable(gl.BLEND);
     gl.clearColor(0.02, 0.03, 0.05, 1);
 
     this.resize();
@@ -149,13 +166,13 @@ export class SandboxPreview {
     this.program = program;
     this.resolutionLocation = gl.getUniformLocation(program, 'uResolution');
     this.timeLocation = gl.getUniformLocation(program, 'uTime');
-    gl.useProgram(program);
-
-    // A new program starts from GPU defaults; re-apply the document before the
-    // first frame so values and texture bindings are already correct.
-    this.userData?.onMaterialApplied(
-      new SandboxUniformBindingTarget(gl, program),
+    this.baseBindingTarget = new SandboxUniformBindingTarget(
+      gl,
+      program,
+      this.textureUnits,
     );
+    gl.useProgram(program);
+    this.syncUserDataTargets();
 
     // The render loop is intentionally stopped while paused, so draw one frame
     // here. Otherwise a compile made while paused would stay invisible until
@@ -163,6 +180,37 @@ export class SandboxPreview {
     this.render();
 
     return { status: 'ok' };
+  }
+
+  /** Compiles the post-effect chain atomically, preserving the last good one. */
+  compilePostEffects(stack: PostEffectStack): CompileResult {
+    const gl = this.gl;
+    const pipeline = this.postPipeline;
+
+    if (!gl || !pipeline) {
+      return {
+        status: 'failed',
+        errors: [this.contextError ?? webGl2RequiredError()],
+      };
+    }
+
+    this.resize();
+    const result = pipeline.compile(stack);
+
+    if (result.status === 'ok') {
+      // Both program families now match the document, so retired textures can
+      // be released safely.
+      this.syncUserDataTargets(true);
+      this.renderOnce();
+    }
+
+    return result;
+  }
+
+  /** The display pass reads the transform every frame; no recompile needed. */
+  setTonemap(mode: TonemapMode): void {
+    this.postPipeline?.setTonemap(mode);
+    this.renderOnce();
   }
 
   /**
@@ -192,6 +240,7 @@ export class SandboxPreview {
     this.textures = textures;
 
     controller.attachGpu({ textures, binder });
+    this.syncUserDataTargets();
   }
 
   /** Draws a single frame; used for async work completed while paused. */
@@ -215,6 +264,7 @@ export class SandboxPreview {
     }
 
     this.detachUserData();
+    this.postPipeline?.dispose();
 
     if (this.animationFrame !== null) {
       cancelAnimationFrame(this.animationFrame);
@@ -280,6 +330,28 @@ export class SandboxPreview {
     this.userData = null;
   }
 
+  /**
+   * Re-attaches the binder to every live program: the base pass and each post
+   * effect pass. A target whose program does not declare a name ignores it, so
+   * the whole document can safely be applied to all of them.
+   */
+  private syncUserDataTargets(flushReleases = false): void {
+    if (!this.userData) return;
+
+    const targets = [
+      ...(this.baseBindingTarget ? [this.baseBindingTarget] : []),
+      ...(this.postPipeline?.bindingTargets() ?? []),
+    ];
+    const target =
+      targets.length > 0 ? new CompositeUniformBindingTarget(targets) : null;
+
+    if (flushReleases) {
+      this.userData.onMaterialApplied(target);
+    } else {
+      this.userData.applyBindings(target);
+    }
+  }
+
   /** A paused preview still needs a fresh frame when its canvas box changes. */
   private readonly handleResize = (): void => {
     if (this.paused) this.render();
@@ -323,11 +395,23 @@ export class SandboxPreview {
 
     this.resize();
 
+    const post = this.postPipeline;
+    if (post?.hasChain() && post.beginBasePass()) {
+      this.drawBaseProgram();
+      post.renderChain(this.elapsedSeconds);
+      return;
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    this.drawBaseProgram();
+  }
 
+  private drawBaseProgram(): void {
+    const gl = this.gl;
     const program = this.program;
-    if (!program) return;
+    if (!gl || !program) return;
 
     gl.useProgram(program);
 
@@ -358,5 +442,7 @@ export class SandboxPreview {
       this.canvas.width = width;
       this.canvas.height = height;
     }
+
+    this.postPipeline?.resize(width, height);
   }
 }

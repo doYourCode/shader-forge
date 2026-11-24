@@ -75,18 +75,35 @@ export function generateBlock(
 }
 
 /**
- * Builds the block for the 2D sandbox's single fragment document.
+ * Builds the block for the 2D sandbox's base fragment document.
  *
- * The sandbox has no separate vertex stage; fragment, post and the combined
- * "both" option all target the same fullscreen pass, so they share one block.
- * A definition explicitly targeting the (non-existent) vertex stage is ignored.
+ * The sandbox has a fragment document and a separate post-effect chain. A
+ * `fragment` definition belongs to the base pass; `both` is shared with the
+ * post passes. The non-existent vertex stage is ignored.
  */
-export function generateSandboxBlock(
+export function generateSandboxFragmentBlock(
   document: UserDataDocument,
 ): GeneratedUserDataBlock | null {
   const targeted = document.definitions
     .map((definition, row) => ({ definition, row }))
-    .filter(({ definition }) => isSandboxTarget(definition.stages));
+    .filter(
+      ({ definition }) =>
+        definition.stages === 'fragment' || definition.stages === 'both',
+    );
+
+  return buildBlock(targeted);
+}
+
+/** Builds the block for every 2D sandbox post-effect pass. */
+export function generateSandboxPostBlock(
+  document: UserDataDocument,
+): GeneratedUserDataBlock | null {
+  const targeted = document.definitions
+    .map((definition, row) => ({ definition, row }))
+    .filter(
+      ({ definition }) =>
+        definition.stages === 'post' || definition.stages === 'both',
+    );
 
   return buildBlock(targeted);
 }
@@ -224,10 +241,6 @@ export function toStageAssemblyRecord(
 function targetsStage(stage: UserUniformStage, target: InjectedStage): boolean {
   if (stage === 'both') return target === 'vertex' || target === 'fragment';
   return stage === target;
-}
-
-function isSandboxTarget(stage: UserUniformStage): boolean {
-  return stage === 'fragment' || stage === 'post' || stage === 'both';
 }
 
 function splitLines(source: string): string[] {

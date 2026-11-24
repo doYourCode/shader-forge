@@ -1,4 +1,5 @@
 import type { UniformBindingTarget } from '@/services/userdata/UniformBinding';
+import { TextureUnitAllocator } from './TextureUnitAllocator';
 import type {
   UserColor3Value,
   UserColor4Value,
@@ -19,12 +20,16 @@ export class SandboxUniformBindingTarget implements UniformBindingTarget<WebGLTe
   private readonly gl: WebGL2RenderingContext;
   private readonly program: WebGLProgram;
   private readonly locations = new Map<string, WebGLUniformLocation | null>();
-  private readonly units = new Map<string, number>();
-  private nextUnit = 0;
+  private readonly units: TextureUnitAllocator;
 
-  constructor(gl: WebGL2RenderingContext, program: WebGLProgram) {
+  constructor(
+    gl: WebGL2RenderingContext,
+    program: WebGLProgram,
+    units: TextureUnitAllocator = new TextureUnitAllocator(0),
+  ) {
     this.gl = gl;
     this.program = program;
+    this.units = units;
   }
 
   setFloat(name: string, value: number): void {
@@ -92,17 +97,7 @@ export class SandboxUniformBindingTarget implements UniformBindingTarget<WebGLTe
     return location;
   }
 
-  /**
-   * Textures are allocated one unit per uniform in first-use order. A removed
-   * sampler leaves its old unit unused; the next binding round still starts
-   * from the same deterministic order.
-   */
   private unitFor(name: string): number {
-    const existing = this.units.get(name);
-    if (existing !== undefined) return existing;
-
-    const unit = this.nextUnit++;
-    this.units.set(name, unit);
-    return unit;
+    return this.units.unitFor(name);
   }
 }

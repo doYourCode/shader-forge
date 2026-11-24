@@ -7,11 +7,13 @@ import AppBrand from '@/components/layout/AppBrand.vue';
 import LanguageSwitch from '@/components/layout/LanguageSwitch.vue';
 import CompileButton from '@/components/shader/CompileButton.vue';
 import EditorToolbar from '@/components/shader/EditorToolbar.vue';
+import PostEffectPanel from '@/components/shader/PostEffectPanel.vue';
 import StatusBar from '@/components/shader/StatusBar.vue';
 import UserDataPanel from '@/components/shader/UserDataPanel.vue';
 import { TEXTURE_PICKER } from '@/components/shader/texturePickerContext';
 import { useSandboxEditor } from '@/composables/useSandboxEditor';
 import {
+  postTab,
   sandboxDataTabGroup,
   sandboxStageTabGroup,
   type EditorTab,
@@ -29,12 +31,11 @@ const { t, locale } = useI18n();
 const editorHostRef = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
-/** The sandbox has no standalone tabs; both documents live in groups. */
+/** The post-effect document is standalone, like the 3D editor. */
 const editorGroups = [sandboxStageTabGroup, sandboxDataTabGroup];
-const editorTabs: readonly EditorTab[] = [];
+const editorTabs: readonly EditorTab[] = [postTab];
 
-/** Fragment, post and both definitions all generate into this document. */
-const sandboxPreviewStages = ['fragment'] as const;
+const sandboxPreviewStages = ['fragment', 'post'] as const;
 
 /**
  * The texture picker is shared with the 3D editor's user-data panel. It is
@@ -61,12 +62,21 @@ const {
   highlightedUserRow,
   userDataDoc,
   userDataCommands,
+  postEffects,
+  activePostEffectId,
+  tonemap,
   compile,
   mountEditor,
   mountCanvas,
   switchTab,
   revealError,
   togglePaused,
+  selectPostEffect,
+  addPostEffect,
+  removePostEffect,
+  movePostEffect,
+  setPostEffectEnabled,
+  setTonemap,
 } = useSandboxEditor();
 
 const statusText = computed(() => {
@@ -96,7 +106,10 @@ function errorStageLabel(error: ShaderError): string {
 
 function isRevealable(error: ShaderError): boolean {
   if (error.stage === 'user_data') return error.row != null;
-  return error.stage === 'fragment' && error.line !== null;
+  return (
+    (error.stage === 'fragment' || error.stage === 'post') &&
+    error.line !== null
+  );
 }
 
 onMounted(() => {
@@ -123,6 +136,20 @@ onBeforeUnmount(() => {
           <AppBrand />
         </template>
       </EditorToolbar>
+
+      <PostEffectPanel
+        v-if="activeTab === 'post'"
+        class="sandbox-editor__post-panel"
+        :effects="postEffects"
+        :active-id="activePostEffectId"
+        :tonemap="tonemap"
+        @select="selectPostEffect"
+        @add="addPostEffect"
+        @remove="removePostEffect"
+        @move="movePostEffect"
+        @toggle="setPostEffectEnabled"
+        @tonemap="setTonemap"
+      />
 
       <div
         v-show="activeTab !== 'user_data'"
@@ -171,7 +198,7 @@ onBeforeUnmount(() => {
         <canvas ref="canvasRef" class="sandbox-editor__canvas" />
 
         <code class="sandbox-editor__abi" aria-hidden="true">
-          vUv · uResolution · uTime · user data
+          vUv · uResolution · uTime · user data · post effects
         </code>
 
         <div
@@ -267,6 +294,12 @@ onBeforeUnmount(() => {
 }
 
 .sandbox-editor__editor-host :deep(.cm-scroller) {
+  overflow: auto;
+}
+
+.sandbox-editor__post-panel {
+  flex: 0 0 auto;
+  max-height: 45%;
   overflow: auto;
 }
 

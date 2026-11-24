@@ -553,6 +553,26 @@ describe('UserDataController material binding', () => {
     expect(harness.binder.attach).toHaveBeenCalledWith(null);
   });
 
+  it('can apply bindings before retired textures are committed', () => {
+    const harness = createHarness();
+    const result = harness.controller.add({
+      name: 'albedo',
+      kind: 'sampler2D',
+    });
+    if (!result.ok) throw new Error('expected add to succeed');
+    harness.controller.setValue(result.definition.id, {
+      kind: 'url',
+      url: '/albedo.png',
+    });
+    harness.controller.remove(result.definition.id);
+
+    harness.controller.applyBindings({} as UniformBindingTarget<BaseTexture>);
+    expect(harness.textures.release).not.toHaveBeenCalled();
+
+    harness.controller.commitTextureReleases();
+    expect(harness.textures.release).toHaveBeenCalledWith(result.definition.id);
+  });
+
   it('loads textures for sampler definitions when the scene attaches', () => {
     const harness = createHarness();
     harness.controller.add({ name: 'albedo', kind: 'sampler2D' });

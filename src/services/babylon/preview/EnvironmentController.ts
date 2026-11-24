@@ -15,7 +15,7 @@ import {
   type EnvironmentIblFilter,
   type EnvironmentIblFilterFactory,
 } from './IblFiltering';
-import { noopLoadTimer, type LoadTimer } from '@/services/perf/LoadProfiler';
+import { noopLoadTimer, type LoadTimer } from '@/core/utils/LoadProfiler';
 
 /** Face size used when converting the equirectangular HDR panorama. */
 const HDR_CUBE_SIZE = 512;

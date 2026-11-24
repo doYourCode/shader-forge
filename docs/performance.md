@@ -19,7 +19,7 @@ window.__shaderForgePerf.samples(); // { phase, ms }[] in completion order
 
 ## Phase names
 
-Emitted by `src/services/perf/LoadProfiler`:
+Emitted by `src/core/utils/LoadProfiler`:
 
 | Phase | Starts when | Ends when |
 | --- | --- | --- |

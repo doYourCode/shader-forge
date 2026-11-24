@@ -42,7 +42,7 @@ import {
   createDefaultEnvironmentController,
   type EnvironmentController,
 } from './preview/EnvironmentController';
-import { noopLoadTimer, type LoadTimer } from '@/services/perf/LoadProfiler';
+import { noopLoadTimer, type LoadTimer } from '@/core/utils/LoadProfiler';
 import { TextureRegistry } from '@/services/userdata/TextureRegistry';
 import type { TextureRegistryPort } from '@/services/userdata/TextureSource';
 import {

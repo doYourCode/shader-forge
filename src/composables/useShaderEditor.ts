@@ -16,7 +16,7 @@ import { findShaderExample } from '@/core/constants/shaderExamples';
 import { buildPostEffectSource } from '@/core/shader/postEffectCodegen';
 import { GenerationTracker } from '@/core/async/generation';
 import { UserDataController } from '@/services/userdata/UserDataController';
-import { LoadProfiler, exposeProfiler } from '@/services/perf/LoadProfiler';
+import { LoadProfiler, exposeProfiler } from '@/core/utils/LoadProfiler';
 import {
   useShaderCompilation,
   type EditorStatusMessage,

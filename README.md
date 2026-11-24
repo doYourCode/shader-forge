@@ -77,6 +77,11 @@ The dependency direction is `core` ← `services` ← UI. ESLint enforces that
 `src/core` stays framework-free and that outer layers do not reach into
 engines directly.
 
+Folder rules: a directory names a subsystem, capability or boundary, not a
+single file; a one-file module lives beside its layer (for example
+`services/clipboard.ts`); tests stay next to the module they cover; avoid a
+folder whose name only repeats the file inside.
+
 ## Working on content
 
 Documentation and knowledge are translated as parallel per-locale trees. See
@@ -98,3 +103,23 @@ npm run build
 
 ShaderForge is released under the GNU General Public License v3.0. See
 [LICENSE](LICENSE).
+
+## Cleaner file tree (optional)
+
+Tests live beside their modules, which can make the Explorer busy. VS Code
+can visually nest them: create `.vscode/settings.json` (it is gitignored, so
+each contributor opts in) with:
+
+```json
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.test.ts, ${capture}.*.test.ts",
+    "*.vue": "${capture}.test.ts"
+  }
+}
+```
+
+This only changes how the Explorer displays files; it does not move files or
+affect the build.

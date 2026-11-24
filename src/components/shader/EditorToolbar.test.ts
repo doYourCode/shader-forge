@@ -16,7 +16,7 @@ import type {
   ExamplePickerPort,
   ExamplePickerSession,
   ExamplePickResult,
-} from '@/services/examplepicker/ExamplePicker';
+} from '@/services/assetpicker/ExamplePicker';
 
 const PICKED_PHONG: ExamplePickResult = {
   status: 'picked',

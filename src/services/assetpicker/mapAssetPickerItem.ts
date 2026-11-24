@@ -2,7 +2,7 @@ import type { AssetPickerItem } from 'assetpicker';
 
 import type { TextureCatalog } from '@/core/constants/previewTextures';
 import type { SamplerKind } from '@/core/models/userUniform';
-import type { TexturePickResult } from '@/services/texturepicker/TexturePicker';
+import type { TexturePickResult } from './TexturePicker';
 
 import { REPOSITORY_STORAGE_ID } from './assetPickerConfig';
 

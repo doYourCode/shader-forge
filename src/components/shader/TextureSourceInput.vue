@@ -10,7 +10,7 @@ import type {
   TexturePickerSession,
   TexturePickRejection,
   TexturePickResult,
-} from '@/services/texturepicker/TexturePicker';
+} from '@/services/assetpicker/TexturePicker';
 import { TEXTURE_PICKER } from './texturePickerContext';
 
 const props = defineProps<{

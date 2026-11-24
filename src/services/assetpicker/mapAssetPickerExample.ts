@@ -1,7 +1,7 @@
 import type { AssetPickerItem } from 'assetpicker';
 
 import type { ShaderExampleCatalog } from '@/core/constants/shaderExamples';
-import type { ExamplePickResult } from '@/services/examplepicker/ExamplePicker';
+import type { ExamplePickResult } from './ExamplePicker';
 
 import { EXAMPLE_STORAGE_ID } from './examplePickerConfig';
 

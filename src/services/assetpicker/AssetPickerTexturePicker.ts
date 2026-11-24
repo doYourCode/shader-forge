@@ -9,7 +9,7 @@ import type {
   TexturePickResult,
   TexturePickerPort,
   TexturePickerSession,
-} from '@/services/texturepicker/TexturePicker';
+} from './TexturePicker';
 
 import {
   buildAssetPickerConfig,

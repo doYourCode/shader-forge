@@ -1,6 +1,6 @@
 import type { AssetPickerConfig } from 'assetpicker';
 
-import type { TexturePickRequest } from '@/services/texturepicker/TexturePicker';
+import type { TexturePickRequest } from './TexturePicker';
 
 /** Key of the bundled repository storage in the picker's config. */
 export const REPOSITORY_STORAGE_ID = 'bundled-textures';

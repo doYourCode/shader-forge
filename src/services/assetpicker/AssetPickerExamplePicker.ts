@@ -8,7 +8,7 @@ import type {
   ExamplePickResult,
   ExamplePickerPort,
   ExamplePickerSession,
-} from '@/services/examplepicker/ExamplePicker';
+} from './ExamplePicker';
 
 import type { AssetPickerLanguage } from './assetPickerConfig';
 import { registerExampleAdapter } from './exampleAdapter';

@@ -7,7 +7,7 @@ import type {
   ExamplePickerPort,
   ExamplePickerSession,
   ExamplePickResult,
-} from '@/services/examplepicker/ExamplePicker';
+} from '@/services/assetpicker/ExamplePicker';
 
 import ShaderExamplePicker from './ShaderExamplePicker.vue';
 import { EXAMPLE_PICKER } from './examplePickerContext';

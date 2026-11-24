@@ -9,7 +9,7 @@ import type {
   ExamplePickerPort,
   ExamplePickerSession,
   ExamplePickResult,
-} from '@/services/examplepicker/ExamplePicker';
+} from '@/services/assetpicker/ExamplePicker';
 import { EXAMPLE_PICKER } from './examplePickerContext';
 
 const emit = defineEmits<{

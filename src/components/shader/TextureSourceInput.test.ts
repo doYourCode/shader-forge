@@ -9,7 +9,7 @@ import type {
   TexturePickerSession,
   TexturePickRequest,
   TexturePickResult,
-} from '@/services/texturepicker/TexturePicker';
+} from '@/services/assetpicker/TexturePicker';
 
 import TextureSourceInput from './TextureSourceInput.vue';
 import { TEXTURE_PICKER } from './texturePickerContext';

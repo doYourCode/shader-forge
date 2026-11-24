@@ -7,7 +7,7 @@ import type {
   UserUniformKind,
   UserUniformValue,
 } from '@/core/models/userUniform';
-import type { TexturePickerPort } from '@/services/texturepicker/TexturePicker';
+import type { TexturePickerPort } from '@/services/assetpicker/TexturePicker';
 import TextureSourceInput from './TextureSourceInput.vue';
 import UniformValueInput from './UniformValueInput.vue';
 import UserColorPicker from './UserColorPicker.vue';

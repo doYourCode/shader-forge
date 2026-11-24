@@ -10,7 +10,7 @@ import type {
   AssetPickerItemInput,
 } from 'assetpicker';
 
-import type { TexturePickRequest } from '@/services/texturepicker/TexturePicker';
+import type { TexturePickRequest } from './TexturePicker';
 
 import { AssetPickerTexturePicker } from './AssetPickerTexturePicker';
 import {

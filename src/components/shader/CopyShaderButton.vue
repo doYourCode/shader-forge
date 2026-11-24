@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Check, Copy } from 'lucide-vue-next';
 
-import { writeClipboard } from '@/services/clipboard/writeClipboard';
+import { writeClipboard } from '@/services/clipboard';
 
 const props = defineProps<{
   /** Resolved on click, so unflushed keystrokes and live values are included. */

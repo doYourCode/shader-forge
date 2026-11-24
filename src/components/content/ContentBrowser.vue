@@ -4,8 +4,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
 import SplitViewLayout from '@/layouts/SplitViewLayout.vue';
-import TreeView from '@/components/knowledge/TreeView.vue';
-import ContentPane from '@/components/knowledge/ContentPane.vue';
+import TreeView from './TreeView.vue';
+import ContentPane from './ContentPane.vue';
 import FallbackNotice from './FallbackNotice.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
 

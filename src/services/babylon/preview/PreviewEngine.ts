@@ -4,7 +4,7 @@ import {
   ShaderLogRecorder,
   type WebGlInfoLogContext,
 } from '@/services/webgl/ShaderLogRecorder';
-import { webGl2RequiredError } from './errors/shaderErrorFactory';
+import { webGl2RequiredError } from './shaderErrorFactory';
 
 /** The only engine state the WebGL 2 guard needs, which keeps it testable. */
 export interface WebGl2EngineLike {

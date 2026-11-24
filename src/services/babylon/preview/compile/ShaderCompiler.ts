@@ -7,7 +7,7 @@ import {
   internalError,
   internalErrorFrom,
   timeoutError,
-} from '../errors/shaderErrorFactory';
+} from '../shaderErrorFactory';
 import { CompileAttempt } from './CompileAttempt';
 
 export interface ShaderCompilerOptions {

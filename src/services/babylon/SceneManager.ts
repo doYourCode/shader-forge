@@ -12,7 +12,7 @@ import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
 import { internalShaders } from './internalShaders';
 import { FragmentDiagnostics } from './preview/compile/FragmentDiagnostics';
 import { ShaderCompiler } from './preview/compile/ShaderCompiler';
-import { internalErrorFrom } from './preview/errors/shaderErrorFactory';
+import { internalErrorFrom } from './preview/shaderErrorFactory';
 import { MaterialController } from './preview/MaterialController';
 import { PreviewAnimator } from './preview/PreviewAnimator';
 import { PreviewEngine } from './preview/PreviewEngine';
@@ -55,7 +55,7 @@ import type { UserDataController } from '@/services/userdata/UserDataController'
 import type {
   PreviewSnapshot,
   PreviewSnapshotFactory,
-} from './preview/snapshot/PreviewSnapshot';
+} from './preview/PreviewSnapshot';
 import {
   GenerationTracker,
   type GenerationScope,

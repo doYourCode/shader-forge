@@ -6,7 +6,7 @@ import {
   type ShaderExample,
 } from '@/core/constants/shaderExamples';
 import { SceneManager } from '@/services/babylon/SceneManager';
-import { createRenderTargetSnapshot } from '@/services/babylon/preview/snapshot/PreviewSnapshot';
+import { createRenderTargetSnapshot } from '@/services/babylon/preview/PreviewSnapshot';
 import type { ShaderSource } from '@/core/models/shaderSource';
 import { UserDataController } from '@/services/userdata/UserDataController';
 

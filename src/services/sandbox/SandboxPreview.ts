@@ -7,7 +7,7 @@ import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import {
   internalError,
   webGl2RequiredError,
-} from '@/services/babylon/preview/errors/shaderErrorFactory';
+} from '@/services/babylon/preview/shaderErrorFactory';
 import { CompositeUniformBindingTarget } from '@/services/userdata/CompositeUniformBindingTarget';
 import { UniformBinder } from '@/services/userdata/UniformBinding';
 import type { UserDataController } from '@/services/userdata/UserDataController';

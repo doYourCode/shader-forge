@@ -4,9 +4,23 @@ import {
   type BaseTexture,
   type Scene,
 } from '@babylonjs/core';
-import type { PreviewTexture } from '@/core/models/previewTexture';
 import type { SamplerKind, UserTextureSource } from '@/core/models/userUniform';
 import { KeyedLatestLoads, type PendingLoad } from '@/core/async/latestLoad';
+import {
+  browserObjectUrls,
+  resolveTextureSource,
+  sameTextureSource,
+  type ObjectUrlProvider,
+  type TextureLookup,
+  type TextureRegistryPort,
+} from './TextureSource';
+
+export {
+  browserObjectUrls,
+  type ObjectUrlProvider,
+  type TextureLookup,
+  type TextureRegistryPort,
+} from './TextureSource';
 
 /** Creates a Babylon texture and reports its asynchronous load outcome. */
 export type UserTextureFactory = (
@@ -16,15 +30,6 @@ export type UserTextureFactory = (
   onLoad: () => void,
   onError: () => void,
 ) => BaseTexture;
-
-/** ObjectURL lifecycle, injectable so tests never touch the real browser API. */
-export interface ObjectUrlProvider {
-  createObjectUrl(file: File): string;
-  revokeObjectUrl(url: string): void;
-}
-
-/** Resolves a repository texture id to its bundled catalog entry. */
-export type TextureLookup = (textureId: string) => PreviewTexture | undefined;
 
 /**
  * Registers a plain 2D texture for `sampler2D` and a cube texture for
@@ -53,26 +58,6 @@ export const createUserTexture: UserTextureFactory = (
   );
 };
 
-export const browserObjectUrls: ObjectUrlProvider = {
-  createObjectUrl: (file) => URL.createObjectURL(file),
-  revokeObjectUrl: (url) => URL.revokeObjectURL(url),
-};
-
-/** The slice of the registry the uniform controller depends on. */
-export interface TextureRegistryPort {
-  /** Loads (or replaces) the texture registered under `definitionId`. */
-  load(
-    definitionId: string,
-    kind: SamplerKind,
-    source: UserTextureSource,
-  ): Promise<BaseTexture | null>;
-  /** Disposes the texture for a removed or re-kinded definition. */
-  release(definitionId: string): void;
-  /** The texture currently registered for a definition, if it is loaded. */
-  textureFor(definitionId: string): BaseTexture | null;
-  dispose(): void;
-}
-
 interface LoadedTexture {
   readonly source: UserTextureSource;
   readonly texture: BaseTexture;
@@ -94,7 +79,7 @@ interface PendingTexture {
  * disposed exactly once, and the registry is the only owner of the ObjectURLs
  * it created from uploaded files.
  */
-export class TextureRegistry implements TextureRegistryPort {
+export class TextureRegistry implements TextureRegistryPort<BaseTexture> {
   private readonly scene: Scene;
   private readonly createTexture: UserTextureFactory;
   private readonly objectUrls: ObjectUrlProvider;
@@ -131,30 +116,23 @@ export class TextureRegistry implements TextureRegistryPort {
     if (this.disposed) return Promise.resolve(null);
 
     const loaded = this.current.get(definitionId);
-    if (loaded && sameSource(loaded.source, source)) {
+    if (loaded && sameTextureSource(loaded.source, source)) {
       return Promise.resolve(loaded.texture);
     }
 
     const inFlight = this.pending.get(definitionId);
-    if (inFlight && sameSource(inFlight.payload.source, source)) {
+    if (inFlight && sameTextureSource(inFlight.payload.source, source)) {
       return inFlight.promise;
     }
 
-    let url: string;
-    if (source.kind === 'file') {
-      url = this.objectUrls.createObjectUrl(source.file);
-    } else if (source.kind === 'repository') {
-      const entry = this.lookup(source.textureId);
-      if (!entry || entry.sampler !== kind) {
-        this.release(definitionId);
-        return Promise.resolve(null);
-      }
-      url = entry.url;
-    } else {
-      url = source.url.trim();
-    }
+    const resolved = resolveTextureSource(
+      source,
+      kind,
+      this.lookup,
+      this.objectUrls,
+    );
 
-    if (url.length === 0) {
+    if (!resolved) {
       this.release(definitionId);
       return Promise.resolve(null);
     }
@@ -162,7 +140,7 @@ export class TextureRegistry implements TextureRegistryPort {
     const entry: PendingTexture = {
       source,
       texture: null,
-      objectUrl: source.kind === 'file' ? url : null,
+      objectUrl: resolved.objectUrl,
     };
     // A newer source for the same definition retires the previous request.
     const load = this.pending.begin(definitionId, entry, (pending) =>
@@ -175,7 +153,7 @@ export class TextureRegistry implements TextureRegistryPort {
       entry.texture = this.createTexture(
         this.scene,
         kind,
-        url,
+        resolved.url,
         () => queueMicrotask(() => this.finishLoad(definitionId, load)),
         () => queueMicrotask(() => this.finishError(load)),
       );
@@ -263,23 +241,4 @@ export class TextureRegistry implements TextureRegistryPort {
       entry.objectUrl = null;
     }
   }
-}
-
-function sameSource(
-  previous: UserTextureSource,
-  next: UserTextureSource,
-): boolean {
-  if (previous.kind === 'file' && next.kind === 'file') {
-    return previous.file === next.file;
-  }
-
-  if (previous.kind === 'url' && next.kind === 'url') {
-    return previous.url.trim() === next.url.trim();
-  }
-
-  if (previous.kind === 'repository' && next.kind === 'repository') {
-    return previous.textureId === next.textureId;
-  }
-
-  return false;
 }

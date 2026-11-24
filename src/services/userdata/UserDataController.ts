@@ -1,4 +1,4 @@
-﻿import {
+import {
   createEmptyUserDataDocument,
   hasTextureContent,
   isSamplerKind,
@@ -28,8 +28,8 @@ import {
   type UniformBinding,
   type UniformBindingTarget,
   type UniformBinderPort,
-} from './UniformBinder';
-import type { TextureRegistryPort } from './TextureRegistry';
+} from './UniformBinding';
+import type { TextureRegistryPort } from './TextureSource';
 
 export { BUILTIN_RESERVED_UNIFORM_NAMES } from '@/core/userdata/userData';
 
@@ -37,16 +37,32 @@ export { BUILTIN_RESERVED_UNIFORM_NAMES } from '@/core/userdata/userData';
 export const USER_DATA_COMPILE_DEBOUNCE_MS = 300;
 
 /** Scene-scoped GPU collaborators, attached by the scene manager. */
-export interface UserDataGpuPort {
-  readonly textures: TextureRegistryPort;
-  readonly binder: UniformBinderPort;
+export interface UserDataGpuPort<TTexture> {
+  readonly textures: TextureRegistryPort<TTexture>;
+  readonly binder: UniformBinderPort<TTexture>;
 }
+
+/** Projects a document onto the source a preview compiler consumes. */
+export type UserDataBlueprintBuilder = (
+  document: UserDataDocument,
+  sources: ShaderSource,
+) => MaterialBlueprint;
 
 export interface UserDataControllerDeps {
   /** The current vertex/fragment documents, read when a blueprint is built. */
   getSources: () => ShaderSource;
   /** Wired to the preview compile pipeline by the editor composable. */
   onCompileRequested: (blueprint: MaterialBlueprint) => void;
+  /**
+   * Replaces the default material projection. The sandbox uses it to inject
+   * fragment/post definitions into its single fragment document.
+   */
+  buildBlueprint?: UserDataBlueprintBuilder;
+  /**
+   * Names the active shader ABI already owns. Defaults to the 3D material ABI;
+   * the sandbox supplies its own smaller set.
+   */
+  reservedNames?: ReadonlySet<string>;
   debounceMs?: number;
   /** Injectable debounce so tests do not depend on wall-clock time. */
   schedule?: (callback: () => void, delayMs: number) => () => void;
@@ -86,7 +102,7 @@ const NOT_FOUND: UserDataCommandResult = { ok: false, reason: 'not-found' };
  * `UserDataGpuPort` implementations and the composable supplies the sources
  * and the compile request.
  */
-export class UserDataController {
+export class UserDataController<TTexture> {
   private readonly deps: UserDataControllerDeps;
   private readonly document: UserDataDocument;
   /**
@@ -96,7 +112,7 @@ export class UserDataController {
    * preview until the debounced recompile lands.
    */
   private readonly pendingTextureReleases = new Set<string>();
-  private gpu: UserDataGpuPort | null = null;
+  private gpu: UserDataGpuPort<TTexture> | null = null;
   private cancelScheduledCompile: (() => void) | null = null;
   private nextId = 1;
   private disposed = false;
@@ -114,7 +130,7 @@ export class UserDataController {
   }
 
   /** Attaches (or detaches, with null) the scene-scoped GPU collaborators. */
-  attachGpu(gpu: UserDataGpuPort | null): void {
+  attachGpu(gpu: UserDataGpuPort<TTexture> | null): void {
     this.gpu = gpu;
     // Releases queued for a previous scene died with its registry.
     this.pendingTextureReleases.clear();
@@ -125,7 +141,7 @@ export class UserDataController {
    * Binds the new material after every `MaterialController.apply`. The binder
    * re-applies the whole document so a fresh effect never keeps GPU defaults.
    */
-  onMaterialApplied(target: UniformBindingTarget | null): void {
+  onMaterialApplied(target: UniformBindingTarget<TTexture> | null): void {
     if (this.disposed) return;
 
     const gpu = this.gpu;
@@ -153,14 +169,24 @@ export class UserDataController {
   }
 
   validateName(name: string, exceptId?: string): NameValidationResult {
-    return validateUserDataName(this.document, name, exceptId);
+    return validateUserDataName(
+      this.document,
+      name,
+      exceptId,
+      this.reservedNames,
+    );
   }
 
   /** Projects the document onto assembled GLSL plus the material extras. */
   buildBlueprint(
     sources: ShaderSource = this.deps.getSources(),
   ): MaterialBlueprint {
-    return buildUserDataBlueprint(this.document, sources);
+    const build = this.deps.buildBlueprint ?? buildUserDataBlueprint;
+    return build(this.document, sources);
+  }
+
+  private get reservedNames(): ReadonlySet<string> {
+    return this.deps.reservedNames ?? RESERVED_UNIFORM_NAMES;
   }
 
   add(request: {
@@ -337,7 +363,7 @@ export class UserDataController {
       const validation = validateUniformName(
         init.name,
         taken,
-        RESERVED_UNIFORM_NAMES,
+        this.reservedNames,
       );
 
       if (!validation.ok) {
@@ -427,7 +453,7 @@ export class UserDataController {
     this.pendingTextureReleases.add(definitionId);
   }
 
-  private flushTextureReleases(gpu: UserDataGpuPort): void {
+  private flushTextureReleases(gpu: UserDataGpuPort<TTexture>): void {
     if (this.pendingTextureReleases.size === 0) return;
 
     for (const definitionId of this.pendingTextureReleases) {

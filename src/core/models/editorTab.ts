@@ -74,3 +74,20 @@ export const dataTabGroup: EditorTabGroup = {
     { id: 'uniforms', labelKey: 'editor.tabs.uniforms', readOnly: true },
   ],
 };
+
+/**
+ * The 2D sandbox has one editable document and the same structured data panel.
+ * It deliberately has no vertex stage and no 3D ABI reference documents, but it
+ * keeps the 3D editor's group structure so the toolbar is familiar.
+ */
+export const sandboxStageTabGroup: EditorTabGroup = {
+  id: 'stages',
+  labelKey: 'editor.tabGroups.stages',
+  tabs: [{ id: 'fragment', labelKey: 'editor.tabs.fragment', readOnly: false }],
+};
+
+export const sandboxDataTabGroup: EditorTabGroup = {
+  id: 'data',
+  labelKey: 'editor.tabGroups.data',
+  tabs: [userDataTab],
+};

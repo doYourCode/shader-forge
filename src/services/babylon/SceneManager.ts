@@ -1,4 +1,5 @@
 import type {
+  BaseTexture,
   DirectionalLight,
   Engine,
   Mesh,
@@ -42,16 +43,14 @@ import {
   type EnvironmentController,
 } from './preview/EnvironmentController';
 import { noopLoadTimer, type LoadTimer } from '@/services/perf/LoadProfiler';
+import { TextureRegistry } from '@/services/userdata/TextureRegistry';
+import type { TextureRegistryPort } from '@/services/userdata/TextureSource';
 import {
-  TextureRegistry,
-  type TextureRegistryPort,
-} from '@/services/userdata/TextureRegistry';
-import {
-  ShaderMaterialBindingTarget,
   UniformBinder,
   type UniformBindingTarget,
   type UniformBinderPort,
-} from '@/services/userdata/UniformBinder';
+} from '@/services/userdata/UniformBinding';
+import { ShaderMaterialBindingTarget } from '@/services/userdata/UniformBinder';
 import type { UserDataController } from '@/services/userdata/UserDataController';
 import type {
   PreviewSnapshot,
@@ -106,9 +105,13 @@ export interface SceneManagerDeps {
     scene: Scene,
     timer: LoadTimer,
   ): EnvironmentController;
-  createTextureRegistry(scene: Scene): TextureRegistryPort;
-  createUniformBinder(textures: TextureRegistryPort): UniformBinderPort;
-  createUniformBindingTarget(material: ShaderMaterial): UniformBindingTarget;
+  createTextureRegistry(scene: Scene): TextureRegistryPort<BaseTexture>;
+  createUniformBinder(
+    textures: TextureRegistryPort<BaseTexture>,
+  ): UniformBinderPort<BaseTexture>;
+  createUniformBindingTarget(
+    material: ShaderMaterial,
+  ): UniformBindingTarget<BaseTexture>;
   createPostEffects(
     deps: PostEffectPipelineDeps,
     mesh: Mesh,
@@ -177,8 +180,8 @@ export class SceneManager {
   private compiler: ShaderCompiler | null = null;
   private fragmentDiagnostics: FragmentDiagnostics | null = null;
   private environment: EnvironmentController | null = null;
-  private textures: TextureRegistryPort | null = null;
-  private userData: UserDataController | null = null;
+  private textures: TextureRegistryPort<BaseTexture> | null = null;
+  private userData: UserDataController<BaseTexture> | null = null;
   private postEffects: PostEffectPipeline | null = null;
   private wireframe = false;
   /**
@@ -227,7 +230,7 @@ export class SceneManager {
     blueprint: MaterialBlueprint,
     model: PreviewModel = previewModels.default,
     hdri: PreviewHdri = previewHdris.default,
-    userData: UserDataController | null = null,
+    userData: UserDataController<BaseTexture> | null = null,
     postStack: PostEffectStack | null = null,
   ): Promise<void> {
     this.dispose();

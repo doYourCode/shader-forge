@@ -6,7 +6,7 @@ import {
   type UserDataControllerDeps,
   type UserUniformInit,
 } from './UserDataController';
-import type { UniformBindingTarget } from './UniformBinder';
+import type { UniformBindingTarget } from './UniformBinding';
 
 const VERTEX = `#version 300 es
 precision highp float;
@@ -57,7 +57,7 @@ function createHarness(overrides: Partial<UserDataControllerDeps> = {}) {
     applyAll: vi.fn(),
   };
   const sources = { vertex: VERTEX, fragment: FRAGMENT };
-  const controller = new UserDataController({
+  const controller = new UserDataController<BaseTexture>({
     getSources: () => sources,
     onCompileRequested,
     debounceMs: 300,
@@ -77,7 +77,10 @@ function createHarness(overrides: Partial<UserDataControllerDeps> = {}) {
   };
 }
 
-function addColor(controller: UserDataController, name = 'tint'): string {
+function addColor(
+  controller: UserDataController<BaseTexture>,
+  name = 'tint',
+): string {
   const result = controller.add({ name, kind: 'color' });
   if (!result.ok) throw new Error('expected the definition to be added');
   return result.definition.id;
@@ -194,7 +197,9 @@ describe('UserDataController structural commands', () => {
     // the recompiled material to replace it.
     expect(harness.textures.release).not.toHaveBeenCalled();
 
-    harness.controller.onMaterialApplied({} as UniformBindingTarget);
+    harness.controller.onMaterialApplied(
+      {} as UniformBindingTarget<BaseTexture>,
+    );
     expect(harness.textures.release).toHaveBeenCalledWith(id);
 
     harness.scheduler.flush();
@@ -227,7 +232,9 @@ describe('UserDataController structural commands', () => {
     expect(harness.controller.doc.definitions[0]?.kind).toBe('samplerCube');
     expect(harness.textures.release).not.toHaveBeenCalled();
 
-    harness.controller.onMaterialApplied({} as UniformBindingTarget);
+    harness.controller.onMaterialApplied(
+      {} as UniformBindingTarget<BaseTexture>,
+    );
     expect(harness.textures.release).toHaveBeenCalledWith(id);
     // The default source is empty, so there is nothing to load yet.
     expect(harness.textures.load).not.toHaveBeenCalled();
@@ -261,7 +268,9 @@ describe('UserDataController structural commands', () => {
     harness.controller.changeKind(id, 'float');
     harness.controller.changeKind(id, 'sampler2D');
     harness.controller.setValue(id, { kind: 'url', url: '/new.png' });
-    harness.controller.onMaterialApplied({} as UniformBindingTarget);
+    harness.controller.onMaterialApplied(
+      {} as UniformBindingTarget<BaseTexture>,
+    );
 
     expect(harness.textures.release).not.toHaveBeenCalledWith(id);
   });
@@ -371,7 +380,9 @@ describe('UserDataController replaceAll', () => {
     // the rebuilt material, exactly like remove().
     expect(harness.textures.release).not.toHaveBeenCalled();
 
-    harness.controller.onMaterialApplied({} as UniformBindingTarget);
+    harness.controller.onMaterialApplied(
+      {} as UniformBindingTarget<BaseTexture>,
+    );
     expect(harness.textures.release).toHaveBeenCalledWith(samplerId);
   });
 
@@ -495,7 +506,9 @@ describe('UserDataController value command', () => {
     expect(harness.textures.release).not.toHaveBeenCalled();
 
     harness.binder.applyAll.mockClear();
-    harness.controller.onMaterialApplied({} as UniformBindingTarget);
+    harness.controller.onMaterialApplied(
+      {} as UniformBindingTarget<BaseTexture>,
+    );
     const bindings = harness.binder.applyAll.mock.calls[0]![0];
     expect(
       bindings.map((binding: { name: string }) => binding.name),
@@ -520,7 +533,7 @@ describe('UserDataController material binding', () => {
     addColor(harness.controller, 'accent');
     harness.binder.attach.mockClear();
     harness.binder.applyAll.mockClear();
-    const target = {} as UniformBindingTarget;
+    const target = {} as UniformBindingTarget<BaseTexture>;
 
     harness.controller.onMaterialApplied(target);
 

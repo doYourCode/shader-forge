@@ -33,8 +33,8 @@ export interface UserDataCommands {
   validateName(name: string, exceptId?: string): NameValidationResult;
 }
 
-export function useUserDataCommands(
-  userData: UserDataController,
+export function useUserDataCommands<TTexture>(
+  userData: UserDataController<TTexture>,
 ): UserDataCommands {
   return {
     doc: userData.doc,

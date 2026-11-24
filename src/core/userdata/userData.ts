@@ -1,4 +1,4 @@
-﻿import { GLSL_RESERVED_WORDS } from '@/core/constants/glslReservedWords';
+import { GLSL_RESERVED_WORDS } from '@/core/constants/glslReservedWords';
 import {
   SHADER_ATTRIBUTES,
   SHADER_SAMPLER_NAMES,
@@ -17,7 +17,12 @@ import {
   type NameValidationResult,
   type UserDataDocument,
 } from '@/core/models/userUniform';
-import { assembleUserData } from '@/core/shader/uniformCodegen';
+import {
+  assembleStage,
+  assembleUserData,
+  generateSandboxBlock,
+  toStageAssemblyRecord,
+} from '@/core/shader/uniformCodegen';
 
 /**
  * Names the engine already owns. Imported (never copied) from the material ABI
@@ -46,13 +51,14 @@ export function validateUserDataName(
   document: UserDataDocument,
   name: string,
   exceptId?: string,
+  reservedNames: ReadonlySet<string> = RESERVED_UNIFORM_NAMES,
 ): NameValidationResult {
   const taken = new Set<string>();
   for (const definition of document.definitions) {
     if (definition.id !== exceptId) taken.add(definition.name);
   }
 
-  return validateUniformName(name, taken, RESERVED_UNIFORM_NAMES);
+  return validateUniformName(name, taken, reservedNames);
 }
 
 /**
@@ -77,12 +83,50 @@ export function buildUserDataBlueprint(
       vertex: sources.vertex,
       fragment: sources.fragment,
     },
+    ...userDataExtras(document),
+    userData: assembly.record,
+  };
+}
+
+/**
+ * Projects the document onto the sandbox's single fragment document.
+ *
+ * Fragment, post and "both" definitions all belong to that fullscreen pass;
+ * there is no separate vertex or post pipeline to assemble. The internal
+ * vertex source travels unchanged so the generic diagnostic contract still has
+ * a source pair to map.
+ */
+export function buildSandboxBlueprint(
+  document: UserDataDocument,
+  sources: ShaderSource,
+): MaterialBlueprint {
+  const fragment = assembleStage(
+    sources.fragment,
+    generateSandboxBlock(document),
+  );
+
+  return {
+    vertex: sources.vertex,
+    fragment: fragment.source,
+    editorSource: {
+      vertex: sources.vertex,
+      fragment: sources.fragment,
+    },
+    ...userDataExtras(document),
+    userData: {
+      vertex: null,
+      fragment: toStageAssemblyRecord(fragment),
+    },
+  };
+}
+
+function userDataExtras(document: UserDataDocument) {
+  return {
     extraUniforms: document.definitions
       .filter((definition) => !isSamplerKind(definition.kind))
       .map((definition) => definition.name),
     extraSamplers: document.definitions
       .filter((definition) => isSamplerKind(definition.kind))
       .map((definition) => definition.name),
-    userData: assembly.record,
   };
 }

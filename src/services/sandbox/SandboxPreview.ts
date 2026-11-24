@@ -1,12 +1,17 @@
 import type { CompileResult } from '@/core/models/compileResult';
 import type { ShaderError } from '@/core/models/shaderError';
-import { sandboxVertexSource } from '@/core/constants/sandbox';
+import type { MaterialBlueprint } from '@/core/models/shaderSource';
+import { previewTextureCatalog } from '@/core/constants/previewTextures';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
 import {
   internalError,
   webGl2RequiredError,
 } from '@/services/babylon/preview/errors/shaderErrorFactory';
+import { UniformBinder } from '@/services/userdata/UniformBinding';
+import type { UserDataController } from '@/services/userdata/UserDataController';
 import { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
+import { SandboxTextureRegistry } from './SandboxTextureRegistry';
+import { SandboxUniformBindingTarget } from './SandboxUniformBindingTarget';
 
 const MAX_DEVICE_PIXEL_RATIO = 2;
 
@@ -29,6 +34,8 @@ export class SandboxPreview {
   private program: WebGLProgram | null = null;
   private resolutionLocation: WebGLUniformLocation | null = null;
   private timeLocation: WebGLUniformLocation | null = null;
+  private userData: UserDataController<WebGLTexture> | null = null;
+  private textures: SandboxTextureRegistry | null = null;
   private animationFrame: number | null = null;
   private paused = false;
   private elapsedSeconds = 0;
@@ -67,10 +74,12 @@ export class SandboxPreview {
   }
 
   /**
-   * Compiles a new fullscreen fragment program. Shader compilation is
-   * synchronous, so callers can apply the result immediately.
+   * Compiles a new fullscreen program. Shader compilation is synchronous, so
+   * callers can apply the result immediately. The blueprint carries the
+   * assembled stages plus the untouched editor fragment and user-data
+   * assembly record needed to attribute diagnostics.
    */
-  compile(fragmentSource: string): CompileResult {
+  compile(blueprint: MaterialBlueprint): CompileResult {
     const gl = this.gl;
     const recorder = this.recorder;
 
@@ -94,19 +103,16 @@ export class SandboxPreview {
 
     recorder.begin();
 
-    const vertexShader = this.compileStage(
-      gl.VERTEX_SHADER,
-      sandboxVertexSource,
-    );
+    const vertexShader = this.compileStage(gl.VERTEX_SHADER, blueprint.vertex);
     const fragmentShader = this.compileStage(
       gl.FRAGMENT_SHADER,
-      fragmentSource,
+      blueprint.fragment,
     );
 
     if (!vertexShader || !fragmentShader) {
       if (vertexShader) gl.deleteShader(vertexShader);
       if (fragmentShader) gl.deleteShader(fragmentShader);
-      return this.failedCompile(fragmentSource);
+      return this.failedCompile(blueprint);
     }
 
     const program = gl.createProgram();
@@ -135,7 +141,7 @@ export class SandboxPreview {
 
     if (!linked) {
       gl.deleteProgram(program);
-      return this.failedCompile(fragmentSource);
+      return this.failedCompile(blueprint);
     }
 
     if (this.program) gl.deleteProgram(this.program);
@@ -145,12 +151,53 @@ export class SandboxPreview {
     this.timeLocation = gl.getUniformLocation(program, 'uTime');
     gl.useProgram(program);
 
+    // A new program starts from GPU defaults; re-apply the document before the
+    // first frame so values and texture bindings are already correct.
+    this.userData?.onMaterialApplied(
+      new SandboxUniformBindingTarget(gl, program),
+    );
+
     // The render loop is intentionally stopped while paused, so draw one frame
     // here. Otherwise a compile made while paused would stay invisible until
     // the user pressed Resume.
     this.render();
 
     return { status: 'ok' };
+  }
+
+  /**
+   * Attaches the user-data document to this preview. The registry and binder
+   * are texture-handle-scoped to WebGL, so they must live beside the context,
+   * not in the composable.
+   */
+  attachUserData(controller: UserDataController<WebGLTexture> | null): void {
+    if (this.userData === controller) return;
+
+    this.detachUserData();
+    this.userData = controller;
+
+    const gl = this.gl;
+    if (!controller || !gl) return;
+
+    const textures = new SandboxTextureRegistry(
+      gl,
+      previewTextureCatalog.find,
+      {
+        // A texture may finish loading while the preview is paused. Draw once so
+        // it becomes visible without the user pressing Resume.
+        onTextureReady: () => this.renderOnce(),
+      },
+    );
+    const binder = new UniformBinder<WebGLTexture>(textures);
+    this.textures = textures;
+
+    controller.attachGpu({ textures, binder });
+  }
+
+  /** Draws a single frame; used for async work completed while paused. */
+  renderOnce(): void {
+    if (this.disposed || !this.gl || !this.program) return;
+    this.render();
   }
 
   setPaused(paused: boolean): void {
@@ -166,6 +213,8 @@ export class SandboxPreview {
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', this.handleResize);
     }
+
+    this.detachUserData();
 
     if (this.animationFrame !== null) {
       cancelAnimationFrame(this.animationFrame);
@@ -209,17 +258,26 @@ export class SandboxPreview {
     return shader;
   }
 
-  private failedCompile(fragmentSource: string): CompileResult {
+  private failedCompile(blueprint: MaterialBlueprint): CompileResult {
     const errors = parseShaderCompileErrors(
       this.recorder?.drain() ?? [],
       {
-        vertex: sandboxVertexSource,
-        fragment: fragmentSource,
+        vertex: blueprint.vertex,
+        fragment: blueprint.fragment,
+        editorSource: blueprint.editorSource,
+        userData: blueprint.userData,
       },
       'The sandbox shader program failed to link.',
     );
 
     return { status: 'failed', errors };
+  }
+
+  private detachUserData(): void {
+    this.userData?.attachGpu(null);
+    this.textures?.dispose();
+    this.textures = null;
+    this.userData = null;
   }
 
   /** A paused preview still needs a fresh frame when its canvas box changes. */

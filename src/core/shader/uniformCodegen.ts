@@ -71,6 +71,32 @@ export function generateBlock(
     .map((definition, row) => ({ definition, row }))
     .filter(({ definition }) => targetsStage(definition.stages, stage));
 
+  return buildBlock(targeted);
+}
+
+/**
+ * Builds the block for the 2D sandbox's single fragment document.
+ *
+ * The sandbox has no separate vertex stage; fragment, post and the combined
+ * "both" option all target the same fullscreen pass, so they share one block.
+ * A definition explicitly targeting the (non-existent) vertex stage is ignored.
+ */
+export function generateSandboxBlock(
+  document: UserDataDocument,
+): GeneratedUserDataBlock | null {
+  const targeted = document.definitions
+    .map((definition, row) => ({ definition, row }))
+    .filter(({ definition }) => isSandboxTarget(definition.stages));
+
+  return buildBlock(targeted);
+}
+
+function buildBlock(
+  targeted: readonly {
+    readonly definition: UserUniformDefinition;
+    readonly row: number;
+  }[],
+): GeneratedUserDataBlock | null {
   if (targeted.length === 0) return null;
 
   const lines: string[] = [BLOCK_START_LINE];
@@ -153,8 +179,8 @@ export function assembleUserData(
     vertex: vertex.source,
     fragment: fragment.source,
     record: {
-      vertex: toRecord(vertex),
-      fragment: toRecord(fragment),
+      vertex: toStageAssemblyRecord(vertex),
+      fragment: toStageAssemblyRecord(fragment),
     },
   };
 }
@@ -184,7 +210,10 @@ export function locateInjectedBlock(source: string): InjectedBlockRange | null {
   return null;
 }
 
-function toRecord(assembly: StageAssembly): StageAssemblyRecord | null {
+/** Projects an assembled stage into the diagnostic record carried by a blueprint. */
+export function toStageAssemblyRecord(
+  assembly: StageAssembly,
+): StageAssemblyRecord | null {
   if (!assembly.injected) return null;
   return {
     injected: assembly.injected,
@@ -195,6 +224,10 @@ function toRecord(assembly: StageAssembly): StageAssemblyRecord | null {
 function targetsStage(stage: UserUniformStage, target: InjectedStage): boolean {
   if (stage === 'both') return target === 'vertex' || target === 'fragment';
   return stage === target;
+}
+
+function isSandboxTarget(stage: UserUniformStage): boolean {
+  return stage === 'fragment' || stage === 'post' || stage === 'both';
 }
 
 function splitLines(source: string): string[] {

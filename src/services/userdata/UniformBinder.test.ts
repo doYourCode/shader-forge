@@ -6,12 +6,14 @@ import type {
   UserUniformValue,
 } from '@/core/models/userUniform';
 import {
+  createUniformKindSetters,
   toUniformBinding,
   UniformBinder,
-  UNIFORM_KIND_SETTERS,
   type UniformBinding,
   type UniformBindingTarget,
-} from './UniformBinder';
+} from './UniformBinding';
+
+const SETTERS = createUniformKindSetters<BaseTexture>();
 
 function binding(
   kind: UserUniformKind,
@@ -23,7 +25,7 @@ function binding(
 }
 
 function createTarget() {
-  const target: UniformBindingTarget = {
+  const target: UniformBindingTarget<BaseTexture> = {
     setFloat: vi.fn(),
     setInt: vi.fn(),
     setVector2: vi.fn(),
@@ -43,7 +45,7 @@ function createBinder() {
   return { binder, textures, texture };
 }
 
-describe('UNIFORM_KIND_SETTERS', () => {
+describe('createUniformKindSetters', () => {
   it('routes every kind to its matching setter', () => {
     const target = createTarget();
     const context = { resolveTexture: vi.fn(() => null) };
@@ -60,7 +62,7 @@ describe('UNIFORM_KIND_SETTERS', () => {
     ];
 
     for (const [kind, value] of cases) {
-      UNIFORM_KIND_SETTERS[kind](target, binding(kind, value), context);
+      SETTERS[kind](target, binding(kind, value), context);
     }
 
     expect(target.setFloat).toHaveBeenCalledWith('myUniform', 0.5);
@@ -97,11 +99,9 @@ describe('UNIFORM_KIND_SETTERS', () => {
   it('normalises direction values at bind time', () => {
     const target = createTarget();
 
-    UNIFORM_KIND_SETTERS.direction(
-      target,
-      binding('direction', { x: 0, y: 3, z: 4 }),
-      { resolveTexture: () => null },
-    );
+    SETTERS.direction(target, binding('direction', { x: 0, y: 3, z: 4 }), {
+      resolveTexture: () => null,
+    });
 
     expect(target.setVector3).toHaveBeenCalledWith('myUniform', {
       x: 0,
@@ -113,11 +113,9 @@ describe('UNIFORM_KIND_SETTERS', () => {
   it('binds a zero direction as the zero vector instead of NaN', () => {
     const target = createTarget();
 
-    UNIFORM_KIND_SETTERS.direction(
-      target,
-      binding('direction', { x: 0, y: 0, z: 0 }),
-      { resolveTexture: () => null },
-    );
+    SETTERS.direction(target, binding('direction', { x: 0, y: 0, z: 0 }), {
+      resolveTexture: () => null,
+    });
 
     expect(target.setVector3).toHaveBeenCalledWith('myUniform', {
       x: 0,
@@ -129,11 +127,9 @@ describe('UNIFORM_KIND_SETTERS', () => {
   it('passes position values through raw', () => {
     const target = createTarget();
 
-    UNIFORM_KIND_SETTERS.position(
-      target,
-      binding('position', { x: 10, y: -2, z: 3.5 }),
-      { resolveTexture: () => null },
-    );
+    SETTERS.position(target, binding('position', { x: 10, y: -2, z: 3.5 }), {
+      resolveTexture: () => null,
+    });
 
     expect(target.setVector3).toHaveBeenCalledWith('myUniform', {
       x: 10,
@@ -147,7 +143,7 @@ describe('UNIFORM_KIND_SETTERS', () => {
     const texture = {} as BaseTexture;
     const resolveTexture = vi.fn(() => texture);
 
-    UNIFORM_KIND_SETTERS.sampler2D(
+    SETTERS.sampler2D(
       target,
       binding('sampler2D', { kind: 'url', url: '/a.png' }),
       { resolveTexture },
@@ -160,7 +156,7 @@ describe('UNIFORM_KIND_SETTERS', () => {
   it('skips a sampler whose texture has not loaded yet', () => {
     const target = createTarget();
 
-    UNIFORM_KIND_SETTERS.samplerCube(
+    SETTERS.samplerCube(
       target,
       binding('samplerCube', { kind: 'url', url: '/sky.hdr' }),
       { resolveTexture: () => null },

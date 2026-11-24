@@ -3,6 +3,7 @@ import {
   Matrix,
   Vector3,
   type AbstractEngine,
+  type BaseTexture,
   type Camera,
   type Mesh,
   type Observer,
@@ -23,7 +24,7 @@ import {
   UniformBinder,
   type TextureResolver,
   type UniformBinding,
-} from '@/services/userdata/UniformBinder';
+} from '@/services/userdata/UniformBinding';
 import { internalShaders } from '../../internalShaders';
 import { EffectBindingTarget } from './EffectBindingTarget';
 import { PostEffectCompiler } from './PostEffectCompiler';
@@ -43,7 +44,7 @@ export interface PostEffectPipelineDeps {
   readonly scene: Scene;
   readonly camera: Camera;
   readonly engine: AbstractEngine;
-  readonly textures: TextureResolver;
+  readonly textures: TextureResolver<BaseTexture>;
   readonly getUserBindings: () => readonly UniformBinding[];
   readonly recorder: ShaderLogRecorder | null;
 }
@@ -60,7 +61,7 @@ export interface PostEffectPipelineDeps {
 export class PostEffectPipeline {
   private readonly deps: PostEffectPipelineDeps;
   private readonly gbuffer: ViewSpaceGbuffer;
-  private readonly binder: UniformBinder;
+  private readonly binder: UniformBinder<BaseTexture>;
   private readonly targets = new Map<PostProcess, EffectBindingTarget>();
   private readonly cameraPosition = Vector3.Zero();
   private readonly inverseProjection = Matrix.Identity();

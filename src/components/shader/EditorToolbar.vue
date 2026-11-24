@@ -9,13 +9,18 @@ import type {
 import ShaderExamplePicker from './ShaderExamplePicker.vue';
 import TabGroupMenu from './TabGroupMenu.vue';
 
-const props = defineProps<{
-  /** Document groups rendered as dropdown triggers, in order. */
-  groups: readonly EditorTabGroup[];
-  /** Documents that stand on their own, rendered after the groups. */
-  tabs: readonly EditorTab[];
-  active: EditorTabId;
-}>();
+const props = withDefaults(
+  defineProps<{
+    /** Document groups rendered as dropdown triggers, in order. */
+    groups: readonly EditorTabGroup[];
+    /** Documents that stand on their own, rendered after the groups. */
+    tabs: readonly EditorTab[];
+    active: EditorTabId;
+    /** The sandbox has no example catalog, so it hides the picker entirely. */
+    showExamples?: boolean;
+  }>(),
+  { showExamples: true },
+);
 
 const emit = defineEmits<{
   (e: 'switch', id: EditorTabId): void;
@@ -52,7 +57,7 @@ const { t } = useI18n();
       </div>
     </div>
 
-    <div class="editor-toolbar__actions">
+    <div v-if="props.showExamples !== false" class="editor-toolbar__actions">
       <ShaderExamplePicker @pick="emit('load-example', $event)" />
     </div>
   </div>

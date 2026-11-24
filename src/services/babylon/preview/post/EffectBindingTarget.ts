@@ -5,7 +5,7 @@ import {
   type BaseTexture,
   type Effect,
 } from '@babylonjs/core';
-import type { UniformBindingTarget } from '@/services/userdata/UniformBinder';
+import type { UniformBindingTarget } from '@/services/userdata/UniformBinding';
 import type {
   UserColor3Value,
   UserColor4Value,
@@ -19,7 +19,7 @@ import type {
  * scalar/vector/texture setters as materials, minus the colour helpers, so
  * colours travel as their component vectors.
  */
-export class EffectBindingTarget implements UniformBindingTarget {
+export class EffectBindingTarget implements UniformBindingTarget<BaseTexture> {
   private readonly effect: Effect;
 
   constructor(effect: Effect) {

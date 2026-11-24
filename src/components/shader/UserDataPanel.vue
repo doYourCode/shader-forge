@@ -11,8 +11,13 @@ import type {
   UserUniformStage,
   UserUniformValue,
 } from '@/core/models/userUniform';
-import { generateBlock } from '@/core/shader/uniformCodegen';
+import {
+  generateBlock,
+  generateSandboxBlock,
+} from '@/core/shader/uniformCodegen';
 import UniformValueInput from './UniformValueInput.vue';
+
+type PreviewStage = 'fragment' | 'vertex' | 'post';
 
 const props = defineProps<{
   definitions: readonly UserUniformDefinition[];
@@ -20,6 +25,17 @@ const props = defineProps<{
   highlightedRow: number | null;
   /** Injected so the table can reject names before any GPU work happens. */
   validateName: (name: string, exceptId?: string) => NameValidationResult;
+  /** Stages the target shader can actually consume; defaults to all. */
+  stages?: readonly UserUniformStage[];
+  /** Kinds the target renderer can bind; defaults to every kind. */
+  kinds?: readonly UserUniformKind[];
+  /** Stages whose generated block is previewed; defaults to all three. */
+  previewStages?: readonly PreviewStage[];
+  /**
+   * How the preview block is projected. The sandbox has one fragment document,
+   * so its fragment/post/both definitions share a single generated block.
+   */
+  blockMode?: 'material' | 'sandbox';
 }>();
 
 const emit = defineEmits<{
@@ -40,7 +56,7 @@ const newName = ref('');
 const newKind = ref<UserUniformKind>('float');
 const addError = ref<string | null>(null);
 
-const STAGES: readonly UserUniformStage[] = [
+const DEFAULT_STAGES: readonly UserUniformStage[] = [
   'fragment',
   'vertex',
   'both',
@@ -48,23 +64,34 @@ const STAGES: readonly UserUniformStage[] = [
 ];
 
 /** Stages whose generated block is previewed, in display order. */
-const PREVIEW_STAGES = ['fragment', 'vertex', 'post'] as const;
+const PREVIEW_STAGES: readonly PreviewStage[] = ['fragment', 'vertex', 'post'];
+
+const stageOptions = computed(() => props.stages ?? DEFAULT_STAGES);
+const previewStages = computed(() => props.previewStages ?? PREVIEW_STAGES);
+const kindOptions = computed(() => {
+  if (!props.kinds) return USER_UNIFORM_KINDS;
+
+  return USER_UNIFORM_KINDS.filter((meta) => props.kinds?.includes(meta.kind));
+});
 
 /**
  * Read-only projection of the same block the compile pipeline injects. It is
  * derived from the table's definitions, so it is always in sync with what a
  * recompile would produce (including the values comment).
  */
-const generatedBlocks = computed(() =>
-  PREVIEW_STAGES.flatMap((stage) => {
-    const block = generateBlock(
-      { revision: 0, definitions: [...props.definitions] },
-      stage,
-    );
+const generatedBlocks = computed(() => {
+  const document = { revision: 0, definitions: [...props.definitions] };
 
+  if (props.blockMode === 'sandbox') {
+    const block = generateSandboxBlock(document);
+    return block ? [{ stage: 'fragment' as const, lines: block.lines }] : [];
+  }
+
+  return previewStages.value.flatMap((stage) => {
+    const block = generateBlock(document, stage);
     return block ? [{ stage, lines: block.lines }] : [];
-  }),
-);
+  });
+});
 
 // Keep the editable drafts in sync with external renames (and drop rows that
 // disappeared), without clobbering what the user is currently typing.
@@ -178,11 +205,7 @@ function onNewKindChange(event: Event): void {
         :aria-label="t('userData.columns.kind')"
         @change="onNewKindChange"
       >
-        <option
-          v-for="meta in USER_UNIFORM_KINDS"
-          :key="meta.kind"
-          :value="meta.kind"
-        >
+        <option v-for="meta in kindOptions" :key="meta.kind" :value="meta.kind">
           {{ t(meta.labelKey) }}
         </option>
       </select>
@@ -250,7 +273,7 @@ function onNewKindChange(event: Event): void {
               @change="onKindChange(definition, $event)"
             >
               <option
-                v-for="meta in USER_UNIFORM_KINDS"
+                v-for="meta in kindOptions"
                 :key="meta.kind"
                 :value="meta.kind"
               >
@@ -266,7 +289,7 @@ function onNewKindChange(event: Event): void {
               :aria-label="t('userData.columns.stages')"
               @change="onStagesChange(definition, $event)"
             >
-              <option v-for="stage in STAGES" :key="stage" :value="stage">
+              <option v-for="stage in stageOptions" :key="stage" :value="stage">
                 {{ t(`userData.stages.${stage}`) }}
               </option>
             </select>

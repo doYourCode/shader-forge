@@ -1,3 +1,4 @@
+import type { BaseTexture } from '@babylonjs/core';
 import { previewHdris } from '@/core/constants/previewHdris';
 import { previewModels } from '@/core/constants/previewModels';
 import {
@@ -44,7 +45,7 @@ export async function bakeExampleThumb(
     fragment: example.fragment,
   };
 
-  const userData = new UserDataController({
+  const userData = new UserDataController<BaseTexture>({
     getSources: () => sources,
     // The bake compiles once, through `init`; no debounced request is wanted.
     onCompileRequested: () => undefined,

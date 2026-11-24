@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Mesh } from '@babylonjs/core';
+import type { BaseTexture, Mesh } from '@babylonjs/core';
 
 import type { PreviewModel } from '@/core/models/previewModel';
 import type { UserDataController } from '@/services/userdata/UserDataController';
@@ -113,7 +113,7 @@ function createHarness() {
   const userData = {
     attachGpu: vi.fn(),
     onMaterialApplied: vi.fn(),
-  } as unknown as UserDataController;
+  } as unknown as UserDataController<BaseTexture>;
 
   return {
     manager,

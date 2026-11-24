@@ -1,8 +1,13 @@
-﻿import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import type { ShaderSource } from '@/core/models/shaderSource';
 import type { UserDataDocument } from '@/core/models/userUniform';
-import { buildUserDataBlueprint, validateUserDataName } from './userData';
+import {
+  buildSandboxBlueprint,
+  buildUserDataBlueprint,
+  validateUserDataName,
+} from './userData';
+import { SANDBOX_RESERVED_UNIFORM_NAMES } from '@/core/constants/sandbox';
 
 const DOCUMENT: UserDataDocument = {
   revision: 2,
@@ -65,6 +70,19 @@ describe('validateUserDataName', () => {
   it('accepts a fresh identifier', () => {
     expect(validateUserDataName(DOCUMENT, 'accent')).toEqual({ ok: true });
   });
+
+  it('rejects names the sandbox ABI owns when given its reserved set', () => {
+    for (const name of ['uTime', 'uResolution', 'vUv', 'fragColor']) {
+      expect(
+        validateUserDataName(
+          DOCUMENT,
+          name,
+          undefined,
+          SANDBOX_RESERVED_UNIFORM_NAMES,
+        ),
+      ).toEqual({ ok: false, reason: 'reserved' });
+    }
+  });
 });
 
 describe('buildUserDataBlueprint', () => {
@@ -97,5 +115,61 @@ describe('buildUserDataBlueprint', () => {
     expect(
       blueprint.userData?.fragment?.declarationRowByLine.length,
     ).toBeGreaterThan(0);
+  });
+});
+
+describe('buildSandboxBlueprint', () => {
+  const SANDBOX_DOCUMENT: UserDataDocument = {
+    revision: 1,
+    definitions: [
+      {
+        id: 'user-1',
+        name: 'tint',
+        kind: 'color',
+        stages: 'fragment',
+        value: { r: 1, g: 0, b: 0 },
+      },
+      {
+        id: 'user-2',
+        name: 'glow',
+        kind: 'float',
+        stages: 'post',
+        value: 2,
+      },
+      {
+        id: 'user-3',
+        name: 'scale',
+        kind: 'vec2',
+        stages: 'both',
+        value: { x: 1, y: 2 },
+      },
+      {
+        id: 'user-4',
+        name: 'ignored',
+        kind: 'float',
+        stages: 'vertex',
+        value: 3,
+      },
+    ],
+  };
+
+  it('injects fragment, post and both definitions into the fragment stage', () => {
+    const blueprint = buildSandboxBlueprint(SANDBOX_DOCUMENT, SOURCES);
+
+    expect(blueprint.fragment).toContain('uniform vec3 tint;');
+    expect(blueprint.fragment).toContain('uniform float glow;');
+    expect(blueprint.fragment).toContain('uniform vec2 scale;');
+    expect(blueprint.fragment).not.toContain('uniform float ignored;');
+    expect(blueprint.fragment).toContain('glow = 2');
+    expect(blueprint.fragment).toContain('scale = (1, 2)');
+  });
+
+  it('leaves the internal vertex stage and the editor source untouched', () => {
+    const blueprint = buildSandboxBlueprint(SANDBOX_DOCUMENT, SOURCES);
+
+    expect(blueprint.vertex).toBe(SOURCES.vertex);
+    expect(blueprint.editorSource).toEqual(SOURCES);
+    expect(blueprint.userData?.vertex).toBeNull();
+    expect(blueprint.userData?.fragment?.injected).not.toBeNull();
   });
 });

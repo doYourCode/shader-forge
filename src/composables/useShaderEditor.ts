@@ -1,4 +1,5 @@
 import { computed, onBeforeUnmount, reactive, ref, type Ref } from 'vue';
+import type { BaseTexture } from '@babylonjs/core';
 
 import { EditorManager } from '@/services/codemirror/EditorManager';
 import { SceneManager } from '@/services/babylon/SceneManager';
@@ -172,7 +173,7 @@ export function useShaderEditor(options: UseShaderEditorOptions = {}) {
     onExternalErrors: (errors) => navigation.applyExternalErrors(errors),
   });
 
-  const userData = new UserDataController(
+  const userData = new UserDataController<BaseTexture>(
     {
       getSources: () => navigation.currentSources(),
       onCompileRequested: (blueprint) => {

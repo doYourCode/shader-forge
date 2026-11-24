@@ -1,19 +1,54 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Pause, Play } from 'lucide-vue-next';
 
 import AppBrand from '@/components/layout/AppBrand.vue';
 import LanguageSwitch from '@/components/layout/LanguageSwitch.vue';
 import CompileButton from '@/components/shader/CompileButton.vue';
+import EditorToolbar from '@/components/shader/EditorToolbar.vue';
 import StatusBar from '@/components/shader/StatusBar.vue';
+import UserDataPanel from '@/components/shader/UserDataPanel.vue';
+import { TEXTURE_PICKER } from '@/components/shader/texturePickerContext';
 import { useSandboxEditor } from '@/composables/useSandboxEditor';
+import {
+  sandboxDataTabGroup,
+  sandboxStageTabGroup,
+  type EditorTab,
+} from '@/core/models/editorTab';
+import {
+  SANDBOX_USER_DATA_KINDS,
+  SANDBOX_USER_DATA_STAGES,
+} from '@/core/constants/sandbox';
 import type { ShaderError } from '@/core/models/shaderError';
+import { AssetPickerTexturePicker } from '@/services/assetpicker/AssetPickerTexturePicker';
+import { toAssetPickerLanguage } from '@/services/assetpicker/assetPickerConfig';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const editorHostRef = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+
+/** The sandbox has no standalone tabs; both documents live in groups. */
+const editorGroups = [sandboxStageTabGroup, sandboxDataTabGroup];
+const editorTabs: readonly EditorTab[] = [];
+
+/** Fragment, post and both definitions all generate into this document. */
+const sandboxPreviewStages = ['fragment'] as const;
+
+/**
+ * The texture picker is shared with the 3D editor's user-data panel. It is
+ * required by `TextureSourceInput` as soon as a sampler row exists, even though
+ * only `sampler2D` is offered here.
+ */
+const texturePicker = new AssetPickerTexturePicker({
+  labels: () => ({
+    title: t('userData.texture.dialog'),
+    storage: t('userData.texture.bundled'),
+  }),
+  language: () => toAssetPickerLanguage(locale.value),
+});
+provide(TEXTURE_PICKER, texturePicker);
 
 const {
   status,
@@ -22,9 +57,14 @@ const {
   paused,
   cursorLine,
   cursorCol,
+  activeTab,
+  highlightedUserRow,
+  userDataDoc,
+  userDataCommands,
   compile,
   mountEditor,
   mountCanvas,
+  switchTab,
   revealError,
   togglePaused,
 } = useSandboxEditor();
@@ -36,6 +76,13 @@ const statusText = computed(() => {
 
 function errorStageLabel(error: ShaderError): string {
   const stage = t(`editor.stage.${error.stage}`);
+
+  if (error.stage === 'user_data') {
+    return error.row == null
+      ? stage
+      : t('editor.error.atRow', { stage, row: error.row + 1 });
+  }
+
   if (error.line === null) return stage;
 
   return error.column === null
@@ -48,6 +95,7 @@ function errorStageLabel(error: ShaderError): string {
 }
 
 function isRevealable(error: ShaderError): boolean {
+  if (error.stage === 'user_data') return error.row != null;
   return error.stage === 'fragment' && error.line !== null;
 }
 
@@ -55,23 +103,50 @@ onMounted(() => {
   if (editorHostRef.value) mountEditor(editorHostRef.value);
   if (canvasRef.value) mountCanvas(canvasRef.value);
 });
+
+onBeforeUnmount(() => {
+  texturePicker.dispose();
+});
 </script>
 
 <template>
   <div class="sandbox-editor">
     <div class="sandbox-editor__left">
-      <header class="sandbox-editor__toolbar">
-        <div class="sandbox-editor__identity">
+      <EditorToolbar
+        :groups="editorGroups"
+        :tabs="editorTabs"
+        :active="activeTab"
+        :show-examples="false"
+        @switch="switchTab"
+      >
+        <template #brand>
           <AppBrand />
-          <span class="sandbox-editor__divider" aria-hidden="true" />
-          <span class="sandbox-editor__title">
-            {{ t('landing.cards.sandbox.title') }}
-          </span>
-        </div>
-        <code class="sandbox-editor__file">fragment.glsl</code>
-      </header>
+        </template>
+      </EditorToolbar>
 
-      <div ref="editorHostRef" class="sandbox-editor__editor-host" />
+      <div
+        v-show="activeTab !== 'user_data'"
+        ref="editorHostRef"
+        class="sandbox-editor__editor-host"
+      />
+
+      <UserDataPanel
+        v-if="activeTab === 'user_data'"
+        class="sandbox-editor__user-data"
+        :definitions="userDataDoc.definitions"
+        :highlighted-row="highlightedUserRow"
+        :validate-name="userDataCommands.validateName"
+        :stages="SANDBOX_USER_DATA_STAGES"
+        :kinds="SANDBOX_USER_DATA_KINDS"
+        :preview-stages="sandboxPreviewStages"
+        block-mode="sandbox"
+        @add="userDataCommands.add"
+        @remove="userDataCommands.remove"
+        @rename="userDataCommands.rename"
+        @change-kind="userDataCommands.changeKind"
+        @change-stages="userDataCommands.changeStages"
+        @change-value="userDataCommands.setValue"
+      />
     </div>
 
     <div class="sandbox-editor__right">
@@ -96,7 +171,7 @@ onMounted(() => {
         <canvas ref="canvasRef" class="sandbox-editor__canvas" />
 
         <code class="sandbox-editor__abi" aria-hidden="true">
-          vUv · uResolution · uTime
+          vUv · uResolution · uTime · user data
         </code>
 
         <div
@@ -142,6 +217,9 @@ onMounted(() => {
                 <code class="sandbox-editor__error-message">
                   {{ error.message }}
                 </code>
+                <span v-if="error.advice" class="sandbox-editor__error-advice">
+                  {{ error.advice }}
+                </span>
               </button>
             </li>
           </ul>
@@ -177,45 +255,6 @@ onMounted(() => {
   border-right: 1px solid var(--border-subtle);
 }
 
-.sandbox-editor__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 38px;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-elevated);
-}
-
-.sandbox-editor__identity {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.sandbox-editor__divider {
-  width: 1px;
-  height: 16px;
-  background: var(--border);
-}
-
-.sandbox-editor__title {
-  overflow: hidden;
-  color: var(--fg-muted);
-  font-family: var(--font-ui);
-  font-size: var(--font-size-ui);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sandbox-editor__file {
-  color: var(--fg-subtle);
-  font-family: var(--font-code);
-  font-size: var(--font-size-label);
-}
-
 .sandbox-editor__editor-host {
   position: relative;
   flex: 1;
@@ -229,6 +268,11 @@ onMounted(() => {
 
 .sandbox-editor__editor-host :deep(.cm-scroller) {
   overflow: auto;
+}
+
+.sandbox-editor__user-data {
+  flex: 1;
+  min-height: 0;
 }
 
 .sandbox-editor__right {
@@ -442,6 +486,13 @@ onMounted(() => {
   font-size: var(--font-size-ui);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.sandbox-editor__error-advice {
+  color: var(--fg-muted);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-label);
+  line-height: 1.45;
 }
 
 .sandbox-editor__status {

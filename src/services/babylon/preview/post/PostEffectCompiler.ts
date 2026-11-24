@@ -10,7 +10,7 @@ import {
   parseShaderCompileErrors,
   type ShaderCompileRecord,
 } from '@/core/utils/shaderErrors';
-import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
+import type { ShaderLogRecorder } from '@/services/gpu/ShaderLogRecorder';
 import { EffectPipelineCache } from '../compile/EffectPipelineCache';
 
 export interface PostEffectCompilerOptions {

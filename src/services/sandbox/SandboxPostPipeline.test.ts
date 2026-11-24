@@ -5,7 +5,7 @@ import type {
   PostEffectStack,
 } from '@/core/models/postEffect';
 import type { ShaderCompileRecord } from '@/core/utils/shaderErrors';
-import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
+import type { ShaderLogRecorder } from '@/services/gpu/ShaderLogRecorder';
 import { SandboxPostPipeline } from './SandboxPostPipeline';
 
 const VERTEX_SHADER = 0x8b31;

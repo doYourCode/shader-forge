@@ -1,5 +1,5 @@
 import { onMounted, ref } from 'vue';
-import { webGpuService } from '@/services/webgpu/WebGpuService';
+import { webGpuService } from '@/services/gpu/WebGpuService';
 
 export function useWebGpuAvailability() {
   const supported = ref<boolean | null>(null); // null = still checking

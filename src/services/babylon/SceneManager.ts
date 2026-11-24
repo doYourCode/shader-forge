@@ -8,7 +8,7 @@ import type {
 } from '@babylonjs/core';
 import type { ShaderError } from '@/core/models/shaderError';
 import { parseShaderCompileErrors } from '@/core/utils/shaderErrors';
-import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
+import type { ShaderLogRecorder } from '@/services/gpu/ShaderLogRecorder';
 import { internalShaders } from './internalShaders';
 import { FragmentDiagnostics } from './preview/compile/FragmentDiagnostics';
 import { ShaderCompiler } from './preview/compile/ShaderCompiler';

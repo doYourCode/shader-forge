@@ -11,7 +11,7 @@ import {
 import { CompositeUniformBindingTarget } from '@/services/userdata/CompositeUniformBindingTarget';
 import { UniformBinder } from '@/services/userdata/UniformBinding';
 import type { UserDataController } from '@/services/userdata/UserDataController';
-import { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
+import { ShaderLogRecorder } from '@/services/gpu/ShaderLogRecorder';
 import { SandboxPostPipeline } from './SandboxPostPipeline';
 import { SandboxTextureRegistry } from './SandboxTextureRegistry';
 import { SandboxUniformBindingTarget } from './SandboxUniformBindingTarget';

@@ -19,7 +19,7 @@ import {
 import type { CompileResult } from '@/core/models/compileResult';
 import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
 import type { ShaderError } from '@/core/models/shaderError';
-import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
+import type { ShaderLogRecorder } from '@/services/gpu/ShaderLogRecorder';
 import {
   UniformBinder,
   type TextureResolver,

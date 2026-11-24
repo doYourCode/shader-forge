@@ -3,7 +3,7 @@ import type { ShaderError } from '@/core/models/shaderError';
 import {
   ShaderLogRecorder,
   type WebGlInfoLogContext,
-} from '@/services/webgl/ShaderLogRecorder';
+} from '@/services/gpu/ShaderLogRecorder';
 import { webGl2RequiredError } from './shaderErrorFactory';
 
 /** The only engine state the WebGL 2 guard needs, which keeps it testable. */

@@ -15,7 +15,7 @@ import {
   parseShaderCompileErrors,
   type ShaderCompileRecord,
 } from '@/core/utils/shaderErrors';
-import type { ShaderLogRecorder } from '@/services/webgl/ShaderLogRecorder';
+import type { ShaderLogRecorder } from '@/services/gpu/ShaderLogRecorder';
 import { SandboxUniformBindingTarget } from './SandboxUniformBindingTarget';
 import { TextureUnitAllocator } from './TextureUnitAllocator';
 

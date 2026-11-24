@@ -78,7 +78,7 @@ The dependency direction is `core` ← `services` ← UI. ESLint enforces that
 engines directly.
 
 Folder rules: a directory names a subsystem, capability or boundary, not a
-single file; a one-file module lives beside its layer (for example
+single file; a one-file module lives at its layer root (for example
 `services/clipboard.ts`); tests stay next to the module they cover; avoid a
 folder whose name only repeats the file inside.
 

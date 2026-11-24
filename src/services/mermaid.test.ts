@@ -6,7 +6,7 @@ import {
   MERMAID_SOURCE_ATTRIBUTE,
   MERMAID_STATE_ATTRIBUTE,
 } from '@/core/content/mermaid';
-import { MermaidService, type MermaidLoader } from './MermaidService';
+import { MermaidService, type MermaidLoader } from './mermaid';
 
 const SOURCE = 'flowchart LR\n  A --> B';
 

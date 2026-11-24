@@ -1,6 +1,6 @@
 import { nextTick, onBeforeUnmount, onMounted, watch, type Ref } from 'vue';
 
-import { mermaidService } from '@/services/mermaid/MermaidService';
+import { mermaidService } from '@/services/mermaid';
 
 /**
  * Hydrates Mermaid placeholders inside `target` after Vue has written the

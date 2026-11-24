@@ -14,7 +14,7 @@ export const MERMAID_STATE_ATTRIBUTE = 'data-mermaid-state';
  *
  * Markdown rendering stays synchronous and side-effect free: Mermaid needs a
  * live DOM and is therefore loaded lazily by the service that consumes these
- * placeholders (see `src/services/mermaid/MermaidService.ts`).
+ * placeholders (see `src/services/mermaid.ts`).
  */
 export function mermaidFencePlugin(md: MarkdownIt): void {
   const renderDefaultFence = md.renderer.rules.fence;

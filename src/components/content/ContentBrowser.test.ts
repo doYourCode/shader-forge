@@ -14,7 +14,7 @@ import type { ContentKind } from '@/core/content/ContentResolver';
 
 // Mermaid needs a real SVG engine. Its placeholder contract is covered by
 // markdown.test.ts and its rendering by MermaidService.test.ts.
-vi.mock('@/services/mermaid/MermaidService', () => ({
+vi.mock('@/services/mermaid', () => ({
   mermaidService: { renderAll: vi.fn(async () => {}) },
 }));
 

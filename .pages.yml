@@ -54,10 +54,14 @@ content:
         required: true
         options:
           values:
-            - name: api
-              label: API Reference
+            - name: editors
+              label: Editors
+            - name: reference
+              label: Reference
             - name: guides
               label: Guides
+            - name: api
+              label: API Reference
       - name: order
         label: Order in section
         type: number
@@ -103,10 +107,14 @@ content:
         required: true
         options:
           values:
-            - name: api
-              label: API Reference
+            - name: editors
+              label: Editors
+            - name: reference
+              label: Reference
             - name: guides
               label: Guides
+            - name: api
+              label: API Reference
       - name: order
         label: Order in section
         type: number

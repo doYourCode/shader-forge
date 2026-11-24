@@ -104,6 +104,13 @@ describe('ContentBrowser', () => {
     expect(document.documentElement.lang).toBe('en');
   });
 
+  it('opens the editors overview when /docs has no slug', async () => {
+    const page = await mountAt('/docs');
+
+    expect(page.text()).toContain('Editors Overview');
+    expect(page.text()).toContain('3D Shader Editor');
+  });
+
   it('renders the in-app 404 when a slug exists in neither locale', async () => {
     i18n.global.locale.value = 'pt-BR';
 

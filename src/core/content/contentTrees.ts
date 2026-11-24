@@ -15,15 +15,23 @@ type SectionMeta = {
 const SECTIONS: Record<ContentKind, SectionMeta[]> = {
   docs: [
     {
+      id: 'editors',
+      labels: { [DEFAULT_LOCALE]: 'Editors', [PT_BR_LOCALE]: 'Editores' },
+    },
+    {
+      id: 'reference',
+      labels: { [DEFAULT_LOCALE]: 'Reference', [PT_BR_LOCALE]: 'Referência' },
+    },
+    {
+      id: 'guides',
+      labels: { [DEFAULT_LOCALE]: 'Guides', [PT_BR_LOCALE]: 'Guias' },
+    },
+    {
       id: 'api',
       labels: {
         [DEFAULT_LOCALE]: 'API Reference',
         [PT_BR_LOCALE]: 'Referência da API',
       },
-    },
-    {
-      id: 'guides',
-      labels: { [DEFAULT_LOCALE]: 'Guides', [PT_BR_LOCALE]: 'Guias' },
     },
   ],
   knowledge: [

@@ -77,9 +77,36 @@ describe('migrated content trees', () => {
     expect(treeLabels(knowledgeTree)).toContain('The Rendering Pipeline');
   });
 
-  it('keeps section labels localised', async () => {
-    const [tree] = await buildContentTree(resolver, 'docs', 'pt-BR');
+  it('publishes the English editor documentation set in order', async () => {
+    const tree = await buildContentTree(resolver, 'docs', DEFAULT_LOCALE);
+    const labels = treeLabels(tree);
 
-    expect(tree?.label).toBe('Referência da API');
+    expect(tree[0]?.label).toBe('Editors');
+    expect(tree[0]?.children?.[0]?.label).toBe('Editors Overview');
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        'Editors Overview',
+        '3D Shader Editor',
+        '2D Sandbox',
+        'User data',
+        'Post effects',
+        'Compiling and errors',
+        'Limits and troubleshooting',
+      ]),
+    );
+  });
+
+  it('keeps section labels localised and starts with the editor docs', async () => {
+    const tree = await buildContentTree(resolver, 'docs', 'pt-BR');
+    const labels = tree.map((section) => section.label);
+
+    expect(labels[0]).toBe('Editores');
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        'Editores',
+        'Referência',
+        'Referência da API',
+      ]),
+    );
   });
 });

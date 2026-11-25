@@ -15,7 +15,7 @@ const CONTENT_KEY = new RegExp(
  * imported eagerly as raw text at build time. No new dependency and no
  * runtime fetch.
  */
-const modules = import.meta.glob('/content/*/{docs,knowledge}/*.md', {
+const modules = import.meta.glob('/content/*/docs/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,

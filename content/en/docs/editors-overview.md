@@ -119,4 +119,4 @@ the preview does not go blank.
 - [ABI Reference](/docs/abi-reference)
 - [Compiling and errors](/docs/compiling-and-errors)
 - [Limits and troubleshooting](/docs/limits-and-troubleshooting)
-- [The rendering pipeline](/knowledge/the-rendering-pipeline)
+- [The rendering pipeline](/docs/the-rendering-pipeline)

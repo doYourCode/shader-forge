@@ -1,8 +1,6 @@
 ---
-title: Gerenciador de Cena
+title: Gerenciador de cena
 section: api
 draft: true
 order: 2
 ---
-
-<!-- TODO(pt-BR): translate -->

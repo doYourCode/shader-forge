@@ -214,22 +214,22 @@ describe('ContentResolver.hasTranslation', () => {
 });
 
 describe('ContentResolver.relativePaths', () => {
-  it('returns the union of both locale trees, deduplicated and filtered by kind', () => {
+  it('returns the union of both locale trees, deduplicated', () => {
     const resolver = new ContentResolver(
       DEFAULT_LOCALE,
       source({
         'en/docs/pipeline.md': EN_PUBLISHED,
         'pt-BR/docs/pipeline.md': PT_PUBLISHED,
         'en/docs/editor.md': EN_PUBLISHED,
-        'en/knowledge/gpu.md': EN_PUBLISHED,
-        'pt-BR/knowledge/gpu.md': PT_PUBLISHED,
+        'en/docs/gpu.md': EN_PUBLISHED,
+        'pt-BR/docs/gpu.md': PT_PUBLISHED,
       }),
     );
 
     expect(resolver.relativePaths('docs')).toEqual([
       'docs/editor.md',
+      'docs/gpu.md',
       'docs/pipeline.md',
     ]);
-    expect(resolver.relativePaths('knowledge')).toEqual(['knowledge/gpu.md']);
   });
 });

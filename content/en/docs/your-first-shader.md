@@ -11,11 +11,11 @@ draft: false
 
 The first-shader tutorial is now part of the ordered lesson path:
 
-1. [First Shaders in the Sandbox](/knowledge/first-shaders) — UVs as colour,
+1. [First Shaders in the Sandbox](/docs/first-shaders) — UVs as colour,
    gradients, shapes, time and tiling.
-2. [Patterns, Noise and SDFs](/knowledge/patterns-noise-sdf) — the procedural
+2. [Patterns, Noise and SDFs](/docs/patterns-noise-sdf) — the procedural
    building blocks behind most 2D shader art.
-3. [The 3D Vertex Stage](/knowledge/vertex-stage-3d) — move from pixels to a
+3. [The 3D Vertex Stage](/docs/vertex-stage-3d) — move from pixels to a
    mesh when you are ready.
 
 You do not need a project or an account. Open the sandbox, paste the first

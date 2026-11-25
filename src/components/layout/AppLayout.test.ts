@@ -76,17 +76,15 @@ describe('AppLayout footer', () => {
     wrapper.unmount();
   });
 
-  it('omits the tagline from the landing and knowledge headers', async () => {
-    for (const path of ['/', '/knowledge/the-rendering-pipeline']) {
-      const wrapper = await mountAt(path);
+  it('omits the tagline from the landing header', async () => {
+    const wrapper = await mountAt('/');
 
-      expect(wrapper.find('.app-header__title').exists()).toBe(false);
-      expect(wrapper.find('.app-header').text()).not.toContain(
-        'Shaders Body of Knowledge',
-      );
+    expect(wrapper.find('.app-header__title').exists()).toBe(false);
+    expect(wrapper.find('.app-header').text()).not.toContain(
+      'Shaders Body of Knowledge',
+    );
 
-      wrapper.unmount();
-    }
+    wrapper.unmount();
   });
 
   it('keeps the documentation title in the header', async () => {
@@ -103,7 +101,7 @@ describe('AppLayout footer', () => {
     for (const path of [
       '/',
       '/docs/shader-editor',
-      '/knowledge/the-rendering-pipeline',
+      '/docs/the-rendering-pipeline',
     ]) {
       const wrapper = await mountAt(path);
 
@@ -126,6 +124,22 @@ describe('AppLayout footer', () => {
       'app-shell--landing',
     );
     docs.unmount();
+  });
+
+  it('lets the documentation screen scroll with the window', async () => {
+    const docs = await mountAt('/docs/shader-editor');
+    expect(docs.find('.app-shell').classes()).toContain(
+      'app-shell--window-scroll',
+    );
+    docs.unmount();
+
+    for (const path of ['/', '/editor']) {
+      const wrapper = await mountAt(path);
+      expect(wrapper.find('.app-shell').classes()).not.toContain(
+        'app-shell--window-scroll',
+      );
+      wrapper.unmount();
+    }
   });
 
   it('keeps the editor shell full-bleed with the footer removed', async () => {

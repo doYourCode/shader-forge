@@ -45,9 +45,9 @@ export control, so keep important fragments outside the page.
 ## Language and content
 
 The interface is available in English and Brazilian Portuguese. Documentation
-and knowledge pages are authored in English for now. When a page has no
-translation yet, the app serves the English original and shows a fallback
-notice; the page content is English even if the interface is Portuguese.
+pages are authored in English for now. When a page has no translation yet, the
+app serves the English original and shows a fallback notice; the page content is
+English even if the interface is Portuguese.
 
 The content trees are managed in Pages CMS (`.pages.yml`). The lesson
 frontmatter contract, the section ids and the code-fence modifiers are

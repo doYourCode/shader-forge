@@ -33,8 +33,6 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
         [PT_BR_LOCALE]: 'Referência da API',
       },
     },
-  ],
-  knowledge: [
     {
       id: 'basics',
       labels: {
@@ -86,13 +84,6 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
       labels: {
         [DEFAULT_LOCALE]: 'WebGL & WebGPU',
         [PT_BR_LOCALE]: 'WebGL e WebGPU',
-      },
-    },
-    {
-      id: 'reference',
-      labels: {
-        [DEFAULT_LOCALE]: 'Reference',
-        [PT_BR_LOCALE]: 'Referência',
       },
     },
   ],

@@ -1,1 +1,1 @@
-export type AppRouteName = 'landing' | 'knowledge' | 'documentation' | 'editor';
+export type AppRouteName = 'landing' | 'documentation' | 'editor';

@@ -29,6 +29,11 @@ const showHeader = computed(() => route.meta.id !== 'editor');
 // The landing is the only screen that gets the deep-space shell: its artwork
 // continues behind the header and footer instead of stopping at the body.
 const isLanding = computed(() => route.meta.id === 'landing');
+
+// The documentation screen scrolls with the window (the editor keeps bounded,
+// internally scrolling panes). Its overflow ancestors therefore have to stay
+// visible so sticky content, such as the on-page summary, follows the viewport.
+const scrollsWithWindow = computed(() => route.meta.id === 'documentation');
 </script>
 
 <template>
@@ -37,6 +42,7 @@ const isLanding = computed(() => route.meta.id === 'landing');
     :class="{
       'app-shell--fill': fillViewport,
       'app-shell--landing': isLanding,
+      'app-shell--window-scroll': scrollsWithWindow,
     }"
   >
     <!-- HEADER -->
@@ -146,6 +152,15 @@ const isLanding = computed(() => route.meta.id === 'landing');
 .app-body--fill > * {
   flex: 1 1 auto;
   min-height: 0;
+}
+
+/* Documentation lets the window scroll. Without this, the overflow boxes above
+   the content become non-scrolling sticky ancestors and the on-page summary
+   would scroll away instead of sticking to the viewport. */
+.app-shell--window-scroll .app-body,
+.app-shell--window-scroll :deep(.split-view__pane),
+.app-shell--window-scroll :deep(.split-view__pane-body) {
+  overflow: visible;
 }
 
 /* Landing still wants page scroll — it uses a plain section,

@@ -289,4 +289,4 @@ complete list.
 - [Post effects](/docs/post-effects)
 - [ABI Reference](/docs/abi-reference)
 - [Compiling and errors](/docs/compiling-and-errors)
-- [The rendering pipeline](/knowledge/the-rendering-pipeline)
+- [The rendering pipeline](/docs/the-rendering-pipeline)

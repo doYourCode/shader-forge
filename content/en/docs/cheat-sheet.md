@@ -166,7 +166,7 @@ vec3 reflected = reflect(-V, N);        // V points surface -> camera
 
 ## Related
 
-- [GLSL ES 3.00](/knowledge/gles-3-0-webgl2)
-- [Built-in functions](/knowledge/built-in-functions)
-- [Debugging shaders](/knowledge/debugging-shaders)
+- [GLSL ES 3.00](/docs/gles-3-0-webgl2)
+- [Built-in functions](/docs/built-in-functions)
+- [Debugging shaders](/docs/debugging-shaders)
 - [ABI Reference](/docs/abi-reference)

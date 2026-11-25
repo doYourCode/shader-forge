@@ -12,14 +12,13 @@ draft: false
 This page is for people adding or editing content. It documents the contract the
 runtime enforces, the conventions the existing lessons follow, and the tests that
 catch drift. The content is managed in Pages CMS (`.pages.yml`), but every page
-is a plain Markdown file under `content/en/{docs,knowledge}`.
+is a plain Markdown file under `content/en/docs/`.
 
 ## Where content lives
 
 | Kind | Directory | URL |
 | --- | --- | --- |
 | Docs | `content/en/docs/*.md` | `/docs/<slug>` |
-| Knowledge | `content/en/knowledge/*.md` | `/knowledge/<slug>` |
 
 The slug is the filename without `.md`. The relative path is the translation
 key: `docs/shader-editor.md` and `pt-BR/docs/shader-editor.md` describe the same
@@ -60,14 +59,12 @@ draft: false
 | `draft` | boolean | Unpublished pages are hidden in production. English drafts are visible in `npm run dev`. |
 
 Every key above is declared in `.pages.yml` for both locales. If you add a key,
-add it to the four collections as well, otherwise the CMS cannot edit it.
+add it to the two collections as well, otherwise the CMS cannot edit it.
 
 ### Section ids
 
-Docs: `editors`, `reference`, `guides`, `api`.
-
-Knowledge: `basics`, `math`, `glsl`, `lessons`, `lighting`, `post`,
-`debugging`, `webgl`, `reference`.
+Docs: `editors`, `guides`, `reference`, `api`, `basics`, `math`, `glsl`,
+`lessons`, `lighting`, `post`, `debugging`, `webgl`.
 
 The labels live in `src/core/content/contentTrees.ts`. A section that is not
 listed there still renders, but at the end with its raw id; add it to both
@@ -175,7 +172,7 @@ The [[albedo|the diffuse base colour before lighting]] is multiplied by the
 cosine term.
 ```
 
-This renders as a hoverable `<abbr>`. The [Glossary](/knowledge/glossary) is a
+This renders as a hoverable `<abbr>`. The [Glossary](/docs/glossary) is a
 normal page; keep its list in sync when you add a new term.
 
 ## Mermaid

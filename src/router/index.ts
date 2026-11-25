@@ -33,12 +33,6 @@ const routes: RouteRecordRaw[] = [
     meta: { headerTitleKey: 'navigation.documentation', id: 'documentation' },
   },
   {
-    path: '/knowledge/:slug?',
-    name: 'knowledge',
-    component: () => import('@/views/KnowledgeView.vue'),
-    meta: { id: 'knowledge' },
-  },
-  {
     path: '/editor',
     name: 'editor',
     component: () => import('@/views/ShaderEditorView.vue'),

@@ -10,7 +10,6 @@ import {
   CONTENT_LOOKUP,
   createContentLookup,
 } from '@/services/content/contentProvider';
-import type { ContentKind } from '@/core/content/ContentResolver';
 
 // Mermaid needs a real SVG engine. Its placeholder contract is covered by
 // markdown.test.ts and its rendering by MermaidService.test.ts.
@@ -37,16 +36,13 @@ async function settle(): Promise<void> {
   await flushPromises();
 }
 
-async function mountAt(
-  path: string,
-  kind: ContentKind = 'docs',
-): Promise<VueWrapper> {
+async function mountAt(path: string): Promise<VueWrapper> {
   const router = makeRouter();
   await router.push(path);
   await router.isReady();
 
   wrapper = mount(ContentBrowser, {
-    props: { kind },
+    props: { kind: 'docs' },
     global: {
       plugins: [router, i18n],
       provide: { [CONTENT_LOOKUP]: contentLookup },
@@ -65,22 +61,14 @@ afterEach(() => {
 });
 
 describe('ContentBrowser', () => {
-  it('follows the header selector: pt-BR falls back with notice and lang="en"', async () => {
+  it('follows the header selector: pt-BR loads the translation and lang="pt-BR"', async () => {
     i18n.global.locale.value = 'pt-BR';
 
-    const page = await mountAt(
-      '/knowledge/the-rendering-pipeline',
-      'knowledge',
-    );
+    const page = await mountAt('/docs/the-rendering-pipeline');
 
-    expect(page.find('.fallback-notice').exists()).toBe(true);
-    expect(page.text()).toContain(
-      'Este conteúdo ainda não foi traduzido. Exibindo o original em inglês.',
-    );
-    expect(page.text()).toContain(
-      'Audience: first-year students in computer graphics.',
-    );
-    expect(document.documentElement.lang).toBe('en');
+    expect(page.find('.fallback-notice').exists()).toBe(false);
+    expect(page.text()).toContain('O pipeline de renderização');
+    expect(document.documentElement.lang).toBe('pt-BR');
   });
 
   it('swaps the document body when the existing selector changes language', async () => {
@@ -94,7 +82,7 @@ describe('ContentBrowser', () => {
     await settle();
 
     expect(page.find('.fallback-notice').exists()).toBe(false);
-    expect(page.text()).toContain('Visão Geral');
+    expect(page.text()).toContain('Visão geral');
     expect(document.documentElement.lang).toBe('pt-BR');
 
     i18n.global.locale.value = 'en';
@@ -121,13 +109,12 @@ describe('ContentBrowser', () => {
     expect(page.find('.fallback-notice').exists()).toBe(false);
   });
 
-  it('builds the knowledge tree for the requested kind', async () => {
-    const page = await mountAt(
-      '/knowledge/the-rendering-pipeline',
-      'knowledge',
-    );
+  it('renders the merged learning sections inside the docs tree', async () => {
+    const page = await mountAt('/docs/the-rendering-pipeline');
 
     expect(page.text()).toContain('The Rendering Pipeline');
+    expect(page.text()).toContain('Shader Basics');
+    expect(page.text()).toContain('Lighting');
     expect(document.documentElement.lang).toBe('en');
   });
 });

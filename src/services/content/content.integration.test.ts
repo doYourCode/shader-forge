@@ -7,8 +7,8 @@ import { loadContentSource } from './contentSource';
 
 /**
  * Exercises the real Vite `import.meta.glob` loader and the migrated content
- * trees. Production semantics (drafts unpublished) are used on purpose:
- * unpublished pt-BR stubs must fall back to English.
+ * trees. Production semantics (drafts unpublished) are used on purpose: draft
+ * pages stay out of the trees and resolve to nothing.
  */
 const source = loadContentSource();
 const resolver = new ContentResolver(DEFAULT_LOCALE, source);
@@ -27,14 +27,14 @@ describe('migrated content trees', () => {
 
     expect(Object.keys(source)).toContain('pt-BR/docs/shader-editor.md');
     expect(paths).toContain('docs/shader-editor.md');
-    expect(paths).toContain('knowledge/the-rendering-pipeline.md');
-    expect(paths).toContain('knowledge/wgsl-webgpu.md');
+    expect(paths).toContain('docs/the-rendering-pipeline.md');
+    expect(paths).toContain('docs/wgsl-webgpu.md');
   });
 
   it('serves a published pt-BR translation without fallback', async () => {
     const result = await resolver.resolve('docs/shader-editor.md', 'pt-BR');
 
-    expect(result.content?.title).toBe('Editor de Shader');
+    expect(result.content?.title).toBe('ShaderEditor (descontinuado)');
     expect(result.locale).toBe('pt-BR');
     expect(result.isFallback).toBe(false);
     expect(
@@ -42,21 +42,21 @@ describe('migrated content trees', () => {
     ).toBe(true);
   });
 
-  it('serves the English original for an untranslated pt-BR page', async () => {
+  it('serves the published pt-BR translation of the rendering pipeline', async () => {
     const result = await resolver.resolve(
-      'knowledge/the-rendering-pipeline.md',
+      'docs/the-rendering-pipeline.md',
       'pt-BR',
     );
 
-    expect(result.content?.title).toBe('The Rendering Pipeline');
-    expect(result.locale).toBe('en');
-    expect(result.isFallback).toBe(true);
+    expect(result.content?.title).toBe('O pipeline de renderização');
+    expect(result.locale).toBe('pt-BR');
+    expect(result.isFallback).toBe(false);
     expect(
       await resolver.hasTranslation(
-        'knowledge/the-rendering-pipeline.md',
+        'docs/the-rendering-pipeline.md',
         'pt-BR',
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('renders a 404-worthy miss for a slug absent from both trees', async () => {
@@ -65,16 +65,11 @@ describe('migrated content trees', () => {
     expect(result.content).toBeNull();
   });
 
-  it('builds trees through the resolver, translated where available', async () => {
-    const docsTree = await buildContentTree(resolver, 'docs', 'pt-BR');
-    const knowledgeTree = await buildContentTree(
-      resolver,
-      'knowledge',
-      'pt-BR',
-    );
+  it('builds one tree through the resolver, translated where available', async () => {
+    const tree = await buildContentTree(resolver, 'docs', 'pt-BR');
 
-    expect(treeLabels(docsTree)).toContain('Editor de Shader');
-    expect(treeLabels(knowledgeTree)).toContain('The Rendering Pipeline');
+    expect(treeLabels(tree)).toContain('ShaderEditor (descontinuado)');
+    expect(treeLabels(tree)).toContain('O pipeline de renderização');
   });
 
   it('publishes the English editor documentation set in order', async () => {
@@ -96,6 +91,19 @@ describe('migrated content trees', () => {
     );
   });
 
+  it('merges the former knowledge pages into their docs sections', async () => {
+    const tree = await buildContentTree(resolver, 'docs', DEFAULT_LOCALE);
+
+    const basics = tree.find((section) => section.label === 'Shader Basics');
+    const lighting = tree.find((section) => section.label === 'Lighting');
+
+    expect(basics?.children?.[0]?.label).toBe('The Rendering Pipeline');
+    expect(lighting?.children?.map((child) => child.label)).toEqual(
+      expect.arrayContaining(['Lighting: Lambert', 'Lighting: Cook-Torrance']),
+    );
+    expect(tree.map((section) => section.label)).not.toContain('Knowledge');
+  });
+
   it('keeps section labels localised and starts with the editor docs', async () => {
     const tree = await buildContentTree(resolver, 'docs', 'pt-BR');
     const labels = tree.map((section) => section.label);
@@ -106,6 +114,8 @@ describe('migrated content trees', () => {
         'Editores',
         'Referência',
         'Referência da API',
+        'Fundamentos de Shader',
+        'Iluminação',
       ]),
     );
   });

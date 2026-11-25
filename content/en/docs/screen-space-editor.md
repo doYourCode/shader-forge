@@ -262,6 +262,6 @@ frame-time comparisons at different scales are not apples-to-apples.
 - [ABI Reference](/docs/abi-reference) — every uniform and sampler, generated
   from the declarations.
 - [Post effects](/docs/post-effects) — the smaller surface post-effect ABI.
-- [Post-processing lessons](/knowledge/post-processing)
-- [Debugging shaders](/knowledge/debugging-shaders)
+- [Post-processing lessons](/docs/post-processing)
+- [Debugging shaders](/docs/debugging-shaders)
 - [Limits and troubleshooting](/docs/limits-and-troubleshooting)

@@ -1,17 +1,25 @@
 ---
-title: Editor de Shader
-description: Gerencia a instância do CodeMirror e o código-fonte do shader.
+title: "ShaderEditor (descontinuado)"
+description: Esta página interna da API foi descontinuada. Comece pela Visão geral dos editores.
 section: api
 order: 1
 draft: false
 ---
 
-## Visão Geral
+# ShaderEditor (descontinuado)
 
-`ShaderEditor` é o responsável pela instância do CodeMirror utilizada pela view do editor.
+## Visão geral
 
-## Responsabilidades
+Esta página descrevia uma abstração interna do CodeMirror chamada
+`ShaderEditor`. Essa classe não faz parte da aplicação, e a página não descrevia
+nenhuma tela que um leitor possa abrir.
 
-- Manter o estado do editor sincronizado com o shader atual.
-- Expor `getValue()` e `setValue()` para leitura e substituição do código-fonte.
-- Emitir eventos de compilação para que o viewer e a barra de status possam reagir.
+A documentação dos editores agora fica em:
+
+- [Visão geral dos editores](/docs/editors-overview)
+- [Editor GLSL 3D](/docs/3d-editor)
+- [Sandbox GLSL 2D](/docs/2d-sandbox)
+- [Dados do usuário](/docs/user-data)
+- [Efeitos de pós-processamento](/docs/post-effects)
+- [Compilação e erros](/docs/compiling-and-errors)
+- [Limites e solução de problemas](/docs/limits-and-troubleshooting)

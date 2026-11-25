@@ -63,12 +63,28 @@ content:
           values:
             - name: editors
               label: Editors
-            - name: reference
-              label: Reference
             - name: guides
               label: Guides
+            - name: reference
+              label: Reference
             - name: api
               label: API Reference
+            - name: basics
+              label: Shader Basics
+            - name: math
+              label: Math & Colour
+            - name: glsl
+              label: GLSL
+            - name: lessons
+              label: Lessons
+            - name: lighting
+              label: Lighting
+            - name: post
+              label: Post-processing
+            - name: debugging
+              label: Debugging & Performance
+            - name: webgl
+              label: 'WebGL & WebGPU'
       - name: order
         label: Order in section
         type: number
@@ -156,12 +172,28 @@ content:
           values:
             - name: editors
               label: Editors
-            - name: reference
-              label: Reference
             - name: guides
               label: Guides
+            - name: reference
+              label: Reference
             - name: api
               label: API Reference
+            - name: basics
+              label: Shader Basics
+            - name: math
+              label: Math & Colour
+            - name: glsl
+              label: GLSL
+            - name: lessons
+              label: Lessons
+            - name: lighting
+              label: Lighting
+            - name: post
+              label: Post-processing
+            - name: debugging
+              label: Debugging & Performance
+            - name: webgl
+              label: 'WebGL & WebGPU'
       - name: order
         label: Order in section
         type: number
@@ -171,212 +203,6 @@ content:
         label: Difficulty
         type: select
         description: Shows a badge and drives the learning path. Leave empty for reference pages.
-        options:
-          values:
-            - name: beginner
-              label: Beginner
-            - name: intermediate
-              label: Intermediate
-            - name: advanced
-              label: Advanced
-      - name: prerequisites
-        label: Prerequisites
-        type: string
-        description: Comma-separated lesson slugs that should be read first.
-      - name: editor
-        label: Open in editor
-        type: select
-        description: Adds the "Open in editor" callout to this page.
-        options:
-          values:
-            - name: editor
-              label: 3D Shader Editor (/editor)
-            - name: sandbox
-              label: 2D Sandbox (/sandbox)
-            - name: screen-space
-              label: Screen Space Editor (/screen-space)
-      - name: example
-        label: Example id
-        type: string
-        description: Bundled example the callout loads (for example phong, gradient, gbuffer-normal).
-      - name: printable
-        label: Printable
-        type: boolean
-        description: Enables the print layout and the Print button (cheat sheets).
-      - name: generated
-        label: Generated
-        type: boolean
-        description: Set by npm run docs:abi. Do not edit this page by hand.
-      - name: draft
-        label: Draft
-        type: boolean
-      - name: body
-        label: Content
-        type: rich-text
-        options:
-          format: markdown
-          media: content-images
-          switcher: true
-
-  - name: knowledge_en
-    label: Knowledge (English)
-    type: collection
-    path: content/en/knowledge
-    format: yaml-frontmatter
-    filename: '{primary}.md'
-    subfolders: false
-    view:
-      fields: [title, section, order, difficulty, draft]
-      primary: title
-      sort: [order, title]
-      default:
-        sort: order
-        order: asc
-    fields:
-      - name: title
-        label: Title
-        type: string
-        required: true
-      - name: description
-        label: Summary
-        type: text
-        description: One or two sentences for lists, search results and future SEO.
-      - name: section
-        label: Section
-        type: select
-        required: true
-        options:
-          values:
-            - name: basics
-              label: Shader Basics
-            - name: math
-              label: Math & Colour
-            - name: glsl
-              label: GLSL
-            - name: lessons
-              label: Lessons
-            - name: lighting
-              label: Lighting
-            - name: post
-              label: Post-processing
-            - name: debugging
-              label: Debugging & Performance
-            - name: webgl
-              label: 'WebGL & WebGPU'
-            - name: reference
-              label: Reference
-      - name: order
-        label: Order in section
-        type: number
-        options:
-          min: 0
-      - name: difficulty
-        label: Difficulty
-        type: select
-        description: Shows a badge and drives the learning path.
-        options:
-          values:
-            - name: beginner
-              label: Beginner
-            - name: intermediate
-              label: Intermediate
-            - name: advanced
-              label: Advanced
-      - name: prerequisites
-        label: Prerequisites
-        type: string
-        description: Comma-separated lesson slugs that should be read first.
-      - name: editor
-        label: Open in editor
-        type: select
-        description: Adds the "Open in editor" callout to this page.
-        options:
-          values:
-            - name: editor
-              label: 3D Shader Editor (/editor)
-            - name: sandbox
-              label: 2D Sandbox (/sandbox)
-            - name: screen-space
-              label: Screen Space Editor (/screen-space)
-      - name: example
-        label: Example id
-        type: string
-        description: Bundled example the callout loads (for example phong, gradient, gbuffer-normal).
-      - name: printable
-        label: Printable
-        type: boolean
-        description: Enables the print layout and the Print button (cheat sheets).
-      - name: generated
-        label: Generated
-        type: boolean
-        description: Set by npm run docs:abi. Do not edit this page by hand.
-      - name: draft
-        label: Draft
-        type: boolean
-      - name: body
-        label: Content
-        type: rich-text
-        options:
-          format: markdown
-          media: content-images
-          switcher: true
-
-  - name: knowledge_pt_br
-    label: Knowledge (Português)
-    type: collection
-    path: content/pt-BR/knowledge
-    format: yaml-frontmatter
-    filename: '{primary}.md'
-    subfolders: false
-    view:
-      fields: [title, section, order, difficulty, draft]
-      primary: title
-      sort: [order, title]
-      default:
-        sort: order
-        order: asc
-    fields:
-      - name: title
-        label: Title
-        type: string
-        required: true
-      - name: description
-        label: Summary
-        type: text
-        description: One or two sentences for lists, search results and future SEO.
-      - name: section
-        label: Section
-        type: select
-        required: true
-        options:
-          values:
-            - name: basics
-              label: Shader Basics
-            - name: math
-              label: Math & Colour
-            - name: glsl
-              label: GLSL
-            - name: lessons
-              label: Lessons
-            - name: lighting
-              label: Lighting
-            - name: post
-              label: Post-processing
-            - name: debugging
-              label: Debugging & Performance
-            - name: webgl
-              label: 'WebGL & WebGPU'
-            - name: reference
-              label: Reference
-      - name: order
-        label: Order in section
-        type: number
-        options:
-          min: 0
-      - name: difficulty
-        label: Difficulty
-        type: select
-        description: Shows a badge and drives the learning path.
         options:
           values:
             - name: beginner

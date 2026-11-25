@@ -49,18 +49,7 @@ const docs: RawDoc[] = Object.entries(source)
 
 const slugs = new Set(docs.map((doc) => doc.slug));
 
-const contentSlugs = {
-  docs: new Set(
-    docs
-      .filter((doc) => doc.relativePath.startsWith('docs/'))
-      .map((doc) => doc.slug),
-  ),
-  knowledge: new Set(
-    docs
-      .filter((doc) => doc.relativePath.startsWith('knowledge/'))
-      .map((doc) => doc.slug),
-  ),
-};
+const contentSlugs = new Set(docs.map((doc) => doc.slug));
 
 function fail(message: string): never {
   throw new Error(message);
@@ -80,13 +69,12 @@ function assertExample(target: EditorTarget, id: string, where: string): void {
 describe('lesson authoring contract', () => {
   it('gives every document a known section', () => {
     for (const doc of docs) {
-      const kind = doc.relativePath.startsWith('docs/') ? 'docs' : 'knowledge';
-      const sections = contentSectionIds(kind);
+      const sections = contentSectionIds('docs');
       const section = String(doc.data.section ?? '');
 
       expect(
         sections.includes(section),
-        `${doc.key}: section "${section}" is not declared in ${kind} sections`,
+        `${doc.key}: section "${section}" is not declared in docs sections`,
       ).toBe(true);
     }
   });
@@ -155,18 +143,17 @@ describe('lesson authoring contract', () => {
     }
   });
 
-  it('resolves every internal docs/knowledge link', () => {
-    const linkPattern = /\]\((\/(?:docs|knowledge)\/([a-z0-9-]+))\)/g;
+  it('resolves every internal docs link', () => {
+    const linkPattern = /\]\((\/docs\/([a-z0-9-]+))\)/g;
 
     for (const doc of docs) {
       for (const match of doc.body.matchAll(linkPattern)) {
         const href = match[1] ?? '';
         const slug = match[2] ?? '';
-        const kind = href.startsWith('/docs/') ? 'docs' : 'knowledge';
 
         expect(
-          contentSlugs[kind].has(slug),
-          `${doc.key}: broken ${kind} link ${href}`,
+          contentSlugs.has(slug),
+          `${doc.key}: broken docs link ${href}`,
         ).toBe(true);
       }
     }

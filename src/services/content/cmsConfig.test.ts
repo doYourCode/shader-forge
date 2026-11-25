@@ -43,11 +43,13 @@ for (const [key, raw] of Object.entries(source)) {
   for (const name of Object.keys(data)) FRONTMATTER_KEYS.add(name);
 }
 
-function collectionFor(kind: 'docs' | 'knowledge'): CmsCollection {
+function collectionFor(locale: 'en' | 'pt-BR'): CmsCollection {
   const collection = collections.find((candidate) =>
-    candidate.path?.includes(`/en/${kind}`),
+    candidate.path?.includes(`/${locale}/docs`),
   );
-  if (!collection) throw new Error(`No English CMS collection for ${kind}.`);
+  if (!collection) {
+    throw new Error(`No ${locale} CMS collection for the docs tree.`);
+  }
   return collection;
 }
 
@@ -63,31 +65,27 @@ function optionNames(fieldValue: CmsField | undefined): string[] {
 
 describe('Pages CMS schema', () => {
   it('declares every frontmatter key the runtime reads', () => {
-    for (const kind of ['docs', 'knowledge'] as const) {
-      const collection = collectionFor(kind);
+    const collection = collectionFor('en');
 
-      for (const key of FRONTMATTER_KEYS) {
-        expect(
-          field(collection, key),
-          `${kind} collection is missing the "${key}" field`,
-        ).toBeDefined();
-      }
+    for (const key of FRONTMATTER_KEYS) {
+      expect(
+        field(collection, key),
+        `docs collection is missing the "${key}" field`,
+      ).toBeDefined();
     }
   });
 
   it('offers exactly the sections the navigation declares', () => {
-    for (const kind of ['docs', 'knowledge'] as const) {
-      const collection = collectionFor(kind);
-      const section = field(collection, 'section');
+    const collection = collectionFor('en');
+    const section = field(collection, 'section');
 
-      expect(optionNames(section).sort()).toEqual(
-        [...contentSectionIds(kind)].sort(),
-      );
-    }
+    expect(optionNames(section).sort()).toEqual(
+      [...contentSectionIds('docs')].sort(),
+    );
   });
 
   it('offers the difficulty and editor values the runtime parses', () => {
-    const docs = collectionFor('docs');
+    const docs = collectionFor('en');
 
     expect(optionNames(field(docs, 'difficulty')).sort()).toEqual([
       'advanced',
@@ -103,20 +101,12 @@ describe('Pages CMS schema', () => {
   });
 
   it('keeps the translated collections structurally identical', () => {
-    for (const kind of ['docs', 'knowledge'] as const) {
-      const english = collectionFor(kind);
-      const portuguese = collections.find((candidate) =>
-        candidate.path?.includes(`/pt-BR/${kind}`),
-      );
+    const english = collectionFor('en');
+    const portuguese = collectionFor('pt-BR');
 
-      expect(portuguese, `missing pt-BR ${kind} collection`).toBeDefined();
+    const englishFields = (english.fields ?? []).map((item) => item.name);
+    const portugueseFields = (portuguese.fields ?? []).map((item) => item.name);
 
-      const englishFields = (english.fields ?? []).map((item) => item.name);
-      const portugueseFields = (portuguese?.fields ?? []).map(
-        (item) => item.name,
-      );
-
-      expect(portugueseFields).toEqual(englishFields);
-    }
+    expect(portugueseFields).toEqual(englishFields);
   });
 });

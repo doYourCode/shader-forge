@@ -1,8 +1,8 @@
 # Content i18n (en / pt-BR)
 
-This document describes how documentation and knowledge content is translated.
-It covers the layout convention, the resolver contract, the CMS configuration,
-and the steps for adding a future locale.
+This document describes how documentation content is translated. It covers the
+layout convention, the resolver contract, the CMS configuration, and the steps
+for adding a future locale.
 
 > UI-string i18n (`vue-i18n` messages in `src/i18n/`) is a separate system and
 > is not described here. Content i18n never reads or writes those files.
@@ -15,19 +15,15 @@ filenames** in every tree:
 ```
 content/
 ├── en/
-│   ├── docs/
-│   │   └── shader-editor.md
-│   └── knowledge/
+│   └── docs/
 │       └── the-rendering-pipeline.md
 └── pt-BR/
-    ├── docs/
-    │   └── shader-editor.md
-    └── knowledge/
+    └── docs/
         └── the-rendering-pipeline.md
 ```
 
-**The relative path is the translation key.** `content/en/docs/shader-editor.md`
-and `content/pt-BR/docs/shader-editor.md` are the same document in two
+**The relative path is the translation key.** `content/en/docs/the-rendering-pipeline.md`
+and `content/pt-BR/docs/the-rendering-pipeline.md` are the same document in two
 languages. There are no filename suffixes (`foo.pt-BR.md` is forbidden) and no
 `translationKey` frontmatter field.
 
@@ -69,7 +65,10 @@ better than a bad translation, and the UI already shows a fallback notice.
 fallback:
 
 ```ts
-const result = await contentResolver.resolve('docs/shader-editor.md', 'pt-BR');
+const result = await contentResolver.resolve(
+  'docs/the-rendering-pipeline.md',
+  'pt-BR',
+);
 ```
 
 - Try `content/<locale>/<relativePath>`.
@@ -97,10 +96,9 @@ Content URLs are locale-neutral. The header language selector in `AppLayout`
 (backed by vue-i18n) is the single source of truth for both UI strings and
 document language; there is no second selector.
 
-| URL                       | Content locale                      |
-| ------------------------- | ----------------------------------- |
-| `/docs`, `/docs/:slug`    | Selected language (header selector) |
-| `/knowledge`, `.../:slug` | Selected language (header selector) |
+| URL                    | Content locale                      |
+| ---------------------- | ----------------------------------- |
+| `/docs`, `/docs/:slug` | Selected language (header selector) |
 
 - Switching the selector re-resolves the current document in place. The URL
   does not change, so links stay stable across languages.
@@ -120,11 +118,10 @@ document language; there is no second selector.
 
 ## Pages CMS
 
-`.pages.yml` declares one collection per locale and kind — `docs_en`,
-`docs_pt_br`, `knowledge_en`, `knowledge_pt_br` — pointing at
-`content/<locale>/<kind>`. Every collection has an identical field schema, so
-editors see the same fields in every language. The CMS only writes files; it
-does not match translations. The path convention above is the matching
+`.pages.yml` declares one collection per locale — `docs_en` and `docs_pt_br` —
+pointing at `content/<locale>/docs`. Both collections have an identical field
+schema, so editors see the same fields in every language. The CMS only writes
+files; it does not match translations. The path convention above is the matching
 mechanism.
 
 ## Adding a future locale
@@ -134,10 +131,10 @@ mechanism.
 2. Add translated section labels in `src/core/content/contentTrees.ts`. The
    `Record<Locale, string>` type will fail to compile until every locale has
    them.
-3. Create `content/<locale>/{docs,knowledge}/` and add the translated files
-   with the same relative paths.
-4. Add two collections (e.g. `docs_xx`, `knowledge_xx`) to `.pages.yml` with
-   the same field schema as the existing ones.
+3. Create `content/<locale>/docs/` and add the translated files with the same
+   relative paths.
+4. Add one collection (e.g. `docs_xx`) to `.pages.yml` with the same field
+   schema as the existing ones.
 5. Add the UI-string messages under `src/i18n/locales/` and the option in the
    header selector in `src/components/layout/AppLayout.vue`.
 6. Run `npm test` and `npm run build`.

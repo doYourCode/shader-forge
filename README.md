@@ -17,8 +17,8 @@ the browser.
   exactly as you wrote them.
 - **View-space post-effect stack** with a final output transform (Reinhard or
   ACES).
-- **Examples, reference and knowledge content** rendered from Markdown,
-  including Mermaid diagrams.
+- **Examples and reference content** rendered from Markdown, including Mermaid
+  diagrams.
 - **English and Brazilian Portuguese** UI and content. The app boots in pt-BR.
 
 The preview requires a WebGL 2 capable browser.
@@ -69,7 +69,7 @@ src/
   components/  Vue components
   views/       Routed screens
   i18n/        vue-i18n messages (en, pt-BR)
-content/       Per-locale documentation and knowledge trees
+content/       Per-locale documentation tree
 docs/          Contributor notes
 ```
 
@@ -84,7 +84,7 @@ folder whose name only repeats the file inside.
 
 ## Working on content
 
-Documentation and knowledge are translated as parallel per-locale trees. See
+Documentation is translated as parallel per-locale trees. See
 [docs/i18n-content.md](docs/i18n-content.md) for the layout and frontmatter
 rules, and [docs/post-effects.md](docs/post-effects.md) for the post-effect
 pipeline.

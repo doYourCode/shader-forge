@@ -10,7 +10,7 @@ import { parseFrontmatter } from './frontmatter';
 import { DEFAULT_LOCALE, isLocale, type Locale } from './locales';
 
 /** Content kinds that participate in the directory-per-locale layout. */
-export type ContentKind = 'docs' | 'knowledge';
+export type ContentKind = 'docs';
 
 /** A parsed, publishable document. */
 export interface Doc {

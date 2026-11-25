@@ -201,8 +201,8 @@ the G-buffer uses:
 - [Screen Space GLSL Editor](/docs/screen-space-editor)
 - [Post effects](/docs/post-effects)
 - [User data](/docs/user-data)
-- [GLSL ES 3.00](/knowledge/gles-3-0-webgl2)
-- [Debugging shaders](/knowledge/debugging-shaders)
+- [GLSL ES 3.00](/docs/gles-3-0-webgl2)
+- [Debugging shaders](/docs/debugging-shaders)
 - [Cheat sheet](/docs/cheat-sheet)
 
 ## Regenerating this page

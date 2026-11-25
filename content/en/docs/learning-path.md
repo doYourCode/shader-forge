@@ -41,25 +41,25 @@ flowchart TD
 
 | Lesson | Difficulty | You will learn |
 | --- | --- | --- |
-| [The Rendering Pipeline](/knowledge/the-rendering-pipeline) | Beginner | How vertex data becomes pixels. |
-| [Math for Shaders](/knowledge/math-for-shaders) | Beginner | Vectors, dot/cross, matrices, spaces. |
-| [Colour and Linear Space](/knowledge/color-and-linear) | Beginner | sRGB vs linear, HDR, tone mapping. |
+| [The Rendering Pipeline](/docs/the-rendering-pipeline) | Beginner | How vertex data becomes pixels. |
+| [Math for Shaders](/docs/math-for-shaders) | Beginner | Vectors, dot/cross, matrices, spaces. |
+| [Colour and Linear Space](/docs/color-and-linear) | Beginner | sRGB vs linear, HDR, tone mapping. |
 
 ## 2. The language
 
 | Lesson | Difficulty | You will learn |
 | --- | --- | --- |
-| [GLSL ES 3.00](/knowledge/gles-3-0-webgl2) | Beginner | Qualifiers, precision, control flow, functions. |
-| [Types and Swizzling](/knowledge/data-types) | Beginner | Scalars, vectors, matrices, constructors, swizzles. |
-| [Built-in Functions](/knowledge/built-in-functions) | Beginner | The functions you will use every day. |
+| [GLSL ES 3.00](/docs/gles-3-0-webgl2) | Beginner | Qualifiers, precision, control flow, functions. |
+| [Types and Swizzling](/docs/data-types) | Beginner | Scalars, vectors, matrices, constructors, swizzles. |
+| [Built-in Functions](/docs/built-in-functions) | Beginner | The functions you will use every day. |
 | [Cheat Sheet](/docs/cheat-sheet) | Beginner | A printable reference for the syntax. |
 
 ## 3. The 2D sandbox
 
 | Lesson | Difficulty | You will learn |
 | --- | --- | --- |
-| [First Shaders in the Sandbox](/knowledge/first-shaders) | Beginner | UVs, gradients, shapes, time, tiling. |
-| [Patterns, Noise and SDFs](/knowledge/patterns-noise-sdf) | Beginner | Hash, value noise, fBm, signed distance fields. |
+| [First Shaders in the Sandbox](/docs/first-shaders) | Beginner | UVs, gradients, shapes, time, tiling. |
+| [Patterns, Noise and SDFs](/docs/patterns-noise-sdf) | Beginner | Hash, value noise, fBm, signed distance fields. |
 
 The sandbox is the fastest place to iterate. Every snippet marked **Run this**
 opens it with the exact source.
@@ -68,18 +68,18 @@ opens it with the exact source.
 
 | Lesson | Difficulty | You will learn |
 | --- | --- | --- |
-| [The 3D Vertex Stage](/knowledge/vertex-stage-3d) | Intermediate | MVP, normalMatrix, varyings, displacement. |
+| [The 3D Vertex Stage](/docs/vertex-stage-3d) | Intermediate | MVP, normalMatrix, varyings, displacement. |
 
 ## 5. Lighting
 
 | Lesson | Difficulty | You will learn |
 | --- | --- | --- |
-| [Lambert](/knowledge/lighting-lambert) | Beginner | Cosine-law diffuse. |
-| [Phong](/knowledge/lighting-phong) | Beginner | Reflection-vector specular. |
-| [Blinn-Phong](/knowledge/lighting-blinn-phong) | Intermediate | Half-vector specular. |
-| [Oren-Nayar](/knowledge/lighting-oren-nayar) | Intermediate | Rough diffuse. |
-| [Cook-Torrance](/knowledge/lighting-cook-torrance) | Advanced | GGX, Smith, Fresnel. |
-| [Image-Based Lighting](/knowledge/lighting-ibl) | Advanced | Irradiance, prefiltering, BRDF LUT. |
+| [Lambert](/docs/lighting-lambert) | Beginner | Cosine-law diffuse. |
+| [Phong](/docs/lighting-phong) | Beginner | Reflection-vector specular. |
+| [Blinn-Phong](/docs/lighting-blinn-phong) | Intermediate | Half-vector specular. |
+| [Oren-Nayar](/docs/lighting-oren-nayar) | Intermediate | Rough diffuse. |
+| [Cook-Torrance](/docs/lighting-cook-torrance) | Advanced | GGX, Smith, Fresnel. |
+| [Image-Based Lighting](/docs/lighting-ibl) | Advanced | Irradiance, prefiltering, BRDF LUT. |
 
 The lighting lessons map one-to-one to bundled examples. The **Open in editor**
 callout at the top of each lesson loads the matching example.
@@ -88,13 +88,13 @@ callout at the top of each lesson loads the matching example.
 
 | Lesson | Difficulty | You will learn |
 | --- | --- | --- |
-| [Textures and Data](/knowledge/textures-and-data) | Intermediate | sampler2D, wrapping, normal maps, cube maps, User data. |
+| [Textures and Data](/docs/textures-and-data) | Intermediate | sampler2D, wrapping, normal maps, cube maps, User data. |
 
 ## 7. Screen-space and post-processing
 
 | Lesson | Difficulty | You will learn |
 | --- | --- | --- |
-| [Post-processing and the G-buffer](/knowledge/post-processing) | Intermediate | The stack, vignette, blur, outlines, fog, SSAO. |
+| [Post-processing and the G-buffer](/docs/post-processing) | Intermediate | The stack, vignette, blur, outlines, fog, SSAO. |
 | [Screen Space GLSL Editor](/docs/screen-space-editor) | Advanced | The whole-scene editor and its HDR pipeline. |
 | [ABI Reference](/docs/abi-reference) | Reference | Every name the renderer binds. |
 
@@ -102,8 +102,8 @@ callout at the top of each lesson loads the matching example.
 
 | Lesson | Difficulty | You will learn |
 | --- | --- | --- |
-| [Debugging Shaders](/knowledge/debugging-shaders) | Intermediate | Colour-as-printf, isolating terms, the error catalogue. |
-| [Performance Basics](/knowledge/how-the-gpu-executes-shaders) | Intermediate | Branching, fetches, overdraw, adaptive resolution. |
+| [Debugging Shaders](/docs/debugging-shaders) | Intermediate | Colour-as-printf, isolating terms, the error catalogue. |
+| [Performance Basics](/docs/how-the-gpu-executes-shaders) | Intermediate | Branching, fetches, overdraw, adaptive resolution. |
 
 ## Which editor should I use?
 
@@ -121,6 +121,6 @@ the surface post-effect tab, where depth is normalised.
 
 ## Related
 
-- [Glossary](/knowledge/glossary)
+- [Glossary](/docs/glossary)
 - [Editors Overview](/docs/editors-overview)
 - [Limits and troubleshooting](/docs/limits-and-troubleshooting)

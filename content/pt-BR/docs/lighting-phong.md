@@ -2,7 +2,7 @@
 title: "Iluminação: Phong"
 description: Adicione um lobo especular espelhando a luz em torno da normal. O modelo clássico de Phong e seu expoente de brilho.
 section: lighting
-order: 2
+order: 20
 difficulty: beginner
 prerequisites: lighting-lambert
 editor: editor

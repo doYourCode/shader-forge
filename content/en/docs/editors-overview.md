@@ -2,7 +2,7 @@
 title: Editors Overview
 description: Compare the 3D Shader Editor, the 2D Sandbox and the Screen Space editor, and learn what they share.
 section: editors
-order: 1
+order: 10
 draft: false
 ---
 

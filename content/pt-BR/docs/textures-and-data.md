@@ -1,8 +1,8 @@
 ---
 title: "Texturas e dados"
 description: Amostre texturas 2D, controle o wrapping, monte um referencial tangente para mapas de normais, leia cubemaps e forneça seus próprios uniforms pela aba Dados do usuário.
-section: lessons
-order: 4
+section: tutorials
+order: 40
 difficulty: intermediate
 prerequisites: vertex-stage-3d
 editor: editor

@@ -2,7 +2,7 @@
 title: "Dados do usuário"
 description: Declare uniforms e texturas em uma tabela. O ShaderForge gera o GLSL, injeta no momento da compilação e vincula os valores em tempo real.
 section: reference
-order: 1
+order: 20
 draft: false
 ---
 

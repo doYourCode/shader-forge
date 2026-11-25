@@ -1,8 +1,8 @@
 ---
 title: "Primeiros shaders no sandbox"
 description: UVs como cor, gradientes, formas simples e animação ao longo do tempo no Sandbox GLSL 2D. O primeiro degrau da trilha de lições.
-section: lessons
-order: 1
+section: tutorials
+order: 10
 difficulty: beginner
 prerequisites: gles-3-0-webgl2
 editor: sandbox

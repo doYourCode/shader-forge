@@ -66,7 +66,7 @@ describe('generated ABI reference', () => {
   it('renders as a normal content page', () => {
     expect(committed.startsWith('---\n')).toBe(true);
     expect(committed).toContain('title: ABI Reference');
-    expect(committed).toContain('section: api');
+    expect(committed).toContain('section: reference');
     expect(committed).toContain('generated: true');
   });
 });

@@ -2,7 +2,7 @@
 title: "Iluminação: IBL"
 description: IBL split-sum a partir de um HDRI. Irradiância para o difuso, um cubemap de radiância pré-filtrado para o especular, e a LUT de BRDF que amarra os dois.
 section: lighting
-order: 6
+order: 60
 difficulty: advanced
 prerequisites: lighting-cook-torrance, textures-and-data
 editor: editor

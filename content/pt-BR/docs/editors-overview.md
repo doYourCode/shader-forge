@@ -2,7 +2,7 @@
 title: "Visão geral dos editores"
 description: Compare o Editor GLSL 3D, o Sandbox GLSL 2D e o Editor GLSL de Tela, e saiba o que eles têm em comum.
 section: editors
-order: 1
+order: 10
 draft: false
 ---
 

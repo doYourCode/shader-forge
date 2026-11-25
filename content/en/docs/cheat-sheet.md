@@ -2,7 +2,7 @@
 title: GLSL Cheat Sheet
 description: A printable one-page reference for GLSL ES 3.00 types, swizzles, qualifiers, built-in functions, lighting terms and the most common errors.
 section: reference
-order: 5
+order: 10
 difficulty: beginner
 printable: true
 draft: false

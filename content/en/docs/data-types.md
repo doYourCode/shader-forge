@@ -1,8 +1,8 @@
 ---
 title: Types and Swizzling
 description: Scalars, vectors, matrices and samplers in GLSL ES 3.00, with the swizzle rules, constructors and a few type traps.
-section: glsl
-order: 1
+section: fundamentals
+order: 50
 difficulty: beginner
 prerequisites: gles-3-0-webgl2
 draft: false

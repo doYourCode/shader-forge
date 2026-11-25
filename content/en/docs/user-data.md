@@ -2,7 +2,7 @@
 title: User data
 description: Declare uniforms and textures in a table. ShaderForge generates the GLSL, injects it at compile time, and binds the values live.
 section: reference
-order: 1
+order: 20
 draft: false
 ---
 

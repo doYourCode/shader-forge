@@ -2,7 +2,7 @@
 title: "Editor GLSL de Tela"
 description: Escreva efeitos em tela cheia sobre uma cena HDR inteira, amostre o G-buffer da cena, inspecione seus attachments e ajuste a prévia com controles de FPS e sliders de iluminação.
 section: editors
-order: 4
+order: 40
 difficulty: advanced
 editor: screen-space
 example: gbuffer-normal

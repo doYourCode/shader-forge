@@ -2,7 +2,7 @@
 title: "Compilação e erros"
 description: Quando a compilação roda, o que o botão Compilar compila, como a fila se comporta e como ler os diagnósticos de shader.
 section: reference
-order: 3
+order: 40
 draft: false
 ---
 

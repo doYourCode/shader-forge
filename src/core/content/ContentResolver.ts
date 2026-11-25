@@ -14,9 +14,9 @@ export type ContentKind = 'docs';
 
 /** A parsed, publishable document. */
 export interface Doc {
-  /** Path relative to the locale root, e.g. `docs/shader-editor.md`. */
+  /** Path relative to the locale root, e.g. `docs/editors-overview.md`. */
   relativePath: string;
-  /** Full source key, e.g. `pt-BR/docs/shader-editor.md`. */
+  /** Full source key, e.g. `pt-BR/docs/editors-overview.md`. */
   sourcePath: string;
   title: string;
   description: string;

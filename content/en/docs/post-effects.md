@@ -2,7 +2,7 @@
 title: Post effects
 description: Build an ordered chain of view-space fullscreen passes with a shared ABI, then apply an output transform.
 section: reference
-order: 2
+order: 30
 draft: false
 ---
 

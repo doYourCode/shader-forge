@@ -2,7 +2,7 @@
 title: "Depuração de shaders"
 description: Leia o painel de erros, use cor como printf, isole um termo de cada vez e corrija os erros que o catálogo de diagnósticos já conhece.
 section: debugging
-order: 1
+order: 10
 difficulty: intermediate
 prerequisites: gles-3-0-webgl2
 editor: sandbox

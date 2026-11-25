@@ -2,7 +2,7 @@
 title: "Limites e solução de problemas"
 description: Requisitos de navegador, o que não é salvo, limites dos editores, dicas de desempenho e correções para sintomas comuns.
 section: reference
-order: 4
+order: 50
 draft: false
 ---
 
@@ -54,7 +54,7 @@ página fica em inglês mesmo que a interface esteja em português.
 
 As árvores de conteúdo são gerenciadas no Pages CMS (`.pages.yml`). O contrato
 de frontmatter das lições, os ids de seção e os modificadores de bloco de código
-estão documentados em [Lições sobre autoria](/docs/authoring-lessons). Páginas
+estão documentados em `docs/authoring-content.pt-BR.md`. Páginas
 geradas, como a [Referência da ABI](/docs/abi-reference), são reconstruídas por
 `npm run docs:abi`.
 

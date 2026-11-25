@@ -1,7 +1,7 @@
 ---
 title: "Trilha de aprendizagem"
 description: A ordem recomendada para as lições de GLSL, de vetores e do pipeline de renderização até iluminação, pós-processamento e depuração.
-section: guides
+section: tutorials
 order: 0
 difficulty: beginner
 draft: false

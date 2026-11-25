@@ -1,8 +1,8 @@
 ---
 title: ABI Reference
 description: Every attribute, uniform and sampler the three editors bind, generated from materialAbi.ts, postEffectAbi.ts and screenSpaceAbi.ts.
-section: api
-order: 0
+section: reference
+order: 70
 generated: true
 draft: false
 ---

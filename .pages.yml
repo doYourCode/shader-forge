@@ -63,28 +63,16 @@ content:
           values:
             - name: editors
               label: Editors
-            - name: guides
-              label: Guides
-            - name: reference
-              label: Reference
-            - name: api
-              label: API Reference
-            - name: basics
-              label: Shader Basics
-            - name: math
-              label: Math & Colour
-            - name: glsl
-              label: GLSL
-            - name: lessons
-              label: Lessons
+            - name: fundamentals
+              label: Shader Fundamentals
+            - name: tutorials
+              label: Tutorials
             - name: lighting
               label: Lighting
-            - name: post
-              label: Post-processing
             - name: debugging
               label: Debugging & Performance
-            - name: webgl
-              label: 'WebGL & WebGPU'
+            - name: reference
+              label: Reference
       - name: order
         label: Order in section
         type: number
@@ -172,28 +160,16 @@ content:
           values:
             - name: editors
               label: Editors
-            - name: guides
-              label: Guides
-            - name: reference
-              label: Reference
-            - name: api
-              label: API Reference
-            - name: basics
-              label: Shader Basics
-            - name: math
-              label: Math & Colour
-            - name: glsl
-              label: GLSL
-            - name: lessons
-              label: Lessons
+            - name: fundamentals
+              label: Shader Fundamentals
+            - name: tutorials
+              label: Tutorials
             - name: lighting
               label: Lighting
-            - name: post
-              label: Post-processing
             - name: debugging
               label: Debugging & Performance
-            - name: webgl
-              label: 'WebGL & WebGPU'
+            - name: reference
+              label: Reference
       - name: order
         label: Order in section
         type: number

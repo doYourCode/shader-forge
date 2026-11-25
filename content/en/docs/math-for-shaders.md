@@ -1,8 +1,8 @@
 ---
 title: Math for Shaders
 description: Vectors, dot and cross products, matrices, the object-to-clip chain and the colour space you are working in. The minimum maths a GLSL lesson assumes.
-section: math
-order: 1
+section: fundamentals
+order: 20
 difficulty: beginner
 prerequisites: the-rendering-pipeline
 draft: false

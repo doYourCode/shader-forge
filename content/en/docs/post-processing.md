@@ -1,8 +1,8 @@
 ---
 title: Post-processing and the G-buffer
 description: Build an ordered fullscreen effect chain, read the depth and normal buffers, and implement vignette, blur, outlines, depth fog and SSAO.
-section: post
-order: 1
+section: tutorials
+order: 50
 difficulty: intermediate
 prerequisites: lighting-cook-torrance, textures-and-data
 editor: screen-space

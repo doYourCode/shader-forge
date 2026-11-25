@@ -2,7 +2,7 @@
 title: "Efeitos de pós-processamento"
 description: Monte uma cadeia ordenada de passes de tela cheia no espaço de visão com uma ABI compartilhada e depois aplique uma transformação de saída.
 section: reference
-order: 2
+order: 30
 draft: false
 ---
 

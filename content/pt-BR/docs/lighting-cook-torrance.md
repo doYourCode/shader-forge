@@ -2,7 +2,7 @@
 title: "Iluminação: Cook-Torrance"
 description: Uma BRDF de microfaceta com base física. Distribuição GGX, geometria Smith e Fresnel Schlick, com conservação de energia.
 section: lighting
-order: 5
+order: 50
 difficulty: advanced
 prerequisites: lighting-blinn-phong, math-for-shaders
 editor: editor

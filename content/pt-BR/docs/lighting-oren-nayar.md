@@ -2,7 +2,7 @@
 title: "Iluminação: Oren-Nayar"
 description: Um modelo difuso rugoso para superfícies foscas. Microfacetas em forma de V acrescentam retrorreflexão dependente da visão que Lambert não consegue expressar.
 section: lighting
-order: 4
+order: 40
 difficulty: intermediate
 prerequisites: lighting-lambert
 editor: editor

@@ -19,43 +19,17 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
       labels: { [DEFAULT_LOCALE]: 'Editors', [PT_BR_LOCALE]: 'Editores' },
     },
     {
-      id: 'guides',
-      labels: { [DEFAULT_LOCALE]: 'Guides', [PT_BR_LOCALE]: 'Guias' },
-    },
-    {
-      id: 'reference',
-      labels: { [DEFAULT_LOCALE]: 'Reference', [PT_BR_LOCALE]: 'Referência' },
-    },
-    {
-      id: 'api',
+      id: 'fundamentals',
       labels: {
-        [DEFAULT_LOCALE]: 'API Reference',
-        [PT_BR_LOCALE]: 'Referência da API',
-      },
-    },
-    {
-      id: 'basics',
-      labels: {
-        [DEFAULT_LOCALE]: 'Shader Basics',
+        [DEFAULT_LOCALE]: 'Shader Fundamentals',
         [PT_BR_LOCALE]: 'Fundamentos de Shader',
       },
     },
     {
-      id: 'math',
+      id: 'tutorials',
       labels: {
-        [DEFAULT_LOCALE]: 'Math & Colour',
-        [PT_BR_LOCALE]: 'Matemática e Cor',
-      },
-    },
-    {
-      id: 'glsl',
-      labels: { [DEFAULT_LOCALE]: 'GLSL', [PT_BR_LOCALE]: 'GLSL' },
-    },
-    {
-      id: 'lessons',
-      labels: {
-        [DEFAULT_LOCALE]: 'Lessons',
-        [PT_BR_LOCALE]: 'Lições',
+        [DEFAULT_LOCALE]: 'Tutorials',
+        [PT_BR_LOCALE]: 'Tutoriais',
       },
     },
     {
@@ -66,13 +40,6 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
       },
     },
     {
-      id: 'post',
-      labels: {
-        [DEFAULT_LOCALE]: 'Post-processing',
-        [PT_BR_LOCALE]: 'Pós-processamento',
-      },
-    },
-    {
       id: 'debugging',
       labels: {
         [DEFAULT_LOCALE]: 'Debugging & Performance',
@@ -80,16 +47,13 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
       },
     },
     {
-      id: 'webgl',
-      labels: {
-        [DEFAULT_LOCALE]: 'WebGL & WebGPU',
-        [PT_BR_LOCALE]: 'WebGL e WebGPU',
-      },
+      id: 'reference',
+      labels: { [DEFAULT_LOCALE]: 'Reference', [PT_BR_LOCALE]: 'Referência' },
     },
   ],
 };
 
-/** `docs/shader-editor.md` → `shader-editor`. */
+/** `docs/editors-overview.md` → `editors-overview`. */
 export function slugFromRelativePath(relativePath: string): string {
   const file = relativePath.split('/').pop() ?? relativePath;
   return file.replace(/\.md$/i, '');

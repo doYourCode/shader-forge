@@ -2,7 +2,7 @@
 title: Glossary
 description: Short definitions of the graphics and GLSL terms used across the lessons, with pointer links to the page that covers each one.
 section: reference
-order: 1
+order: 60
 difficulty: beginner
 draft: false
 ---

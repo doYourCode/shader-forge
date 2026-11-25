@@ -1,8 +1,8 @@
 ---
 title: "Matemática para shaders"
 description: Vetores, produto escalar e produto vetorial, matrizes, a cadeia do espaço de objeto ao clip space e o espaço de cor em que você está trabalhando. O mínimo de matemática que uma lição de GLSL pressupõe.
-section: math
-order: 1
+section: fundamentals
+order: 20
 difficulty: beginner
 prerequisites: the-rendering-pipeline
 draft: false

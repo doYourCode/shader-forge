@@ -2,7 +2,7 @@
 title: 3D Shader Editor
 description: Write a vertex and fragment pair for a mesh, compile it, and preview it on a model under an HDR environment.
 section: editors
-order: 2
+order: 20
 draft: false
 ---
 

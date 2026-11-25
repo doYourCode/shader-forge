@@ -2,7 +2,7 @@
 title: "Iluminação: Blinn-Phong"
 description: Substitua o vetor de reflexão pelo half vector para obter um lobo especular estável e mais barato que alcança a silhueta.
 section: lighting
-order: 3
+order: 30
 difficulty: intermediate
 prerequisites: lighting-phong
 editor: editor

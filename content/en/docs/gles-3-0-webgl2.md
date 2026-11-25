@@ -1,8 +1,8 @@
 ---
 title: GLSL ES 3.00
 description: The shader language used by all three editors - qualifiers, precision, control flow, functions and the jump from GLSL ES 1.00.
-section: glsl
-order: 3
+section: fundamentals
+order: 40
 difficulty: beginner
 prerequisites: math-for-shaders
 draft: false

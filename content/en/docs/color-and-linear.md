@@ -1,8 +1,8 @@
 ---
 title: Colour and Linear Space
 description: Why sRGB values are not light, what HDR means in a shader, and where the output transform and sRGB encode belong.
-section: math
-order: 2
+section: fundamentals
+order: 30
 difficulty: beginner
 prerequisites: math-for-shaders
 draft: false

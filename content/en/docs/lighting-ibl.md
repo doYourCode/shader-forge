@@ -2,7 +2,7 @@
 title: "Lighting: Image-Based Lighting"
 description: Split-sum IBL from an HDRI. Irradiance for diffuse, a prefiltered radiance cubemap for specular, and the BRDF LUT that ties them together.
 section: lighting
-order: 6
+order: 60
 difficulty: advanced
 prerequisites: lighting-cook-torrance, textures-and-data
 editor: editor

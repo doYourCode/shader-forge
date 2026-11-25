@@ -1,8 +1,8 @@
 ---
 title: Patterns, Noise and SDFs
 description: Tiling, hash-based value noise and signed distance fields - the three procedural building blocks behind most 2D shader art.
-section: lessons
-order: 2
+section: tutorials
+order: 20
 difficulty: beginner
 prerequisites: first-shaders
 editor: sandbox

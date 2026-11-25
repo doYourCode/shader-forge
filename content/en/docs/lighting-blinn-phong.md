@@ -2,7 +2,7 @@
 title: "Lighting: Blinn-Phong"
 description: Replace the reflection vector with the half vector to get a stable, cheaper specular lobe that reaches the silhouette.
 section: lighting
-order: 3
+order: 30
 difficulty: intermediate
 prerequisites: lighting-phong
 editor: editor

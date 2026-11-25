@@ -2,7 +2,7 @@
 title: "Glossário"
 description: Definições curtas dos termos de gráficos e GLSL usados nas lições, com links de referência para a página que cobre cada um.
 section: reference
-order: 1
+order: 60
 difficulty: beginner
 draft: false
 ---

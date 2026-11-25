@@ -1,8 +1,8 @@
 ---
 title: "Pós-processamento e o G-buffer"
 description: Monte uma cadeia ordenada de efeitos de tela cheia, leia os buffers de profundidade e de normais e implemente vinheta, desfoque, contornos, névoa de profundidade e SSAO.
-section: post
-order: 1
+section: tutorials
+order: 50
 difficulty: intermediate
 prerequisites: lighting-cook-torrance, textures-and-data
 editor: screen-space

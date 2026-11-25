@@ -1,8 +1,8 @@
 ---
 title: The 3D Vertex Stage
 description: The MVP chain, normalMatrix, varyings and vertex displacement. How a mesh becomes clip-space triangles and how to move it safely.
-section: lessons
-order: 3
+section: tutorials
+order: 30
 difficulty: intermediate
 prerequisites: math-for-shaders, first-shaders
 editor: editor

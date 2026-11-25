@@ -2,7 +2,7 @@
 title: "Editor GLSL 3D"
 description: Escreva um par de shaders de vértices e fragmentos para uma malha, compile-o e veja a prévia em um modelo sob um ambiente HDR.
 section: editors
-order: 2
+order: 20
 draft: false
 ---
 

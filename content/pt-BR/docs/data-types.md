@@ -1,8 +1,8 @@
 ---
 title: "Tipos e swizzling"
 description: Escalares, vetores, matrizes e samplers em GLSL ES 3.00, com as regras de swizzle, os construtores e algumas armadilhas de tipos.
-section: glsl
-order: 1
+section: fundamentals
+order: 50
 difficulty: beginner
 prerequisites: gles-3-0-webgl2
 draft: false

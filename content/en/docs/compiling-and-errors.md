@@ -2,7 +2,7 @@
 title: Compiling and errors
 description: When compilation runs, what the Compile button targets, how the queue behaves, and how to read shader diagnostics.
 section: reference
-order: 3
+order: 40
 draft: false
 ---
 

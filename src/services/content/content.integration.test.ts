@@ -25,20 +25,19 @@ describe('migrated content trees', () => {
   it('loads every locale from content/<locale>/**', () => {
     const paths = resolver.relativePaths();
 
-    expect(Object.keys(source)).toContain('pt-BR/docs/shader-editor.md');
-    expect(paths).toContain('docs/shader-editor.md');
+    expect(Object.keys(source)).toContain('pt-BR/docs/editors-overview.md');
+    expect(paths).toContain('docs/editors-overview.md');
     expect(paths).toContain('docs/the-rendering-pipeline.md');
-    expect(paths).toContain('docs/wgsl-webgpu.md');
   });
 
   it('serves a published pt-BR translation without fallback', async () => {
-    const result = await resolver.resolve('docs/shader-editor.md', 'pt-BR');
+    const result = await resolver.resolve('docs/editors-overview.md', 'pt-BR');
 
-    expect(result.content?.title).toBe('ShaderEditor (descontinuado)');
+    expect(result.content?.title).toBe('Visão geral dos editores');
     expect(result.locale).toBe('pt-BR');
     expect(result.isFallback).toBe(false);
     expect(
-      await resolver.hasTranslation('docs/shader-editor.md', 'pt-BR'),
+      await resolver.hasTranslation('docs/editors-overview.md', 'pt-BR'),
     ).toBe(true);
   });
 
@@ -68,7 +67,7 @@ describe('migrated content trees', () => {
   it('builds one tree through the resolver, translated where available', async () => {
     const tree = await buildContentTree(resolver, 'docs', 'pt-BR');
 
-    expect(treeLabels(tree)).toContain('ShaderEditor (descontinuado)');
+    expect(treeLabels(tree)).toContain('Visão geral dos editores');
     expect(treeLabels(tree)).toContain('O pipeline de renderização');
   });
 
@@ -91,32 +90,40 @@ describe('migrated content trees', () => {
     );
   });
 
-  it('merges the former knowledge pages into their docs sections', async () => {
+  it('groups the learning pages into their docs sections', async () => {
     const tree = await buildContentTree(resolver, 'docs', DEFAULT_LOCALE);
 
-    const basics = tree.find((section) => section.label === 'Shader Basics');
+    expect(tree.map((section) => section.label)).toEqual([
+      'Editors',
+      'Shader Fundamentals',
+      'Tutorials',
+      'Lighting',
+      'Debugging & Performance',
+      'Reference',
+    ]);
+
+    const fundamentals = tree.find(
+      (section) => section.label === 'Shader Fundamentals',
+    );
     const lighting = tree.find((section) => section.label === 'Lighting');
 
-    expect(basics?.children?.[0]?.label).toBe('The Rendering Pipeline');
+    expect(fundamentals?.children?.[0]?.label).toBe('The Rendering Pipeline');
     expect(lighting?.children?.map((child) => child.label)).toEqual(
       expect.arrayContaining(['Lighting: Lambert', 'Lighting: Cook-Torrance']),
     );
-    expect(tree.map((section) => section.label)).not.toContain('Knowledge');
   });
 
   it('keeps section labels localised and starts with the editor docs', async () => {
     const tree = await buildContentTree(resolver, 'docs', 'pt-BR');
     const labels = tree.map((section) => section.label);
 
-    expect(labels[0]).toBe('Editores');
-    expect(labels).toEqual(
-      expect.arrayContaining([
-        'Editores',
-        'Referência',
-        'Referência da API',
-        'Fundamentos de Shader',
-        'Iluminação',
-      ]),
-    );
+    expect(labels).toEqual([
+      'Editores',
+      'Fundamentos de Shader',
+      'Tutoriais',
+      'Iluminação',
+      'Depuração e Desempenho',
+      'Referência',
+    ]);
   });
 });

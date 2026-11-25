@@ -2,7 +2,7 @@
 title: "Lighting: Cook-Torrance"
 description: A physically based microfacet BRDF. GGX distribution, Smith geometry and Schlick Fresnel, with energy conservation.
 section: lighting
-order: 5
+order: 50
 difficulty: advanced
 prerequisites: lighting-blinn-phong, math-for-shaders
 editor: editor

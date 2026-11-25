@@ -1,12 +1,3 @@
----
-title: "Lições sobre autoria"
-description: O contrato de frontmatter, os ids de seção, o modelo de lição, os modificadores de bloco de código e as regras de deep link usados pelo sistema de documentação.
-section: guides
-order: 9
-difficulty: beginner
-draft: false
----
-
 # Lições sobre autoria
 
 Esta página é para quem adiciona ou edita conteúdo. Ela documenta o contrato
@@ -21,7 +12,7 @@ mas cada página é um arquivo Markdown simples em `content/en/docs/`.
 | Docs | `content/en/docs/*.md` | `/docs/<slug>` |
 
 O slug é o nome do arquivo sem `.md`. O caminho relativo é a chave de tradução:
-`docs/shader-editor.md` e `pt-BR/docs/shader-editor.md` descrevem a mesma
+`docs/editors-overview.md` e `pt-BR/docs/editors-overview.md` descrevem a mesma
 página. Por enquanto, o inglês é o único locale em que se escreve conteúdo; uma
 página não traduzida usa o fallback para o inglês, com um aviso.
 
@@ -34,8 +25,8 @@ obrigatórios.
 ---
 title: Primeiros shaders no sandbox
 description: UVs, gradientes, formas e tempo no Sandbox GLSL 2D.
-section: lessons
-order: 1
+section: tutorials
+order: 10
 difficulty: beginner
 prerequisites: gles-3-0-webgl2, math-for-shaders
 editor: sandbox
@@ -65,8 +56,7 @@ não consegue editá-la.
 
 ### Ids de seção
 
-Docs: `editors`, `guides`, `reference`, `api`, `basics`, `math`, `glsl`,
-`lessons`, `lighting`, `post`, `debugging`, `webgl`.
+Docs: `editors`, `fundamentals`, `tutorials`, `lighting`, `debugging`, `reference`.
 
 Os rótulos ficam em `src/core/content/contentTrees.ts`. Uma seção que não está
 listada ali ainda renderiza, mas no final, com o id bruto; adicione-a aos dois

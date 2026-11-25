@@ -2,7 +2,7 @@
 title: "Sandbox GLSL 2D"
 description: Um editor de shader de tela cheia só de fragmentos, com vUv, uResolution e uTime, e nenhuma cena para configurar.
 section: editors
-order: 3
+order: 30
 draft: false
 ---
 

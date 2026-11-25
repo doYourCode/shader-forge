@@ -2,7 +2,7 @@
 title: Debugging Shaders
 description: Read the error panel, use colour as printf, isolate terms one at a time, and fix the errors the diagnostics catalog already knows.
 section: debugging
-order: 1
+order: 10
 difficulty: intermediate
 prerequisites: gles-3-0-webgl2
 editor: sandbox

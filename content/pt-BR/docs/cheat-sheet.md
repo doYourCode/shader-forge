@@ -2,7 +2,7 @@
 title: "Referência rápida de GLSL"
 description: Uma referência imprimível de uma página sobre GLSL ES 3.00 — tipos, swizzles, qualificadores, funções integradas, termos de iluminação e os erros mais comuns.
 section: reference
-order: 5
+order: 10
 difficulty: beginner
 printable: true
 draft: false

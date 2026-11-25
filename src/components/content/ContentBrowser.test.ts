@@ -72,10 +72,10 @@ describe('ContentBrowser', () => {
   });
 
   it('swaps the document body when the existing selector changes language', async () => {
-    const page = await mountAt('/docs/shader-editor');
+    const page = await mountAt('/docs/editors-overview');
 
     expect(page.find('.fallback-notice').exists()).toBe(false);
-    expect(page.text()).toContain('Overview');
+    expect(page.text()).toContain('Editors Overview');
     expect(document.documentElement.lang).toBe('en');
 
     i18n.global.locale.value = 'pt-BR';
@@ -88,7 +88,7 @@ describe('ContentBrowser', () => {
     i18n.global.locale.value = 'en';
     await settle();
 
-    expect(page.text()).toContain('Overview');
+    expect(page.text()).toContain('Editors Overview');
     expect(document.documentElement.lang).toBe('en');
   });
 
@@ -113,7 +113,7 @@ describe('ContentBrowser', () => {
     const page = await mountAt('/docs/the-rendering-pipeline');
 
     expect(page.text()).toContain('The Rendering Pipeline');
-    expect(page.text()).toContain('Shader Basics');
+    expect(page.text()).toContain('Shader Fundamentals');
     expect(page.text()).toContain('Lighting');
     expect(document.documentElement.lang).toBe('en');
   });

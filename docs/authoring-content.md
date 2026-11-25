@@ -1,12 +1,3 @@
----
-title: Authoring Lessons
-description: The frontmatter contract, section ids, lesson template, code-fence modifiers and deep-link rules used by the documentation system.
-section: guides
-order: 9
-difficulty: beginner
-draft: false
----
-
 # Authoring Lessons
 
 This page is for people adding or editing content. It documents the contract the
@@ -21,7 +12,7 @@ is a plain Markdown file under `content/en/docs/`.
 | Docs | `content/en/docs/*.md` | `/docs/<slug>` |
 
 The slug is the filename without `.md`. The relative path is the translation
-key: `docs/shader-editor.md` and `pt-BR/docs/shader-editor.md` describe the same
+key: `docs/editors-overview.md` and `pt-BR/docs/editors-overview.md` describe the same
 page. English is the only authored locale for now; an untranslated page falls
 back to English with a notice.
 
@@ -33,8 +24,8 @@ Every page starts with YAML frontmatter. Only `title` and `section` are required
 ---
 title: First Shaders in the Sandbox
 description: UVs, gradients, shapes and time in the 2D Sandbox.
-section: lessons
-order: 1
+section: tutorials
+order: 10
 difficulty: beginner
 prerequisites: gles-3-0-webgl2, math-for-shaders
 editor: sandbox
@@ -63,8 +54,7 @@ add it to the two collections as well, otherwise the CMS cannot edit it.
 
 ### Section ids
 
-Docs: `editors`, `guides`, `reference`, `api`, `basics`, `math`, `glsl`,
-`lessons`, `lighting`, `post`, `debugging`, `webgl`.
+Docs: `editors`, `fundamentals`, `tutorials`, `lighting`, `debugging`, `reference`.
 
 The labels live in `src/core/content/contentTrees.ts`. A section that is not
 listed there still renders, but at the end with its raw id; add it to both

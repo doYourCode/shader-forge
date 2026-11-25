@@ -1,8 +1,8 @@
 ---
 title: "O estágio de vértice 3D"
 description: A cadeia MVP, normalMatrix, varyings e deslocamento de vértices. Como uma malha se torna triângulos em clip space e como movê-la com segurança.
-section: lessons
-order: 3
+section: tutorials
+order: 30
 difficulty: intermediate
 prerequisites: math-for-shaders, first-shaders
 editor: editor

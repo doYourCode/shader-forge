@@ -1,8 +1,8 @@
 ---
 title: "Funções integradas"
 description: As funções do GLSL ES 3.00 que você mais vai usar, com intervalos de argumentos, usos comuns e as diferenças em relação ao GLSL ES 1.00.
-section: glsl
-order: 2
+section: fundamentals
+order: 60
 difficulty: beginner
 prerequisites: data-types
 draft: false

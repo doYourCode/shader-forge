@@ -2,7 +2,7 @@
 title: Limits and troubleshooting
 description: Browser requirements, what is not saved, editor limits, performance advice and fixes for common symptoms.
 section: reference
-order: 4
+order: 50
 draft: false
 ---
 
@@ -51,7 +51,7 @@ English even if the interface is Portuguese.
 
 The content trees are managed in Pages CMS (`.pages.yml`). The lesson
 frontmatter contract, the section ids and the code-fence modifiers are
-documented in [Authoring lessons](/docs/authoring-lessons). Generated pages such
+documented in `docs/authoring-content.md`. Generated pages such
 as the [ABI Reference](/docs/abi-reference) are rebuilt by `npm run docs:abi`.
 
 A few preview labels are hardcoded in English: **Model**, **Environment**,

@@ -1,8 +1,8 @@
 ---
 title: "Padrões, ruído e SDFs"
 description: Tiling, ruído de valor baseado em hash e campos de distância com sinal — os três blocos de construção procedurais por trás da maior parte da arte 2D com shaders.
-section: lessons
-order: 2
+section: tutorials
+order: 20
 difficulty: beginner
 prerequisites: first-shaders
 editor: sandbox

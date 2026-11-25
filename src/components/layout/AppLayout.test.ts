@@ -67,7 +67,7 @@ describe('AppLayout footer', () => {
   });
 
   it('keeps the branded header on the other screens', async () => {
-    const wrapper = await mountAt('/docs/shader-editor');
+    const wrapper = await mountAt('/docs/editors-overview');
 
     expect(wrapper.find('.app-header').exists()).toBe(true);
     expect(wrapper.find('.app-brand').exists()).toBe(true);
@@ -88,7 +88,7 @@ describe('AppLayout footer', () => {
   });
 
   it('keeps the documentation title in the header', async () => {
-    const wrapper = await mountAt('/docs/shader-editor');
+    const wrapper = await mountAt('/docs/editors-overview');
 
     expect(wrapper.find('.app-header__title').text()).toBe(
       'Reference & Documentation',
@@ -100,7 +100,7 @@ describe('AppLayout footer', () => {
   it('keeps the footer on the other screens', async () => {
     for (const path of [
       '/',
-      '/docs/shader-editor',
+      '/docs/editors-overview',
       '/docs/the-rendering-pipeline',
     ]) {
       const wrapper = await mountAt(path);
@@ -119,7 +119,7 @@ describe('AppLayout footer', () => {
     );
     landing.unmount();
 
-    const docs = await mountAt('/docs/shader-editor');
+    const docs = await mountAt('/docs/editors-overview');
     expect(docs.find('.app-shell').classes()).not.toContain(
       'app-shell--landing',
     );
@@ -127,7 +127,7 @@ describe('AppLayout footer', () => {
   });
 
   it('lets the documentation screen scroll with the window', async () => {
-    const docs = await mountAt('/docs/shader-editor');
+    const docs = await mountAt('/docs/editors-overview');
     expect(docs.find('.app-shell').classes()).toContain(
       'app-shell--window-scroll',
     );

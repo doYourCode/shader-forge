@@ -2,7 +2,7 @@
 title: Performance Basics
 description: Why a shader is slow, how the GPU executes fragments in parallel, and which levers actually matter in these editors.
 section: debugging
-order: 2
+order: 20
 difficulty: intermediate
 prerequisites: post-processing
 draft: false

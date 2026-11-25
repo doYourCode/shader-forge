@@ -2,7 +2,7 @@
 title: "Lighting: Phong"
 description: Add a specular lobe by mirroring the light around the normal. The classic Phong model and its shininess exponent.
 section: lighting
-order: 2
+order: 20
 difficulty: beginner
 prerequisites: lighting-lambert
 editor: editor

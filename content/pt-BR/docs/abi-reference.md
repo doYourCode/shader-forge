@@ -1,8 +1,8 @@
 ---
 title: "Referência da ABI"
 description: Todos os atributos, uniforms e samplers que os três editores vinculam, gerados a partir de materialAbi.ts, postEffectAbi.ts e screenSpaceAbi.ts.
-section: api
-order: 0
+section: reference
+order: 70
 generated: true
 draft: false
 ---

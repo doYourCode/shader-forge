@@ -2,7 +2,7 @@
 title: Screen Space GLSL Editor
 description: Write fullscreen effects over a whole HDR scene, sample the scene G-buffer, inspect its attachments, and tune the preview with FPS controls and lighting sliders.
 section: editors
-order: 4
+order: 40
 difficulty: advanced
 editor: screen-space
 example: gbuffer-normal

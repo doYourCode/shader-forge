@@ -2,7 +2,7 @@
 title: "Iluminação: Lambert"
 description: O modelo difuso da lei do cosseno. Um produto escalar, uma multiplicação pelo albedo e o ponto de referência que todos os outros modelos de iluminação estendem.
 section: lighting
-order: 1
+order: 10
 difficulty: beginner
 prerequisites: vertex-stage-3d
 editor: editor

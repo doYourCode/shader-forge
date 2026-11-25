@@ -1,8 +1,8 @@
 ---
 title: "O pipeline de renderização"
 description: Como os dados de vértices se tornam pixels na tela.
-section: basics
-order: 1
+section: fundamentals
+order: 10
 draft: false
 ---
 # O pipeline de renderização: dos dados 3D aos pixels da sua tela

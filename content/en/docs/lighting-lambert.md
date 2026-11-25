@@ -2,7 +2,7 @@
 title: "Lighting: Lambert"
 description: The cosine-law diffuse model. One dot product, one albedo multiply, and the reference point every other lighting model extends.
 section: lighting
-order: 1
+order: 10
 difficulty: beginner
 prerequisites: vertex-stage-3d
 editor: editor

@@ -1,8 +1,8 @@
 ---
 title: First Shaders in the Sandbox
 description: UVs as colour, gradients, simple shapes and time animation in the 2D Sandbox. The first rung of the lesson path.
-section: lessons
-order: 1
+section: tutorials
+order: 10
 difficulty: beginner
 prerequisites: gles-3-0-webgl2
 editor: sandbox

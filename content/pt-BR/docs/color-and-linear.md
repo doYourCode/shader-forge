@@ -1,8 +1,8 @@
 ---
 title: "Cor e espaço linear"
 description: Por que valores sRGB não são luz, o que HDR significa em um shader e onde ficam a transformação de saída e a codificação sRGB.
-section: math
-order: 2
+section: fundamentals
+order: 30
 difficulty: beginner
 prerequisites: math-for-shaders
 draft: false

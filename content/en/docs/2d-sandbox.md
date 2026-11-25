@@ -2,7 +2,7 @@
 title: 2D Sandbox
 description: A fragment-only fullscreen shader editor with vUv, uResolution and uTime, and no scene to set up.
 section: editors
-order: 3
+order: 30
 draft: false
 ---
 

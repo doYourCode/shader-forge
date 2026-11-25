@@ -1,8 +1,8 @@
 ---
 title: Built-in Functions
 description: The GLSL ES 3.00 functions you will use most, with argument ranges, common idioms and the differences from GLSL ES 1.00.
-section: glsl
-order: 2
+section: fundamentals
+order: 60
 difficulty: beginner
 prerequisites: data-types
 draft: false

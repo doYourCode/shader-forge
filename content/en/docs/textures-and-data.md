@@ -1,8 +1,8 @@
 ---
 title: Textures and Data
 description: Sample 2D textures, control wrapping, build a tangent frame for normal maps, read cubemaps, and feed your own uniforms through the User data tab.
-section: lessons
-order: 4
+section: tutorials
+order: 40
 difficulty: intermediate
 prerequisites: vertex-stage-3d
 editor: editor

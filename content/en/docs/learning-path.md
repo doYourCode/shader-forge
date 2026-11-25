@@ -1,7 +1,7 @@
 ---
 title: Learning Path
 description: The recommended order for the GLSL lessons, from vectors and the rendering pipeline to lighting, post-processing and debugging.
-section: guides
+section: tutorials
 order: 0
 difficulty: beginner
 draft: false

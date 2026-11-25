@@ -2,7 +2,7 @@
 title: "Lighting: Oren-Nayar"
 description: A rough-diffuse model for matte surfaces. V-shaped microfacets add view-dependent retro-reflection that Lambert cannot express.
 section: lighting
-order: 4
+order: 40
 difficulty: intermediate
 prerequisites: lighting-lambert
 editor: editor

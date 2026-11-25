@@ -2,7 +2,7 @@
 title: "Fundamentos de desempenho"
 description: Por que um shader é lento, como a GPU executa fragmentos em paralelo e quais alavancas realmente importam nestes editores.
 section: debugging
-order: 2
+order: 20
 difficulty: intermediate
 prerequisites: post-processing
 draft: false

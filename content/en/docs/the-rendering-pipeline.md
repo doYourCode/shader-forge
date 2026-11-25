@@ -1,8 +1,8 @@
 ---
 title: The Rendering Pipeline
 description: How vertex data becomes pixels on screen.
-section: basics
-order: 1
+section: fundamentals
+order: 10
 draft: false
 ---
 # The Rendering Pipeline: From 3D Data to Pixels on Your Screen

@@ -97,7 +97,14 @@ export function useShaderCompilation(deps: ShaderCompilationDeps) {
     try {
       while (queue.length > 0) {
         const job = queue.shift();
-        if (job) await execute(job);
+        if (!job) continue;
+
+        try {
+          await execute(job);
+        } catch {
+          // A consumer (onOutcome) failed after the result was applied. The
+          // job is settled, and the remaining queue must still drain.
+        }
       }
     } finally {
       draining = false;

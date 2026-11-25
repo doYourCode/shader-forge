@@ -60,6 +60,7 @@ function fakePass(
       },
     },
     dispose: vi.fn(),
+    restoreDefaultInputTexture: vi.fn(),
     getEffect: () => effect as never,
     inputTexture: { texture: null },
   } as unknown as PostProcess & { dispose: ReturnType<typeof vi.fn> };
@@ -98,14 +99,14 @@ function setup(results: readonly unknown[]) {
 
   const refreshPrePass = vi.fn();
   const setRequiredAttachments = vi.fn();
-  const setObjectIdEnabled = vi.fn();
   const bindTransparent = vi.fn();
   const gbuffer = {
     refreshPrePass,
     bind: vi.fn(),
     bindTransparent,
     setRequiredAttachments,
-    setObjectIdEnabled,
+    sceneColorTexture: vi.fn(() => null),
+    settlePrePass: vi.fn(),
     resize: vi.fn(),
   } as unknown as ScreenSpaceGbuffer;
 
@@ -140,7 +141,6 @@ function setup(results: readonly unknown[]) {
     detach,
     refreshPrePass,
     setRequiredAttachments,
-    setObjectIdEnabled,
     bindTransparent,
   };
 }
@@ -199,31 +199,6 @@ describe('ScreenSpacePostPipeline', () => {
     expect(result.status).toBe('ok');
     expect(attach).toHaveBeenCalledWith(displayPass);
     expect(pipeline.displayPass).toBe(displayPass);
-  });
-
-  it('does not enable the object-id pass for a declared-but-unread sampler', async () => {
-    const { pipeline, setObjectIdEnabled } = setup([
-      { ok: true, postProcess: fakePass(['textureSampler']) },
-      { ok: true, postProcess: fakePass() },
-    ]);
-
-    await pipeline.compile(stack([postEffect('e1')]));
-
-    expect(setObjectIdEnabled).toHaveBeenCalledWith(false);
-  });
-
-  it('enables the object-id pass when an effect reads it', async () => {
-    const { pipeline, setObjectIdEnabled } = setup([
-      {
-        ok: true,
-        postProcess: fakePass(['textureSampler', 'objectIdTexture']),
-      },
-      { ok: true, postProcess: fakePass() },
-    ]);
-
-    await pipeline.compile(stack([postEffect('e1')]));
-
-    expect(setObjectIdEnabled).toHaveBeenCalledWith(true);
   });
 
   it('requests no G-buffer attachment for a passthrough', async () => {

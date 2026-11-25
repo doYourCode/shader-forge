@@ -70,10 +70,6 @@ const modes = availableDebugModes();
         <dd>RG16F · linear UV-space motion vectors</dd>
       </div>
       <div>
-        <dt>objectIdTexture</dt>
-        <dd>R32F · per-object id, 0 = background</dd>
-      </div>
-      <div>
         <dt>sceneColorTexture</dt>
         <dd>RGBA16F · original HDR opaque scene colour</dd>
       </div>

@@ -211,6 +211,8 @@ export class ScreenSpaceSceneManager {
   private environmentIntensity = DEFAULT_ENVIRONMENT_INTENSITY;
   private frameStartedAt = 0;
   private renderScale = DEFAULT_RENDER_SCALE_POLICY.max;
+  private pendingRenderScale: number | null = null;
+  private scaleSamplesToSkip = 0;
   private averageFrameMs = DEFAULT_RENDER_SCALE_POLICY.targetFrameMs;
   private framesUntilScaleUpdate = RENDER_SCALE_SAMPLE_FRAMES;
 
@@ -254,6 +256,8 @@ export class ScreenSpaceSceneManager {
 
     // A fresh engine always starts at its native resolution.
     this.renderScale = DEFAULT_RENDER_SCALE_POLICY.max;
+    this.pendingRenderScale = null;
+    this.scaleSamplesToSkip = 0;
     this.averageFrameMs = DEFAULT_RENDER_SCALE_POLICY.targetFrameMs;
     this.framesUntilScaleUpdate = RENDER_SCALE_SAMPLE_FRAMES;
 
@@ -337,6 +341,9 @@ export class ScreenSpaceSceneManager {
     this.pipeline = pipeline;
 
     scene.onBeforeRenderObservable.add(() => {
+      // Apply a pending resolution change before drawing, never after the
+      // final post-process pass: resizing the canvas clears its buffer.
+      this.applyPendingRenderScale();
       this.frameStartedAt = performance.now();
     });
     scene.onAfterRenderObservable.add(() => this.reportStats(engine));
@@ -365,6 +372,7 @@ export class ScreenSpaceSceneManager {
     if (!scene || !session.isCurrent()) return false;
 
     this.onLoading({ key: 'screenSpace.loading.scene' });
+    this.holdRenderScale();
     let container: AssetContainer;
     try {
       container = await this.meshProvider.load(scene, sceneAsset);
@@ -383,6 +391,7 @@ export class ScreenSpaceSceneManager {
     this.container = container;
     this.split = this.meshProvider.prepare(container);
     this.sun?.bind(this.split);
+    this.holdRenderScale();
     this.gbuffer?.setMeshes(this.split.opaque, this.split.transparent);
 
     const bounds = sceneWorldBounds([
@@ -408,7 +417,8 @@ export class ScreenSpaceSceneManager {
       });
     }
 
-    return pipeline.compile(stack);
+    this.holdRenderScale();
+    return pipeline.compile(stack).finally(() => this.holdRenderScale());
   }
 
   setTonemap(mode: TonemapMode): void {
@@ -416,6 +426,9 @@ export class ScreenSpaceSceneManager {
   }
 
   setDebugMode(mode: GbufferDebugMode): void {
+    // A debug view can rebuild the PrePass; do not turn that stall into an
+    // automatic resolution drop.
+    this.holdRenderScale();
     this.pipeline?.setDebugMode(mode);
   }
 
@@ -442,6 +455,8 @@ export class ScreenSpaceSceneManager {
 
   dispose(): void {
     this.sessions.invalidate();
+    this.pendingRenderScale = null;
+    this.scaleSamplesToSkip = 0;
 
     this.userData?.attachGpu(null);
     this.userData = null;
@@ -506,6 +521,11 @@ export class ScreenSpaceSceneManager {
    * dropping effect passes.
    */
   private adaptRenderScale(engine: Engine): void {
+    if (this.scaleSamplesToSkip > 0) {
+      this.scaleSamplesToSkip -= 1;
+      return;
+    }
+
     const sample = Math.min(engine.getDeltaTime(), MAX_FRAME_SAMPLE_MS);
     this.averageFrameMs = blendFrameTime(this.averageFrameMs, sample);
 
@@ -520,9 +540,35 @@ export class ScreenSpaceSceneManager {
     );
     if (next === this.renderScale) return;
 
+    // Defer the resize to the next frame's before-render stage. Applying it
+    // here (after the final post-process draw) would clear the canvas before
+    // the browser composites the frame.
+    this.pendingRenderScale = next;
+  }
+
+  private applyPendingRenderScale(): void {
+    const next = this.pendingRenderScale;
+    if (next === null) return;
+
+    this.pendingRenderScale = null;
     this.renderScale = next;
+
+    const engine = this.scene?.getEngine();
+    if (!engine) return;
+
     engine.setHardwareScalingLevel(hardwareScalingLevel(next));
     this.pipeline?.resize();
+    // The resize itself costs a frame; do not feed it back into the policy.
+    this.scaleSamplesToSkip = Math.max(this.scaleSamplesToSkip, 2);
+  }
+
+  /** Ignore the frame-time sample produced by an expected compile/rebuild stall. */
+  private holdRenderScale(): void {
+    this.scaleSamplesToSkip = RENDER_SCALE_SAMPLE_FRAMES;
+    this.averageFrameMs = Math.min(
+      this.averageFrameMs,
+      DEFAULT_RENDER_SCALE_POLICY.targetFrameMs,
+    );
   }
 }
 

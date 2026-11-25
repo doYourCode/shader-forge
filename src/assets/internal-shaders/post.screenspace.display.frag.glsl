@@ -16,7 +16,6 @@ uniform sampler2D normalTexture;
 uniform sampler2D albedoTexture;
 uniform sampler2D materialTexture;
 uniform sampler2D velocityTexture;
-uniform sampler2D objectIdTexture;
 uniform sampler2D transparentTexture;
 
 uniform vec2 resolution;
@@ -78,12 +77,6 @@ float geometryMask(vec2 uv)
     return step(0.5, texture(normalTexture, uv).a);
 }
 
-vec3 objectIdColor(float id)
-{
-    float h = fract(id * 0.61803398875);
-    return 0.5 + 0.5 * cos(6.28318 * (h + vec3(0.0, 0.33, 0.67)));
-}
-
 vec3 debugColor()
 {
     if (debugMode < 1.5) {
@@ -117,11 +110,6 @@ vec3 debugColor()
             vec3(clamp(velocity * 10.0 + 0.5, 0.0, 1.0), 0.0) *
             geometryMask(vUV)
         );
-    }
-
-    if (debugMode < 7.5) {
-        float id = texture(objectIdTexture, vUV).r;
-        return id <= 0.0 ? vec3(0.0) : objectIdColor(id);
     }
 
     return texture(transparentTexture, vUV).rgb;

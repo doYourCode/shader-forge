@@ -15,7 +15,6 @@ export type GbufferDebugMode =
   | 'albedo'
   | 'material'
   | 'velocity'
-  | 'objectId'
   | 'transparent';
 
 export interface GbufferDebugModeOption {
@@ -32,7 +31,6 @@ export const GBUFFER_DEBUG_MODES: readonly GbufferDebugModeOption[] = [
   { id: 'albedo', labelKey: 'screenSpace.debug.albedo', value: 4 },
   { id: 'material', labelKey: 'screenSpace.debug.material', value: 5 },
   { id: 'velocity', labelKey: 'screenSpace.debug.velocity', value: 6 },
-  { id: 'objectId', labelKey: 'screenSpace.debug.objectId', value: 7 },
   { id: 'transparent', labelKey: 'screenSpace.debug.transparent', value: 8 },
 ];
 

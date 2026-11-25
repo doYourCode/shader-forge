@@ -279,7 +279,6 @@
       "albedo": "Albedo",
       "material": "Roughness / metallic",
       "velocity": "Motion vectors",
-      "objectId": "Object id",
       "transparent": "Transparent overlay"
     }
   }

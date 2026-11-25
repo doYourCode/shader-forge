@@ -37,6 +37,7 @@ export class PreviewEngine {
   private logRecorder: ShaderLogRecorder | null = null;
   private scene: Scene | null = null;
   private renderLoopActive = false;
+  private contextLostReported = false;
 
   constructor(reportError: (errors: ShaderError[]) => void) {
     this.reportError = reportError;
@@ -75,6 +76,19 @@ export class PreviewEngine {
     }
 
     this.logRecorder = createLogRecorder(engine);
+    this.contextLostReported = false;
+
+    // Babylon stops rendering while the context is lost. Without this the
+    // editor would keep showing "Ready" over a blank canvas.
+    engine.onContextLostObservable.add(() => {
+      if (this.contextLostReported) return;
+      this.contextLostReported = true;
+      this.reportError([contextLostError()]);
+    });
+    engine.onContextRestoredObservable.add(() => {
+      this.contextLostReported = false;
+    });
+
     return engine;
   }
 
@@ -154,4 +168,18 @@ function createLogRecorder(engine: Engine): ShaderLogRecorder | null {
   } catch {
     return null;
   }
+}
+
+function contextLostError(): ShaderError {
+  return {
+    stage: 'program',
+    line: null,
+    column: null,
+    kind: 'internal',
+    title: 'WebGL context lost',
+    message:
+      'The GPU context was lost, so the 3D preview stopped rendering. The rest of the editor is still usable.',
+    advice:
+      'Reload the page to rebuild the preview. If it repeats, lower the shader cost or update the browser/driver.',
+  };
 }

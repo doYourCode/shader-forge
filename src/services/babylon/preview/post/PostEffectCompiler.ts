@@ -66,6 +66,10 @@ export class PostEffectCompiler {
   }
 
   async compile(request: PostEffectPassRequest): Promise<PostEffectPassResult> {
+    if (isContextLost(this.engine)) {
+      return { ok: false, errors: [contextLostError()] };
+    }
+
     // One batch per attempt: an overlapping surface compile cannot be told
     // apart from this one, so callers serialize compiles.
     this.recorder?.begin();
@@ -83,43 +87,56 @@ export class PostEffectCompiler {
     const fragmentKey = `${fragmentShader}FragmentShader`;
     Effect.ShadersStore[fragmentKey] = request.fragment;
 
-    const postProcess = new PostProcess(request.name, fragmentShader, {
-      engine: this.engine,
-      uniforms: [...request.uniforms],
-      samplers: [...request.samplers],
-      samplingMode: Constants.TEXTURE_BILINEAR_SAMPLINGMODE,
-      textureType: this.textureType,
-      textureFormat: Constants.TEXTUREFORMAT_RGBA,
-    });
+    try {
+      const postProcess = new PostProcess(request.name, fragmentShader, {
+        engine: this.engine,
+        uniforms: [...request.uniforms],
+        samplers: [...request.samplers],
+        samplingMode: Constants.TEXTURE_BILINEAR_SAMPLINGMODE,
+        textureType: this.textureType,
+        textureFormat: Constants.TEXTUREFORMAT_RGBA,
+      });
 
-    // PostProcess does not forward compile callbacks to its Effect, so the
-    // failure signal is attached directly. Without it a broken shader would
-    // only surface as a timeout.
-    const effect = postProcess.getEffect();
-    if (effect) {
-      effect.onError = (_failed, errors) => {
-        outcome = 'failed';
-        fallback = errors;
-      };
+      // PostProcess does not forward compile callbacks to its Effect, so the
+      // failure signal is attached directly. Without it a broken shader would
+      // only surface as a timeout.
+      const effect = postProcess.getEffect();
+      if (effect) {
+        effect.onError = (_failed, errors) => {
+          outcome = 'failed';
+          fallback = errors;
+        };
+      }
+
+      const ready = await this.waitUntilReady(postProcess, () => outcome);
+
+      if (ready === 'compiled') {
+        this.recorder?.drain();
+        return { ok: true, postProcess };
+      }
+
+      let errors: ShaderError[];
+      if (ready === 'context-lost') {
+        errors = [contextLostError()];
+        this.recorder?.drain();
+      } else if (ready === 'failed') {
+        errors = this.mapErrors(
+          this.recorder?.drain() ?? [],
+          request.source,
+          fallback,
+        );
+      } else {
+        errors = [timeoutError(request, this.options.timeoutMs)];
+      }
+
+      EffectPipelineCache.evict(postProcess.getEffect());
+      postProcess.dispose();
+
+      return { ok: false, errors };
+    } finally {
+      // Also runs when PostProcess construction throws.
+      delete Effect.ShadersStore[fragmentKey];
     }
-
-    const ready = await this.waitUntilReady(postProcess, () => outcome);
-    delete Effect.ShadersStore[fragmentKey];
-
-    if (ready === 'compiled') {
-      this.recorder?.drain();
-      return { ok: true, postProcess };
-    }
-
-    const errors =
-      ready === 'failed'
-        ? this.mapErrors(this.recorder?.drain() ?? [], request.source, fallback)
-        : [timeoutError(request, this.options.timeoutMs)];
-
-    EffectPipelineCache.evict(postProcess.getEffect());
-    postProcess.dispose();
-
-    return { ok: false, errors };
   }
 
   /**
@@ -130,35 +147,45 @@ export class PostEffectCompiler {
   private waitUntilReady(
     postProcess: PostProcess,
     outcome: () => 'compiled' | 'failed' | null,
-  ): Promise<'compiled' | 'failed' | 'timeout'> {
+  ): Promise<'compiled' | 'failed' | 'timeout' | 'context-lost'> {
     const started = performance.now();
 
     return new Promise((resolve) => {
       const poll = (): void => {
-        const current = outcome();
-        if (current !== null) {
-          resolve(current);
-          return;
-        }
+        try {
+          // Do not sit in the 15 s timeout when the GPU is already gone.
+          if (isContextLost(this.engine)) {
+            resolve('context-lost');
+            return;
+          }
 
-        // `isReady` stays false forever after a failed compile; the driver
-        // message is the only signal that the pass will never be usable.
-        if (postProcess.getEffect()?.getCompilationError()) {
+          const current = outcome();
+          if (current !== null) {
+            resolve(current);
+            return;
+          }
+
+          // `isReady` stays false forever after a failed compile; the driver
+          // message is the only signal that the pass will never be usable.
+          if (postProcess.getEffect()?.getCompilationError()) {
+            resolve('failed');
+            return;
+          }
+
+          if (postProcess.isReady()) {
+            resolve('compiled');
+            return;
+          }
+
+          if (performance.now() - started > this.options.timeoutMs) {
+            resolve('timeout');
+            return;
+          }
+
+          window.setTimeout(poll, this.options.pollMs);
+        } catch {
           resolve('failed');
-          return;
         }
-
-        if (postProcess.isReady()) {
-          resolve('compiled');
-          return;
-        }
-
-        if (performance.now() - started > this.options.timeoutMs) {
-          resolve('timeout');
-          return;
-        }
-
-        window.setTimeout(poll, this.options.pollMs);
       };
 
       poll();
@@ -238,4 +265,24 @@ function internalPassError(fallback: string): ShaderError {
       fallback || 'An internal post-processing pass could not be compiled.',
     advice: 'Reload the preview. If it persists, report the error.',
   };
+}
+
+function contextLostError(): ShaderError {
+  return {
+    stage: 'post',
+    line: null,
+    column: null,
+    kind: 'internal',
+    title: 'WebGL context lost',
+    message:
+      'The GPU context was lost while compiling the post-effect pipeline.',
+    advice:
+      'Reload the page to rebuild the preview. If it repeats, lower the shader cost or update the browser/driver.',
+  };
+}
+
+/** Babylon exposes the live GL context only through the private `_gl` field. */
+function isContextLost(engine: AbstractEngine): boolean {
+  const context = (engine as unknown as { _gl?: WebGL2RenderingContext })._gl;
+  return context?.isContextLost?.() ?? false;
 }

@@ -16,11 +16,11 @@ describe('activeSamplers', () => {
   it('unions the sampler lists of every pass', () => {
     const names = activeSamplers([
       pass(['textureSampler', 'depthTexture']),
-      pass(['textureSampler', 'objectIdTexture']),
+      pass(['textureSampler', 'customTexture']),
     ]);
 
     expect(names).toEqual(
-      new Set(['textureSampler', 'depthTexture', 'objectIdTexture']),
+      new Set(['textureSampler', 'depthTexture', 'customTexture']),
     );
   });
 

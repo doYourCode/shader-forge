@@ -21,7 +21,6 @@ import {
   orderedScreenSpaceAttachments,
   type ScreenSpaceAttachment,
 } from '@/core/screenspace/gbufferAttachments';
-import { ObjectIdPass } from './ObjectIdPass';
 import { TransparentOverlay } from './TransparentOverlay';
 import { materialsForMesh } from './SceneAssetProvider';
 
@@ -45,7 +44,6 @@ export interface ScreenSpaceGbufferOptions {
  * - Babylon's PrePass MRT, restricted to the attachments the compiled effects
  *   actually read (none for a passthrough, which keeps the scene on a plain
  *   colour target with no PrePass at all);
- * - a dedicated object-id prepass, enabled only when an effect reads it;
  * - the transparent overlay, when the pipeline asks for one.
  *
  * The PrePass renders alongside the opaque scene draw, so albedo/roughness are
@@ -53,7 +51,6 @@ export interface ScreenSpaceGbufferOptions {
  */
 export class ScreenSpaceGbuffer {
   readonly prePassConfig: PrePassEffectConfiguration;
-  readonly objectId: ObjectIdPass;
   readonly overlay: TransparentOverlay | null;
 
   private readonly scene: Scene;
@@ -63,6 +60,11 @@ export class ScreenSpaceGbuffer {
   private readonly afterTargets: () => void;
   private readonly beforeTargetsObserver: Observer<Scene>;
   private readonly afterTargetsObserver: Observer<Scene>;
+  private sceneColorWrapper: ThinTexture | null = null;
+  private sceneColorInternal: InternalTexture | null = null;
+  private appliedAttachments: readonly number[] = [];
+  private appliedEnabled = false;
+  private applied = false;
   private transparentFallback: RawTexture | null = null;
   private disposed = false;
 
@@ -90,7 +92,6 @@ export class ScreenSpaceGbuffer {
       this.prePass.addEffectConfiguration(this.prePassConfig);
     }
 
-    this.objectId = new ObjectIdPass(scene, camera, opaque);
     const transparentOverlay =
       options.transparentOverlay ?? TRANSPARENT_OVERLAY_ENABLED;
     this.overlay = transparentOverlay
@@ -123,8 +124,33 @@ export class ScreenSpaceGbuffer {
     return this.overlay?.baseTexture ?? this.fallbackTexture();
   }
 
-  setObjectIdEnabled(enabled: boolean): void {
-    this.objectId.setEnabled(enabled);
+  /**
+   * The unmodified scene colour produced by the PrePass, or null when the
+   * PrePass is not active. Babylon's post-process `inputTexture` is the
+   * pass output target, so it cannot stand in for the original scene colour.
+   */
+  sceneColorTexture(): ThinTexture | null {
+    // `prePass.enabled` is toggled around custom render targets, so use the
+    // configuration and the render target's own enabled flag instead.
+    if (
+      this.disposed ||
+      !this.prePassConfig.enabled ||
+      !this.prePass?.defaultRT.enabled
+    ) {
+      return null;
+    }
+
+    const internal =
+      this.prePass.defaultRT.textures?.[0]?.getInternalTexture() ?? null;
+    if (!internal) return null;
+
+    if (this.sceneColorInternal !== internal) {
+      // A new ThinTexture is only a view over the PrePass-owned texture.
+      this.sceneColorWrapper = new ThinTexture(internal);
+      this.sceneColorInternal = internal;
+    }
+
+    return this.sceneColorWrapper;
   }
 
   /**
@@ -156,7 +182,6 @@ export class ScreenSpaceGbuffer {
   ): void {
     if (this.disposed) return;
 
-    this.objectId.setMeshes(opaque);
     this.overlay?.setMeshes(opaque, transparent);
 
     if (!this.prePass) return;
@@ -189,7 +214,6 @@ export class ScreenSpaceGbuffer {
       Constants.PREPASS_VELOCITY_LINEAR_TEXTURE_TYPE,
       'velocity',
     );
-    this.objectId.bind(effect);
   }
 
   /** Binds the overlay (or its transparent stand-in) to a display pass. */
@@ -201,10 +225,42 @@ export class ScreenSpaceGbuffer {
   }
 
   /**
+   * Camera attach/detach marks Babylon's PrePass dirty even when the MRT
+   * layout did not change. After a chain swap, clear that pending rebuild so
+   * the next frame only links the new first pass; the layout is already in
+   * the state `refreshPrePass` applied.
+   */
+  settlePrePass(): void {
+    if (!this.prePass || !this.applied) return;
+
+    const enabled = this.prePassConfig.texturesRequired.length > 0;
+    if (
+      enabled !== this.appliedEnabled ||
+      !sameAttachmentTypes(
+        this.prePassConfig.texturesRequired,
+        this.appliedAttachments,
+      )
+    ) {
+      return;
+    }
+
+    // Babylon exposes no public API to acknowledge a chain change separately
+    // from a layout rebuild. Keep the one internal write isolated here.
+    const prePass = this.prePass as unknown as { _isDirty?: boolean };
+    prePass._isDirty = false;
+  }
+
+  /**
    * Applies the requested attachment set and re-registers the PrePass
    * configuration on the current post-process chain. A stack that reads no
    * scene data disables the PrePass entirely, so the scene renders straight
    * into the first post-process target.
+   *
+   * Babylon's `update()` is expensive: it tears down the MRT, marks every
+   * scene material pre-pass dirty and re-links the post-process chain. Only
+   * run it when the enabled state or the MRT layout actually changed. A new
+   * chain with the same layout still gets the configuration assigned above;
+   * Babylon links its first pass on the next frame.
    */
   refreshPrePass(
     chain: readonly {
@@ -222,13 +278,30 @@ export class ScreenSpaceGbuffer {
         : undefined;
     }
 
+    // Without a post process there is nothing Babylon can enable. Keep the
+    // state "not applied" so the next refresh (after the chain is installed)
+    // performs the real update.
+    if (enabled && chain.length === 0) return;
+
+    const layoutChanged =
+      enabled !== this.appliedEnabled ||
+      !sameAttachmentTypes(
+        this.prePassConfig.texturesRequired,
+        this.appliedAttachments,
+      );
+
+    if (this.applied && !layoutChanged) return;
+
     this.prePass.markAsDirty();
     this.prePass.update();
+
+    this.applied = true;
+    this.appliedEnabled = enabled;
+    this.appliedAttachments = [...this.prePassConfig.texturesRequired];
   }
 
   resize(width: number, height: number): void {
     if (this.disposed) return;
-    this.objectId.resize(width, height);
     this.overlay?.resize(width, height);
   }
 
@@ -243,7 +316,6 @@ export class ScreenSpaceGbuffer {
       this.afterTargetsObserver,
     );
 
-    this.objectId.dispose();
     this.overlay?.dispose();
     this.transparentFallback?.dispose();
     this.transparentFallback = null;
@@ -251,6 +323,8 @@ export class ScreenSpaceGbuffer {
     // Wrappers are views over PrePass-owned textures; dropping the map is the
     // only safe release. Babylon disposes the attachments with the PrePass.
     this.wrappers.clear();
+    this.sceneColorWrapper = null;
+    this.sceneColorInternal = null;
 
     this.scene.disablePrePassRenderer();
   }
@@ -328,4 +402,14 @@ export class ScreenSpaceGbuffer {
       }
     }
   }
+}
+
+function sameAttachmentTypes(
+  first: readonly number[],
+  second: readonly number[],
+): boolean {
+  return (
+    first.length === second.length &&
+    first.every((type, index) => type === second[index])
+  );
 }

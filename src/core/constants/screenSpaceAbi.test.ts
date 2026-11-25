@@ -23,7 +23,6 @@ describe('screen-space ABI', () => {
       'albedoTexture',
       'materialTexture',
       'velocityTexture',
-      'objectIdTexture',
     ]);
     expect(new Set(SCREEN_SPACE_SAMPLERS).size).toBe(
       SCREEN_SPACE_SAMPLERS.length,

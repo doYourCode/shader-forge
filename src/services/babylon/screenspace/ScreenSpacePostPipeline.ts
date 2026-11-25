@@ -89,7 +89,6 @@ export class ScreenSpacePostPipeline {
   private display: PostProcess | null = null;
   private tonemap: TonemapMode = 'none';
   private debugMode: GbufferDebugMode = 'off';
-  private usesObjectId = false;
   private effectSamplers: ReadonlySet<string> = new Set();
   private requiredAttachments: ReadonlySet<ScreenSpaceAttachment> = new Set();
   private sceneColorWrapper: ThinTexture | null = null;
@@ -181,10 +180,9 @@ export class ScreenSpacePostPipeline {
 
     // Plan from the linked programs, not from the sources: the ABI shaders
     // declare every sampler they may read, so a textual match would request a
-    // full G-buffer (and an object-id pass) for a passthrough.
+    // full G-buffer for a passthrough.
     const samplers = activeSamplers(effectPasses);
     this.effectSamplers = samplers;
-    this.usesObjectId = samplers.has(SCREEN_SPACE_SAMPLER_NAMES.objectId);
     this.requiredAttachments = requiredScreenSpaceAttachments(
       samplers,
       this.debugMode,
@@ -200,9 +198,6 @@ export class ScreenSpacePostPipeline {
 
   setDebugMode(mode: GbufferDebugMode): void {
     this.debugMode = mode;
-    this.deps.gbuffer.setObjectIdEnabled(
-      this.usesObjectId || mode === 'objectId',
-    );
 
     // A debug view reads attachments the effect stack may not need, so the
     // PrePass layout follows the selected mode.
@@ -232,32 +227,64 @@ export class ScreenSpacePostPipeline {
   }
 
   private install(chain: readonly PostProcess[], tonemap: TonemapMode): void {
-    this.detachChain();
+    const previous = this.chain;
+    const previousDisplay = this.display;
+    const previousTonemap = this.tonemap;
+    const attached: PostProcess[] = [];
 
-    for (const postProcess of chain) {
-      postProcess.onApplyObservable.add(() => this.applyPass(postProcess));
-      this.deps.camera.attachPostProcess(postProcess);
+    try {
+      // Attach first and dispose the old chain only after the new one is
+      // fully installed. If the PrePass refresh throws (allocation failure,
+      // lost context), the old chain can still be restored.
+      for (const postProcess of chain) {
+        postProcess.onApplyObservable.add(() => this.applyPass(postProcess));
+        this.deps.camera.attachPostProcess(postProcess);
+        attached.push(postProcess);
+      }
+
+      this.chain = [...chain];
+      this.display = this.chain[this.chain.length - 1] ?? null;
+      this.tonemap = tonemap;
+      this.deps.gbuffer.setRequiredAttachments(this.requiredAttachments);
+      this.deps.gbuffer.refreshPrePass(this.chain);
+    } catch (error) {
+      this.chain = previous;
+      this.display = previousDisplay;
+      this.tonemap = previousTonemap;
+      this.disposePasses(attached);
+
+      // Best effort: re-apply the PrePass state for the chain that is still
+      // attached, then surface the original failure.
+      try {
+        this.deps.gbuffer.refreshPrePass(previous);
+        this.deps.gbuffer.settlePrePass();
+      } catch {
+        // The original error is the actionable one.
+      }
+
+      throw error;
     }
 
-    this.chain = [...chain];
-    this.display = this.chain[this.chain.length - 1] ?? null;
-    this.tonemap = tonemap;
-    this.deps.gbuffer.setRequiredAttachments(this.requiredAttachments);
-    this.deps.gbuffer.refreshPrePass(this.chain);
-    this.deps.gbuffer.setObjectIdEnabled(
-      this.usesObjectId || this.debugMode === 'objectId',
-    );
+    this.disposePasses(previous);
+    this.deps.gbuffer.settlePrePass();
   }
 
   private detachChain(): void {
-    for (const postProcess of this.chain) {
-      this.targets.delete(postProcess);
-      this.deps.camera.detachPostProcess(postProcess);
-      postProcess.dispose();
-    }
-
+    const passes = this.chain;
     this.chain = [];
     this.display = null;
+    this.disposePasses(passes);
+  }
+
+  private disposePasses(passes: readonly PostProcess[]): void {
+    for (const postProcess of passes) {
+      this.targets.delete(postProcess);
+      this.deps.camera.detachPostProcess(postProcess);
+      // Clear the PrePass forced-output link before disposal so Babylon can
+      // release the post process's own render targets.
+      postProcess.restoreDefaultInputTexture();
+      postProcess.dispose();
+    }
   }
 
   private applyPass(postProcess: PostProcess): void {
@@ -316,6 +343,18 @@ export class ScreenSpacePostPipeline {
   }
 
   private bindSceneColor(effect: Effect): void {
+    // When the PrePass owns the scene colour, `chain[0].inputTexture` is the
+    // post-process output target, not the original scene. Bind the PrePass
+    // colour attachment instead.
+    const prePassSceneColor = this.deps.gbuffer.sceneColorTexture();
+    if (prePassSceneColor) {
+      effect.setTexture(
+        SCREEN_SPACE_SAMPLER_NAMES.sceneColor,
+        prePassSceneColor,
+      );
+      return;
+    }
+
     const internal = this.chain[0]?.inputTexture?.texture ?? null;
     if (!internal) return;
 

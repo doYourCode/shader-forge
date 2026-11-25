@@ -47,8 +47,6 @@ export const SCREEN_SPACE_SAMPLER_NAMES = {
   material: 'materialTexture',
   /** Linear UV-space motion vectors. */
   velocity: 'velocityTexture',
-  /** Object id in r. 0 is background/unknown. */
-  objectId: 'objectIdTexture',
 } as const;
 
 export const SCREEN_SPACE_UNIFORMS: readonly string[] = [

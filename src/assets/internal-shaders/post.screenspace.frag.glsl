@@ -25,7 +25,6 @@ precision highp float;
 //                        metallic/roughness model: use gbufferRoughness() and
 //                        gbufferMetallic() below.
 //   velocityTexture.rg   linear UV-space motion vectors (may be negative).
-//   objectIdTexture.r    object id; 0 is background/unknown.
 //
 // Uniforms
 //   resolution, texelSize, time, cameraNear, cameraFar, cameraPosition,
@@ -44,7 +43,6 @@ uniform sampler2D normalTexture;
 uniform sampler2D albedoTexture;
 uniform sampler2D materialTexture;
 uniform sampler2D velocityTexture;
-uniform sampler2D objectIdTexture;
 
 uniform vec2 resolution;
 uniform vec2 texelSize;

@@ -48,7 +48,6 @@ const DEBUG_ATTACHMENTS: Record<
   albedo: ['albedo'],
   material: ['normal', 'albedo', 'material'],
   velocity: ['normal', 'velocity'],
-  objectId: [],
   transparent: [],
 };
 

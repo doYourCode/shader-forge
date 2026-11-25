@@ -17,7 +17,6 @@ describe('screen-space debug modes', () => {
 
   it('maps ids to shader values and rejects unknown labels', () => {
     expect(debugModeValue('material')).toBe(5);
-    expect(debugModeValue('objectId')).toBe(7);
     expect(isGbufferDebugMode('depth')).toBe(true);
     expect(isGbufferDebugMode('not-a-mode')).toBe(false);
   });

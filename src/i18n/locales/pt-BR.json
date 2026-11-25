@@ -279,7 +279,6 @@
       "albedo": "Albedo",
       "material": "Rugosidade / metálico",
       "velocity": "Vetores de movimento",
-      "objectId": "ID do objeto",
       "transparent": "Sobreposição transparente"
     }
   }

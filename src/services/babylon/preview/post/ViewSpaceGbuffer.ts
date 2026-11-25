@@ -36,9 +36,9 @@ const DEPTH_UNIFORMS = [
  * Depth gets its own single-channel float target instead of sharing the normal
  * buffer's alpha: it keeps full precision for screen-space comparisons and
  * avoids the low dynamic range of a normalised 8-bit channel. Both passes are
- * registered as scene custom render targets, which Babylon draws after the
- * before-render stage and before the camera, so the first post process already
- * sees complete buffers.
+ * registered as scene custom render targets on demand, which Babylon draws
+ * after the before-render stage and before the camera, so the first post
+ * process already sees complete buffers.
  *
  * The passes draw the mesh with dedicated materials, so vertex displacement
  * performed by a user's surface shader is not reflected here.
@@ -58,6 +58,7 @@ export class ViewSpaceGbuffer {
   private normalSwapped = false;
   private depthPreviousMaterial: Material | null = null;
   private depthSwapped = false;
+  private active = false;
   private disposed = false;
 
   constructor(
@@ -146,8 +147,23 @@ export class ViewSpaceGbuffer {
     this.depthTexture.renderList = [mesh];
     this.depthTexture.onBeforeRenderObservable.add(() => this.prepareDepth());
     this.depthTexture.onAfterRenderObservable.add(() => this.restoreDepth());
+  }
 
-    scene.customRenderTargets.push(this.texture, this.depthTexture);
+  /**
+   * Registers (or removes) both geometry passes for the scene.
+   *
+   * The targets only render when an installed effect actually samples them:
+   * otherwise every frame would draw the preview mesh twice more for buffers
+   * nothing reads. The targets stay allocated so a later compile can switch
+   * them back on without a hitch.
+   */
+  setActive(active: boolean): void {
+    if (this.disposed || this.active === active) return;
+
+    this.active = active;
+    for (const target of [this.texture, this.depthTexture]) {
+      setCustomRenderTarget(this.scene, target, active);
+    }
   }
 
   setMesh(mesh: Mesh): void {
@@ -171,11 +187,10 @@ export class ViewSpaceGbuffer {
     if (this.disposed) return;
     this.disposed = true;
 
-    removeRenderTarget(this.scene, this.texture);
-    removeRenderTarget(this.scene, this.depthTexture);
-
     this.restoreNormals();
     this.restoreDepth();
+    setCustomRenderTarget(this.scene, this.texture, false);
+    setCustomRenderTarget(this.scene, this.depthTexture, false);
     this.texture.dispose();
     this.depthTexture.dispose();
     this.normalMaterial.dispose();
@@ -243,8 +258,18 @@ export class ViewSpaceGbuffer {
   }
 }
 
-function removeRenderTarget(scene: Scene, target: RenderTargetTexture): void {
+function setCustomRenderTarget(
+  scene: Scene,
+  target: RenderTargetTexture,
+  active: boolean,
+): void {
   const index = scene.customRenderTargets.indexOf(target);
+
+  if (active) {
+    if (index < 0) scene.customRenderTargets.push(target);
+    return;
+  }
+
   if (index >= 0) scene.customRenderTargets.splice(index, 1);
 }
 

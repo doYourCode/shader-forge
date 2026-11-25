@@ -257,7 +257,12 @@
       "description": "Full-screen passes run in stack order over the HDR scene. Each pass reads the previous pass, the original scene colour and the scene G-buffer."
     },
     "fpsHint": "Click the viewport to look around. WASD to move, Q/E down/up, Shift to boost.",
-    "stats": "{fps} fps · {ms} ms / {budget} ms · {width}×{height} · {drawCalls} draws",
+    "stats": "{fps} fps · {ms} ms / {budget} ms · {width}×{height} ({scale}%) · {drawCalls} draws",
+    "lighting": {
+      "title": "Lighting",
+      "sun": "Sun",
+      "environment": "HDRI"
+    },
     "loading": {
       "scene": "Loading scene…",
       "sceneProgress": "Loading scene… {loaded}/{total} MB",

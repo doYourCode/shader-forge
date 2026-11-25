@@ -8,6 +8,7 @@ import {
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import type { PreviewScene } from '@/core/models/previewScene';
+import { TRANSPARENT_OVERLAY_ENABLED } from '@/core/constants/screenSpaceRender';
 import {
   classifySceneMaterials,
   type SceneMaterialLike,
@@ -27,10 +28,11 @@ export interface LoadedSceneMeshes {
 /**
  * Loads complete GLB scenes and separates them for the screen-space pipeline.
  *
- * The PBR materials are kept exactly as the loader built them; only the
- * transmissive/alpha-blended subset is moved to the overlay layer and has its
- * refraction disabled (the overlay renders it without the transmission helper,
- * so it cannot recursively depend on the scene colour pass).
+ * The PBR materials are kept exactly as the loader built them; the
+ * transmissive/alpha-blended subset has its refraction disabled so it cannot
+ * recursively depend on the scene colour pass. By default it stays in the main
+ * pass (see `TRANSPARENT_OVERLAY_ENABLED`); when the overlay is enabled it moves
+ * to the overlay layer instead.
  */
 export class SceneAssetProvider {
   async load(
@@ -70,7 +72,12 @@ export class SceneAssetProvider {
 
       switch (kind) {
         case 'transparent':
-          mesh.layerMask = TRANSPARENT_LAYER;
+          mesh.layerMask = TRANSPARENT_OVERLAY_ENABLED
+            ? TRANSPARENT_LAYER
+            : OPAQUE_LAYER;
+          // Refraction needs a scene-colour target, which neither the overlay
+          // nor the main forward pass provides while screen-space effects own
+          // the colour. Keep it off for both paths.
           disableTransmission(materials);
           transparent.push(mesh);
           break;

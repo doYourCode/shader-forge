@@ -96,11 +96,15 @@ describe('ScreenSpaceSceneManager', () => {
       postBindings: vi.fn(() => []),
     } as unknown as UserDataController<BaseTexture>;
 
+    const sun = { bind: vi.fn(), setIntensity: vi.fn(), dispose: vi.fn() };
+    const createSun = vi.fn(() => sun);
+
     const manager = new ScreenSpaceSceneManager(
       {
         createEngine: () => previewEngine as never,
         createScene: () => ({ scene, camera }),
         createEnvironment: () => environment,
+        createSun,
         createGbuffer: () => gbuffer,
         createPipeline: () => pipeline,
       },
@@ -136,12 +140,25 @@ describe('ScreenSpaceSceneManager', () => {
     expect(previewEngine.start).toHaveBeenCalled();
     expect(userData.attachGpu).toHaveBeenCalled();
 
+    // The sun exists before the meshes load so their PBR effects include it.
+    expect(createSun).toHaveBeenCalledWith(scene, camera.camera, 2);
+    expect(sun.bind).toHaveBeenCalledWith(
+      expect.objectContaining({ opaque: expect.any(Array) }),
+    );
+
+    manager.setSunIntensity(3.5);
+    expect(sun.setIntensity).toHaveBeenCalledWith(3.5);
+
+    manager.setEnvironmentIntensity(1.4);
+    expect(scene.environmentIntensity).toBe(1.4);
+
     manager.dispose();
 
     expect(userData.attachGpu).toHaveBeenCalledWith(null);
     expect(pipeline.dispose).toHaveBeenCalled();
     expect(gbuffer.dispose).toHaveBeenCalled();
     expect(environment.dispose).toHaveBeenCalled();
+    expect(sun.dispose).toHaveBeenCalled();
     expect(container.dispose).toHaveBeenCalled();
     expect(camera.dispose).toHaveBeenCalled();
     expect(previewEngine.stopRenderLoop).toHaveBeenCalled();
@@ -219,6 +236,11 @@ describe('ScreenSpaceSceneManager', () => {
         createEngine: () => previewEngine as never,
         createScene: () => ({ scene, camera }),
         createEnvironment: () => environment,
+        createSun: () => ({
+          bind: vi.fn(),
+          setIntensity: vi.fn(),
+          dispose: vi.fn(),
+        }),
         createGbuffer: () => gbuffer,
         createPipeline: () => pipeline,
       },

@@ -56,7 +56,11 @@ export class PreviewEngine {
     // `preserveDrawingBuffer` forces an extra copy of the drawing buffer on
     // every frame and is only needed to read the canvas back (screenshots).
     // The preview never does that, so it stays off.
-    const engine = new Engine(canvas, true, {
+    // MSAA would only ever apply to the final canvas blit: the scene renders
+    // into a post-process target without multisampling, so geometry edges are
+    // not anti-aliased with or without it. Turning it off drops the per-frame
+    // multisample resolve of a full-screen quad.
+    const engine = new Engine(canvas, false, {
       preserveDrawingBuffer: false,
       stencil: true,
     });

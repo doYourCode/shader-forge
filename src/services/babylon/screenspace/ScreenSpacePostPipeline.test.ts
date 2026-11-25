@@ -5,7 +5,7 @@ import {
   type PostProcess,
   type Scene,
 } from '@babylonjs/core';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type {
   PostEffectSource,
@@ -33,11 +33,34 @@ function stack(effects: readonly PostEffectSource[]): PostEffectStack {
   return { effects, tonemap: 'aces' };
 }
 
-function fakePass(): PostProcess & { dispose: ReturnType<typeof vi.fn> } {
+/** Callbacks registered through `onApplyObservable` in the current test. */
+let applyHandlers: (() => void)[] = [];
+
+function fakeEffect(samplers: readonly string[]) {
   return {
-    onApplyObservable: { add: vi.fn() },
+    getSamplers: () => samplers,
+    setFloat: vi.fn(),
+    setFloat2: vi.fn(),
+    setVector3: vi.fn(),
+    setMatrix: vi.fn(),
+    setTexture: vi.fn(),
+  };
+}
+
+function fakePass(
+  samplers: readonly string[] = [],
+): PostProcess & { dispose: ReturnType<typeof vi.fn> } {
+  const effect = fakeEffect(samplers);
+
+  return {
+    onApplyObservable: {
+      add: (handler: () => void) => {
+        applyHandlers.push(handler);
+        return {};
+      },
+    },
     dispose: vi.fn(),
-    getEffect: () => null,
+    getEffect: () => effect as never,
     inputTexture: { texture: null },
   } as unknown as PostProcess & { dispose: ReturnType<typeof vi.fn> };
 }
@@ -74,11 +97,15 @@ function setup(results: readonly unknown[]) {
   } as unknown as Scene;
 
   const refreshPrePass = vi.fn();
+  const setRequiredAttachments = vi.fn();
+  const setObjectIdEnabled = vi.fn();
+  const bindTransparent = vi.fn();
   const gbuffer = {
     refreshPrePass,
     bind: vi.fn(),
-    overlay: { bind: vi.fn() },
-    setObjectIdEnabled: vi.fn(),
+    bindTransparent,
+    setRequiredAttachments,
+    setObjectIdEnabled,
     resize: vi.fn(),
   } as unknown as ScreenSpaceGbuffer;
 
@@ -106,12 +133,25 @@ function setup(results: readonly unknown[]) {
     compiler,
   });
 
-  return { pipeline, compile, attach, detach, refreshPrePass };
+  return {
+    pipeline,
+    compile,
+    attach,
+    detach,
+    refreshPrePass,
+    setRequiredAttachments,
+    setObjectIdEnabled,
+    bindTransparent,
+  };
 }
+
+beforeEach(() => {
+  applyHandlers = [];
+});
 
 describe('ScreenSpacePostPipeline', () => {
   it('installs a compiled effect and the display pass', async () => {
-    const effectPass = fakePass();
+    const effectPass = fakePass(['textureSampler']);
     const displayPass = fakePass();
     const { pipeline, compile, attach, refreshPrePass } = setup([
       { ok: true, postProcess: effectPass },
@@ -159,5 +199,76 @@ describe('ScreenSpacePostPipeline', () => {
     expect(result.status).toBe('ok');
     expect(attach).toHaveBeenCalledWith(displayPass);
     expect(pipeline.displayPass).toBe(displayPass);
+  });
+
+  it('does not enable the object-id pass for a declared-but-unread sampler', async () => {
+    const { pipeline, setObjectIdEnabled } = setup([
+      { ok: true, postProcess: fakePass(['textureSampler']) },
+      { ok: true, postProcess: fakePass() },
+    ]);
+
+    await pipeline.compile(stack([postEffect('e1')]));
+
+    expect(setObjectIdEnabled).toHaveBeenCalledWith(false);
+  });
+
+  it('enables the object-id pass when an effect reads it', async () => {
+    const { pipeline, setObjectIdEnabled } = setup([
+      {
+        ok: true,
+        postProcess: fakePass(['textureSampler', 'objectIdTexture']),
+      },
+      { ok: true, postProcess: fakePass() },
+    ]);
+
+    await pipeline.compile(stack([postEffect('e1')]));
+
+    expect(setObjectIdEnabled).toHaveBeenCalledWith(true);
+  });
+
+  it('requests no G-buffer attachment for a passthrough', async () => {
+    const { pipeline, setRequiredAttachments } = setup([
+      { ok: true, postProcess: fakePass(['textureSampler']) },
+      { ok: true, postProcess: fakePass() },
+    ]);
+
+    await pipeline.compile(stack([postEffect('e1')]));
+
+    expect(setRequiredAttachments).toHaveBeenCalledWith(new Set());
+  });
+
+  it('requests only the attachments the effect reads', async () => {
+    const { pipeline, setRequiredAttachments } = setup([
+      {
+        ok: true,
+        postProcess: fakePass([
+          'textureSampler',
+          'depthTexture',
+          'normalTexture',
+        ]),
+      },
+      { ok: true, postProcess: fakePass() },
+    ]);
+
+    await pipeline.compile(stack([postEffect('e1')]));
+
+    expect(setRequiredAttachments).toHaveBeenCalledWith(
+      new Set(['depth', 'normal']),
+    );
+  });
+
+  it('binds the transparent overlay stand-in on the display pass', async () => {
+    const { pipeline, bindTransparent } = setup([
+      { ok: true, postProcess: fakePass(['textureSampler']) },
+      { ok: true, postProcess: fakePass() },
+    ]);
+
+    await pipeline.compile(stack([postEffect('e1')]));
+    const displayApply = applyHandlers[applyHandlers.length - 1];
+    expect(displayApply).toBeTypeOf('function');
+
+    displayApply?.();
+
+    expect(bindTransparent).toHaveBeenCalled();
   });
 });

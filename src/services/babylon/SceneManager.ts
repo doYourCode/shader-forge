@@ -294,6 +294,9 @@ export class SceneManager {
     }
 
     mesh.name = 'preview';
+    // The preview has no picking consumers; leaving meshes pickable makes
+    // pointer events ray-cast the full model.
+    mesh.isPickable = false;
     this.mesh = mesh;
     this.model = model;
     this.mesh.rotationQuaternion = null;
@@ -391,6 +394,7 @@ export class SceneManager {
     }
 
     nextMesh.name = 'preview';
+    nextMesh.isPickable = false;
     nextMesh.rotationQuaternion = null;
 
     materials.setMesh(nextMesh);

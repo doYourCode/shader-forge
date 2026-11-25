@@ -50,6 +50,9 @@ scene ──► normal prepass ──┐
   targets before the camera: normals in an RGBA half-float target and linear
   depth in a single-channel `R32F` target (8-bit fallback). The camera uses a
   tight clip range (`0.1` / `20`) so the normalised depth uses its full range.
+  They are registered as custom render targets **only while an installed effect
+  samples one of their textures**: the default passthrough samples neither, so
+  it draws the mesh once instead of three times.
 - `linearize` decodes the scene colour from display space into the linear
   working space; `display` applies the selected transform and re-encodes to
   sRGB. With **none**, the round trip is the identity.

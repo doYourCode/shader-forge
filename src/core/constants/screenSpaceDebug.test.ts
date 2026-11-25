@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   GBUFFER_DEBUG_MODES,
+  availableDebugModes,
   debugModeValue,
   isGbufferDebugMode,
 } from './screenSpaceDebug';
+import { TRANSPARENT_OVERLAY_ENABLED } from './screenSpaceRender';
 
 describe('screen-space debug modes', () => {
   it('assigns a unique numeric value to every mode', () => {
@@ -18,5 +20,12 @@ describe('screen-space debug modes', () => {
     expect(debugModeValue('objectId')).toBe(7);
     expect(isGbufferDebugMode('depth')).toBe(true);
     expect(isGbufferDebugMode('not-a-mode')).toBe(false);
+  });
+
+  it('only offers the transparent view while an overlay renders', () => {
+    const ids = availableDebugModes().map((mode) => mode.id);
+
+    expect(ids.includes('transparent')).toBe(TRANSPARENT_OVERLAY_ENABLED);
+    expect(ids).toContain('depth');
   });
 });

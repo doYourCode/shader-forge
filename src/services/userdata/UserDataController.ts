@@ -114,6 +114,15 @@ export class UserDataController<TTexture> {
   private readonly pendingTextureReleases = new Set<string>();
   private gpu: UserDataGpuPort<TTexture> | null = null;
   private cancelScheduledCompile: (() => void) | null = null;
+  /**
+   * `postBindings()` is read once per post pass per frame. The projection only
+   * changes with the document revision, so it is cached instead of rebuilding
+   * two filtered arrays 60+ times a second.
+   */
+  private postBindingsCache: {
+    readonly revision: number;
+    readonly bindings: readonly UniformBinding[];
+  } | null = null;
   private nextId = 1;
   private disposed = false;
 
@@ -180,7 +189,12 @@ export class UserDataController<TTexture> {
    * surface material's binder.
    */
   postBindings(): readonly UniformBinding[] {
-    return this.document.definitions
+    const cached = this.postBindingsCache;
+    if (cached && cached.revision === this.document.revision) {
+      return cached.bindings;
+    }
+
+    const bindings = this.document.definitions
       .filter((definition) => definition.stages === 'post')
       .filter(
         (definition) =>
@@ -188,6 +202,13 @@ export class UserDataController<TTexture> {
           hasTextureContent(definition.value),
       )
       .map((definition) => toUniformBinding(definition));
+
+    this.postBindingsCache = {
+      revision: this.document.revision,
+      bindings,
+    };
+
+    return bindings;
   }
 
   validateName(name: string, exceptId?: string): NameValidationResult {

@@ -4,6 +4,9 @@
  * The numeric values are the contract with the display shader; keep them in
  * sync with `post.screenspace.display.frag.glsl`.
  */
+
+import { TRANSPARENT_OVERLAY_ENABLED } from './screenSpaceRender';
+
 export type GbufferDebugMode =
   | 'off'
   | 'scene'
@@ -35,6 +38,16 @@ export const GBUFFER_DEBUG_MODES: readonly GbufferDebugModeOption[] = [
 
 export function debugModeValue(mode: GbufferDebugMode): number {
   return GBUFFER_DEBUG_MODES.find((option) => option.id === mode)?.value ?? 0;
+}
+
+/**
+ * Modes the current pipeline can show. The transparent view reads the overlay
+ * target, which has no content once those surfaces render in the main pass.
+ */
+export function availableDebugModes(): readonly GbufferDebugModeOption[] {
+  if (TRANSPARENT_OVERLAY_ENABLED) return GBUFFER_DEBUG_MODES;
+
+  return GBUFFER_DEBUG_MODES.filter((mode) => mode.id !== 'transparent');
 }
 
 export function isGbufferDebugMode(value: string): value is GbufferDebugMode {

@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n';
 
 import {
-  GBUFFER_DEBUG_MODES,
+  availableDebugModes,
   type GbufferDebugMode,
 } from '@/core/constants/screenSpaceDebug';
 
@@ -16,11 +16,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const modes = availableDebugModes();
+
 function onChange(event: Event): void {
   const target = event.target;
   if (!(target instanceof HTMLSelectElement)) return;
 
-  const mode = GBUFFER_DEBUG_MODES.find((option) => option.id === target.value);
+  const mode = modes.find((option) => option.id === target.value);
   if (mode) emit('change', mode.id);
 }
 </script>
@@ -31,11 +33,7 @@ function onChange(event: Event): void {
       t('screenSpace.debug.overlay')
     }}</span>
     <select :value="props.active" @change="onChange">
-      <option
-        v-for="mode in GBUFFER_DEBUG_MODES"
-        :key="mode.id"
-        :value="mode.id"
-      >
+      <option v-for="mode in modes" :key="mode.id" :value="mode.id">
         {{ t(mode.labelKey) }}
       </option>
     </select>

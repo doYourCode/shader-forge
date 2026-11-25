@@ -28,6 +28,7 @@ import {
 import { internalShaders } from '../../internalShaders';
 import { EffectBindingTarget } from './EffectBindingTarget';
 import { PostEffectCompiler } from './PostEffectCompiler';
+import { activeSamplers } from './activeSamplers';
 import { ViewSpaceGbuffer } from './ViewSpaceGbuffer';
 
 const LINEARIZE_PASS = 'sf-post-linearize';
@@ -109,6 +110,7 @@ export class PostEffectPipeline {
       renderTextureType(this.deps.engine),
     );
     const candidates: PostProcess[] = [];
+    const effectPasses: PostProcess[] = [];
     const errors: ShaderError[] = [];
 
     const linearize = await compiler.compile({
@@ -143,6 +145,7 @@ export class PostEffectPipeline {
       }
 
       candidates.push(pass.postProcess);
+      effectPasses.push(pass.postProcess);
     }
 
     if (errors.length > 0) {
@@ -169,6 +172,14 @@ export class PostEffectPipeline {
       disposeAll(candidates);
       return { status: 'unavailable', reason: 'compile-superseded' };
     }
+
+    // Only render the geometry prepasses when a linked effect reads them: the
+    // default passthrough declares both samplers but samples neither.
+    const samplers = activeSamplers(effectPasses);
+    this.gbuffer.setActive(
+      samplers.has(POST_EFFECT_SAMPLER_NAMES.gbuffer) ||
+        samplers.has(POST_EFFECT_SAMPLER_NAMES.depth),
+    );
 
     this.install(candidates, stack.tonemap);
     return { status: 'ok' };

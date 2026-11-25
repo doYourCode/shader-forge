@@ -5,6 +5,10 @@ import { USER_UNIFORM_KINDS } from '@/core/constants/userUniformKinds';
 import { previewHdris } from '@/core/constants/previewHdris';
 import { previewScenes } from '@/core/constants/previewScenes';
 import { SCREEN_SPACE_RESERVED_NAMES } from '@/core/constants/screenSpaceAbi';
+import {
+  DEFAULT_ENVIRONMENT_INTENSITY,
+  DEFAULT_SUN_INTENSITY,
+} from '@/core/constants/screenSpaceRender';
 import { createScreenSpaceEffect } from '@/core/constants/screenSpaceEffects';
 import type { GbufferDebugMode } from '@/core/constants/screenSpaceDebug';
 import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
@@ -66,6 +70,8 @@ export function useScreenSpaceEditor(
   } | null>(null);
   const stats = ref<ScreenSpaceFrameStats | null>(null);
   const debugMode = ref<GbufferDebugMode>('off');
+  const sunIntensity = ref(DEFAULT_SUN_INTENSITY);
+  const environmentIntensity = ref(DEFAULT_ENVIRONMENT_INTENSITY);
 
   let navigation: PostEffectNavigation | null = null;
 
@@ -255,6 +261,16 @@ export function useScreenSpaceEditor(
     sceneManager.setDebugMode(mode);
   }
 
+  function setSunIntensity(value: number): void {
+    sunIntensity.value = value;
+    sceneManager.setSunIntensity(value);
+  }
+
+  function setEnvironmentIntensity(value: number): void {
+    environmentIntensity.value = value;
+    sceneManager.setEnvironmentIntensity(value);
+  }
+
   function setPaused(value: boolean): void {
     paused.value = value;
     sceneManager.setPaused(value);
@@ -290,6 +306,8 @@ export function useScreenSpaceEditor(
     loadingMessage,
     stats,
     debugMode,
+    sunIntensity,
+    environmentIntensity,
     postEffects: postEffects.effects,
     activePostEffectId: postEffects.activeId,
     tonemap: postEffects.tonemap,
@@ -310,6 +328,8 @@ export function useScreenSpaceEditor(
     setPostEffectEnabled,
     setTonemap,
     setDebugMode,
+    setSunIntensity,
+    setEnvironmentIntensity,
     revealError: navigation.revealError,
     userDataCommands,
     clipboardSource: navigation.clipboardSource,

@@ -25,6 +25,10 @@ import {
   debugModeValue,
   type GbufferDebugMode,
 } from '@/core/constants/screenSpaceDebug';
+import {
+  requiredScreenSpaceAttachments,
+  type ScreenSpaceAttachment,
+} from '@/core/screenspace/gbufferAttachments';
 import type { CompileResult } from '@/core/models/compileResult';
 import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
 import type { ShaderError } from '@/core/models/shaderError';
@@ -36,6 +40,7 @@ import {
 } from '@/services/userdata/UniformBinding';
 import { EffectBindingTarget } from '../preview/post/EffectBindingTarget';
 import { PostEffectCompiler } from '../preview/post/PostEffectCompiler';
+import { activeSamplers } from '../preview/post/activeSamplers';
 import type { ScreenSpaceGbuffer } from './ScreenSpaceGbuffer';
 
 const DISPLAY_PASS = 'sf-screen-space-display';
@@ -85,6 +90,8 @@ export class ScreenSpacePostPipeline {
   private tonemap: TonemapMode = 'none';
   private debugMode: GbufferDebugMode = 'off';
   private usesObjectId = false;
+  private effectSamplers: ReadonlySet<string> = new Set();
+  private requiredAttachments: ReadonlySet<ScreenSpaceAttachment> = new Set();
   private sceneColorWrapper: ThinTexture | null = null;
   private sceneColorInternal: InternalTexture | null = null;
   private frameIndex = 0;
@@ -127,6 +134,7 @@ export class ScreenSpacePostPipeline {
 
     const generation = ++this.generation;
     const candidates: PostProcess[] = [];
+    const effectPasses: PostProcess[] = [];
     const errors: ShaderError[] = [];
 
     for (const effect of stack.effects) {
@@ -144,6 +152,7 @@ export class ScreenSpacePostPipeline {
       }
 
       candidates.push(pass.postProcess);
+      effectPasses.push(pass.postProcess);
     }
 
     if (errors.length > 0) {
@@ -170,9 +179,17 @@ export class ScreenSpacePostPipeline {
       return { status: 'unavailable', reason: 'compile-superseded' };
     }
 
-    this.usesObjectId = stack.effects.some((effect) =>
-      effect.fragment.includes(SCREEN_SPACE_SAMPLER_NAMES.objectId),
+    // Plan from the linked programs, not from the sources: the ABI shaders
+    // declare every sampler they may read, so a textual match would request a
+    // full G-buffer (and an object-id pass) for a passthrough.
+    const samplers = activeSamplers(effectPasses);
+    this.effectSamplers = samplers;
+    this.usesObjectId = samplers.has(SCREEN_SPACE_SAMPLER_NAMES.objectId);
+    this.requiredAttachments = requiredScreenSpaceAttachments(
+      samplers,
+      this.debugMode,
     );
+
     this.install(candidates, stack.tonemap);
     return { status: 'ok' };
   }
@@ -186,6 +203,15 @@ export class ScreenSpacePostPipeline {
     this.deps.gbuffer.setObjectIdEnabled(
       this.usesObjectId || mode === 'objectId',
     );
+
+    // A debug view reads attachments the effect stack may not need, so the
+    // PrePass layout follows the selected mode.
+    this.requiredAttachments = requiredScreenSpaceAttachments(
+      this.effectSamplers,
+      mode,
+    );
+    this.deps.gbuffer.setRequiredAttachments(this.requiredAttachments);
+    this.deps.gbuffer.refreshPrePass(this.chain);
   }
 
   resize(): void {
@@ -216,6 +242,7 @@ export class ScreenSpacePostPipeline {
     this.chain = [...chain];
     this.display = this.chain[this.chain.length - 1] ?? null;
     this.tonemap = tonemap;
+    this.deps.gbuffer.setRequiredAttachments(this.requiredAttachments);
     this.deps.gbuffer.refreshPrePass(this.chain);
     this.deps.gbuffer.setObjectIdEnabled(
       this.usesObjectId || this.debugMode === 'objectId',
@@ -264,7 +291,7 @@ export class ScreenSpacePostPipeline {
     this.bindSceneColor(effect);
 
     if (isDisplay) {
-      this.deps.gbuffer.overlay.bind(effect);
+      this.deps.gbuffer.bindTransparent(effect);
       effect.setFloat(
         SCREEN_SPACE_DISPLAY_UNIFORM_NAMES.toneMappingMode,
         TONEMAP_VALUES[this.tonemap],

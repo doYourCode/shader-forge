@@ -640,4 +640,20 @@ describe('UserDataController post-effect bindings', () => {
 
     expect(harness.controller.postBindings()).toHaveLength(1);
   });
+
+  it('reuses the projected bindings until the document changes', () => {
+    const harness = createHarness();
+    harness.controller.add({ name: 'radius', kind: 'float', stages: 'post' });
+
+    const first = harness.controller.postBindings();
+
+    expect(harness.controller.postBindings()).toBe(first);
+
+    const id = harness.controller.doc.definitions[0]!.id;
+    harness.controller.setValue(id, 2);
+
+    const next = harness.controller.postBindings();
+    expect(next).not.toBe(first);
+    expect(next[0]?.value).toBe(2);
+  });
 });

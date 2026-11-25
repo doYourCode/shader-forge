@@ -27,6 +27,9 @@ export function createPreviewScene(
   // Same value as `--viewport-bg` in style.css: one step darker than the UI
   // chrome, so the model reads as the subject instead of blending into it.
   scene.clearColor = Color4.FromHexString('#1a1d23ff');
+  // Nothing in the preview ray-picks on hover; skipping it removes a hit test
+  // against the whole model on every pointer move.
+  scene.skipPointerMovePicking = true;
 
   const camera = new ArcRotateCamera(
     'camera',

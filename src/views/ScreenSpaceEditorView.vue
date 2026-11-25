@@ -10,6 +10,7 @@ import type { ShaderError } from '@/core/models/shaderError';
 import ScreenSpaceToolbar from '@/components/screenspace/ScreenSpaceToolbar.vue';
 import GbufferPanel from '@/components/screenspace/GbufferPanel.vue';
 import GbufferOverlay from '@/components/screenspace/GbufferOverlay.vue';
+import LightingOverlay from '@/components/screenspace/LightingOverlay.vue';
 import PostEffectPanel from '@/components/shader/PostEffectPanel.vue';
 import UserDataPanel from '@/components/shader/UserDataPanel.vue';
 import CopyShaderButton from '@/components/shader/CopyShaderButton.vue';
@@ -48,6 +49,8 @@ const {
   loadingMessage,
   stats,
   debugMode,
+  sunIntensity,
+  environmentIntensity,
   postEffects,
   activePostEffectId,
   tonemap,
@@ -68,6 +71,8 @@ const {
   setPostEffectEnabled,
   setTonemap,
   setDebugMode,
+  setSunIntensity,
+  setEnvironmentIntensity,
   revealError,
   userDataCommands,
   clipboardSource,
@@ -94,6 +99,7 @@ const statsText = computed(() => {
     width: value.width,
     height: value.height,
     drawCalls: value.drawCalls,
+    scale: Math.round(value.renderScale * 100),
   });
 });
 
@@ -198,6 +204,13 @@ onBeforeUnmount(() => {
         <canvas ref="canvasRef" class="screen-space__canvas" />
 
         <GbufferOverlay :active="debugMode" @change="setDebugMode" />
+
+        <LightingOverlay
+          :sun-intensity="sunIntensity"
+          :environment-intensity="environmentIntensity"
+          @sun-intensity="setSunIntensity"
+          @environment-intensity="setEnvironmentIntensity"
+        />
 
         <p class="screen-space__hint">{{ t('screenSpace.fpsHint') }}</p>
 

@@ -51,6 +51,10 @@ export class SandboxPreview {
   private paused = false;
   private elapsedSeconds = 0;
   private lastTimestamp = 0;
+  /** Last measured CSS box; layout is only read when the observer fires. */
+  private cssWidth = 0;
+  private cssHeight = 0;
+  private resizeObserver: ResizeObserver | null = null;
   private disposed = false;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -58,7 +62,9 @@ export class SandboxPreview {
 
     const gl = canvas.getContext('webgl2', {
       alpha: false,
-      antialias: true,
+      // The sandbox draws one fullscreen triangle: MSAA would only add a
+      // multisample resolve of a screen-covering primitive.
+      antialias: false,
       powerPreference: 'high-performance',
     });
 
@@ -83,8 +89,10 @@ export class SandboxPreview {
     gl.disable(gl.BLEND);
     gl.clearColor(0.02, 0.03, 0.05, 1);
 
+    this.measureCanvas();
     this.resize();
     this.start();
+    this.observeCanvasSize();
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this.handleResize);
     }
@@ -265,6 +273,8 @@ export class SandboxPreview {
 
     this.detachUserData();
     this.postPipeline?.dispose();
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
 
     if (this.animationFrame !== null) {
       cancelAnimationFrame(this.animationFrame);
@@ -354,8 +364,29 @@ export class SandboxPreview {
 
   /** A paused preview still needs a fresh frame when its canvas box changes. */
   private readonly handleResize = (): void => {
+    this.measureCanvas();
+    this.resize();
     if (this.paused) this.render();
   };
+
+  /** Reads layout only when the canvas box changes, never per frame. */
+  private observeCanvasSize(): void {
+    if (
+      typeof ResizeObserver === 'undefined' ||
+      typeof Element === 'undefined' ||
+      !(this.canvas instanceof Element)
+    ) {
+      return;
+    }
+
+    this.resizeObserver = new ResizeObserver(this.handleResize);
+    this.resizeObserver.observe(this.canvas);
+  }
+
+  private measureCanvas(): void {
+    this.cssWidth = this.canvas.clientWidth;
+    this.cssHeight = this.canvas.clientHeight;
+  }
 
   private start(): void {
     if (
@@ -435,8 +466,8 @@ export class SandboxPreview {
       typeof window === 'undefined'
         ? 1
         : Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
-    const width = Math.max(1, Math.round(this.canvas.clientWidth * ratio));
-    const height = Math.max(1, Math.round(this.canvas.clientHeight * ratio));
+    const width = Math.max(1, Math.round(this.cssWidth * ratio));
+    const height = Math.max(1, Math.round(this.cssHeight * ratio));
 
     if (this.canvas.width !== width || this.canvas.height !== height) {
       this.canvas.width = width;

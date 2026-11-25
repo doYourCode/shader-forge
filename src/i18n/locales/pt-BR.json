@@ -257,7 +257,12 @@
       "description": "Passes em tela cheia rodam na ordem da pilha sobre a cena HDR. Cada passe lê o anterior, a cor original da cena e o G-Buffer da cena."
     },
     "fpsHint": "Clique na viewport para olhar. WASD para mover, Q/E para descer/subir, Shift para acelerar.",
-    "stats": "{fps} fps · {ms} ms / {budget} ms · {width}×{height} · {drawCalls} draws",
+    "stats": "{fps} fps · {ms} ms / {budget} ms · {width}×{height} ({scale}%) · {drawCalls} draws",
+    "lighting": {
+      "title": "Iluminação",
+      "sun": "Sol",
+      "environment": "HDRI"
+    },
     "loading": {
       "scene": "Carregando cena…",
       "sceneProgress": "Carregando cena… {loaded}/{total} MB",

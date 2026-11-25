@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n';
 
 import {
-  GBUFFER_DEBUG_MODES,
+  availableDebugModes,
   type GbufferDebugMode,
 } from '@/core/constants/screenSpaceDebug';
 
@@ -15,6 +15,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+const modes = availableDebugModes();
 </script>
 
 <template>
@@ -28,7 +30,7 @@ const { t } = useI18n();
 
     <div class="gbuffer-panel__modes" role="group">
       <button
-        v-for="mode in GBUFFER_DEBUG_MODES"
+        v-for="mode in modes"
         :key="mode.id"
         type="button"
         class="gbuffer-panel__mode"

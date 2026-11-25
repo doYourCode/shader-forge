@@ -46,6 +46,21 @@ export function shadowCasters(
 }
 
 /**
+ * Meshes that receive the direct sun.
+ *
+ * An instance reads `receiveShadows` from its source mesh and Babylon logs a
+ * warning for every write to an instance, so only the sources are listed. The
+ * transparent subset is included: reflections and glass still take the sun.
+ */
+export function shadowReceivers(
+  meshes: LoadedSceneMeshes,
+): readonly AbstractMesh[] {
+  return [...meshes.opaque, ...meshes.transparent].filter(
+    (mesh) => !mesh.isAnInstance,
+  );
+}
+
+/**
  * The preview's direct light and its cascaded shadow map.
  *
  * The sun is dynamic: the cascades follow the active camera every frame, so
@@ -110,7 +125,7 @@ export class SunController {
 
     // Reflection/transmission surfaces receive light too; only the opaque
     // subset casts, so shop windows do not black out the street.
-    for (const mesh of [...meshes.opaque, ...meshes.transparent]) {
+    for (const mesh of shadowReceivers(meshes)) {
       mesh.receiveShadows = true;
     }
   }

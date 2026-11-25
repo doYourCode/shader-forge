@@ -25,12 +25,7 @@ const CORE_ONLY = {
 };
 
 const CORE_NO_OUTER = {
-  group: [
-    '@/services/*',
-    '@/components/*',
-    '@/composables/*',
-    '@/views/*',
-  ],
+  group: ['@/services/*', '@/components/*', '@/composables/*', '@/views/*'],
   message: 'src/core must not depend on outer layers. Invert the dependency.',
 };
 
@@ -134,15 +129,34 @@ export default tseslint.config(
     },
   },
   {
-    files: [
-      'src/components/**/*.{ts,vue}',
-      'src/views/**/*.{ts,vue}',
-    ],
+    files: ['src/components/**/*.{ts,vue}', 'src/views/**/*.{ts,vue}'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
         'error',
         { patterns: [UI_NO_ENGINES, RETIRED_LIB] },
       ],
+    },
+  },
+  /**
+   * Development tooling under `tools/`. The capture harness runs in Node and,
+   * for `lib/page-capture.mjs`, inside the browser through `page.evaluate`, so
+   * both global sets are legitimate here. Nothing under `tools/` ships with the
+   * application.
+   */
+  {
+    files: ['tools/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        setTimeout: 'readonly',
+        URL: 'readonly',
+        document: 'readonly',
+        window: 'readonly',
+        navigator: 'readonly',
+        performance: 'readonly',
+        HTMLCanvasElement: 'readonly',
+      },
     },
   },
   prettier,

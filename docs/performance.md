@@ -40,7 +40,7 @@ count rather than the effect count. Three controls keep it inside budget:
   resolution scale between `1.0` and `0.5` (see
   `src/core/screenspace/renderScale.ts`). It drops a step when the average frame
   misses the 60 fps budget by 20 %, and only raises the scale with real
-  headroom. The stats overlay prints the current scale as `@{scale}%`.
+  headroom. The stats overlay prints the current scale as `({scale}%)`.
 - **On-demand G-buffer attachments.** Babylon's PrePass MRT is built from the
   attachments the *linked* effect programs read, plus the ones the active debug
   view needs. A passthrough requests none, which skips the PrePass entirely;
@@ -64,7 +64,25 @@ count rather than the effect count. Three controls keep it inside budget:
 
 Scene assets still dominate: the bundled Bistro scene is ~550 meshes, ~2 900
 mesh nodes and ~1.9 GB of decoded textures. If the frame stays slow at `0.5`
-scale, the bottleneck is the scene, not the effect stack.
+scale, the bottleneck is the scene, not the effect stack. A Spector.js capture
+quantifies that split: see `docs/spector-investigation.md` and the harness in
+`tools/spector`.
+
+## Measuring a frame
+
+`docs/spector-investigation.md` records a full command-level audit of this
+preview. To repeat it, capture the GL stream of a scenario and read the summary:
+
+```
+npm run dev -- --port 5199
+npm run spector:capture -- --url http://localhost:5199
+npm run spector:analyze
+```
+
+The capture reports per-frame draw calls, distinct programs/textures, GL state
+churn and WebGL errors. Spector inflates frame time, so use these captures for
+structure and the editor's stats overlay for timing; the overlay's draw count is
+per frame.
 
 ## Caveats
 

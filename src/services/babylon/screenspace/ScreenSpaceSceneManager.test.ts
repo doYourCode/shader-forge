@@ -10,7 +10,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { PostEffectStack } from '@/core/models/postEffect';
 import type { UserDataController } from '@/services/userdata/UserDataController';
-import { ScreenSpaceSceneManager } from './ScreenSpaceSceneManager';
+import {
+  ScreenSpaceSceneManager,
+  takeFrameDrawCalls,
+} from './ScreenSpaceSceneManager';
 import type { FpsCameraController } from './FpsCameraController';
 import type { SceneAssetProvider } from './SceneAssetProvider';
 import type { ScreenSpaceGbuffer } from './ScreenSpaceGbuffer';
@@ -265,5 +268,21 @@ describe('ScreenSpaceSceneManager', () => {
     });
 
     manager.dispose();
+  });
+});
+
+describe('takeFrameDrawCalls', () => {
+  it('reports the frame count and rolls the counter over', () => {
+    const fetchNewFrame = vi.fn();
+    const engine = {
+      _drawCalls: { current: 1611, fetchNewFrame },
+    } as unknown as Engine;
+
+    expect(takeFrameDrawCalls(engine, 7)).toBe(1611);
+    expect(fetchNewFrame).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back when the engine does not expose the counter', () => {
+    expect(takeFrameDrawCalls({} as Engine, 7)).toBe(7);
   });
 });

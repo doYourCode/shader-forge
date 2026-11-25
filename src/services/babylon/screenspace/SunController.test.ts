@@ -2,7 +2,7 @@ import type { AbstractMesh } from '@babylonjs/core';
 import { describe, expect, it } from 'vitest';
 
 import type { LoadedSceneMeshes } from './SceneAssetProvider';
-import { shadowCasters } from './SunController';
+import { shadowCasters, shadowReceivers } from './SunController';
 
 function mesh(name: string, isAnInstance = false): AbstractMesh {
   return { name, isAnInstance } as unknown as AbstractMesh;
@@ -29,5 +29,25 @@ describe('shadowCasters', () => {
     expect(
       shadowCasters(split({ opaque: [wall], transparent: [glass] })),
     ).toEqual([wall]);
+  });
+});
+
+describe('shadowReceivers', () => {
+  it('skips instances, whose source mesh carries the flag', () => {
+    const source = mesh('window');
+    const instance = mesh('window-instance', true);
+
+    expect(shadowReceivers(split({ opaque: [source, instance] }))).toEqual([
+      source,
+    ]);
+  });
+
+  it('includes the transparent subset', () => {
+    const wall = mesh('wall');
+    const glass = mesh('glass');
+
+    expect(
+      shadowReceivers(split({ opaque: [wall], transparent: [glass] })),
+    ).toEqual([wall, glass]);
   });
 });

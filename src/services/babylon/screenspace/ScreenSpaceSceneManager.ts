@@ -492,11 +492,10 @@ export class ScreenSpaceSceneManager {
 
   private reportStats(engine: Engine): void {
     const frameMs = performance.now() - this.frameStartedAt;
-    const counters = (
-      engine as unknown as {
-        _drawCalls?: { current?: number };
-      }
-    )._drawCalls;
+    const drawCalls = takeFrameDrawCalls(
+      engine,
+      this.scene?.getActiveMeshes().length ?? 0,
+    );
     this.adaptRenderScale(engine);
 
     const width = engine.getRenderWidth();
@@ -507,7 +506,7 @@ export class ScreenSpaceSceneManager {
       budgetMs: FRAME_BUDGET_MS,
       width,
       height,
-      drawCalls: counters?.current ?? this.scene?.getActiveMeshes().length ?? 0,
+      drawCalls,
       renderScale: this.renderScale,
     });
   }
@@ -570,6 +569,30 @@ export class ScreenSpaceSceneManager {
       DEFAULT_RENDER_SCALE_POLICY.targetFrameMs,
     );
   }
+}
+
+/**
+ * The engine's per-frame draw counter, and the roll-over Babylon's scene
+ * instrumentation performs once per frame.
+ *
+ * `PerfCounter.current` only resets when `fetchNewFrame()` runs, and nothing in
+ * this app enables `SceneInstrumentation`, so reading it without rolling it
+ * over reports every draw call since the engine was created. The overlay then
+ * climbs for as long as the preview runs.
+ */
+interface DrawCallCounter {
+  readonly current?: number;
+  fetchNewFrame?: () => void;
+}
+
+/** Draw calls submitted since the previous frame. */
+export function takeFrameDrawCalls(engine: Engine, fallback: number): number {
+  const counters = (engine as unknown as { _drawCalls?: DrawCallCounter })
+    ._drawCalls;
+  const current = counters?.current;
+  counters?.fetchNewFrame?.();
+
+  return typeof current === 'number' ? current : fallback;
 }
 
 function internalSceneError(error: unknown): ShaderError {

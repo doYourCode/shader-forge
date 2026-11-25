@@ -25,3 +25,6 @@ dist-ssr
 
 # AI specific
 AGENTS.md
+
+# Spector capture artifacts (raw GL traces stay local)
+tools/spector/out/

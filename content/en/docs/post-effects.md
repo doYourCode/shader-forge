@@ -11,7 +11,9 @@ draft: false
 A post effect is a fullscreen fragment pass that runs after the scene has been
 rendered. Effects are stacked: each one receives the previous pass's output, and
 a final display pass applies the output transform. The 3D Shader Editor and the
-2D Sandbox share the stack, the ABI and the editor.
+2D Sandbox share this surface stack, the ABI and the editor. The
+[Screen Space GLSL Editor](/docs/screen-space-editor) has a separate stack with
+a richer scene G-buffer.
 
 ## The stack
 
@@ -25,6 +27,7 @@ the editor contains the stack:
 | **↑** / **↓**       | Moves the effect earlier or later in the chain.                    |
 | **×**               | Removes the effect.                                                 |
 | **Add effect**      | Appends a new pass-through effect.                                 |
+| **Load example**    | Replaces the active effect with a bundled example (vignette, blur, outline, depth fog, SSAO). |
 | **Output transform**| Chooses the tonemap applied by the display pass.                   |
 
 There is always at least one effect: removing the last one creates a new effect
@@ -138,12 +141,25 @@ means vertex and fragment only; it does **not** reach post effects. See
 - Editing an effect's fragment does not compile automatically; press
   **Compile** while the Post effect document is active.
 
+## Screen-space effects are different
+
+The Screen Space editor's effects run over a whole scene and expose the original
+HDR scene colour plus depth, normal, albedo, material and velocity attachments.
+The surface ABI above has only `textureSampler`, `gbufferTexture` and a
+normalised `depthTexture`. A screen-space effect that reads `depthTexture` as
+world units will be wrong in the surface tab, and a surface effect that expects
+normalised depth will be wrong here.
+
+Use the Screen Space editor for depth/normal outlines, SSAO, motion vectors and
+anything that needs the untouched scene colour. The complete name list for both
+contracts is in the generated [ABI Reference](/docs/abi-reference).
+
 ## A grayscale and vignette effect
 
 This fragment works in both editors and uses only inputs that are meaningful in
 the sandbox:
 
-```glsl
+```glsl run=sandbox title="Grayscale + vignette"
 #version 300 es
 precision highp float;
 

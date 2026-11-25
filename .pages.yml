@@ -5,6 +5,11 @@
 # Pages CMS does not resolve translations, so each locale gets its own
 # collection and editors always see the tree for the locale they are editing.
 # The runtime resolves/falls back in src/core/content/ContentResolver.ts.
+#
+# The `section` values below must match SECTIONS in
+# src/core/content/contentTrees.ts, and every frontmatter key the runtime reads
+# must be declared here so the CMS can edit it. The lesson frontmatter contract
+# is documented in content/en/docs/authoring-lessons.md.
 
 media:
   - name: content-images
@@ -24,6 +29,8 @@ settings:
       update: 'content(update): {path}'
       delete: 'content(delete): {path}'
 
+# Shared lesson fields. Pages CMS has no YAML anchors, so each collection
+# repeats them; keep the four blocks identical.
 content:
   - name: docs_en
     label: Docs (English)
@@ -33,7 +40,7 @@ content:
     filename: '{primary}.md'
     subfolders: false
     view:
-      fields: [title, section, order, draft]
+      fields: [title, section, order, difficulty, draft]
       primary: title
       sort: [order, title]
       default:
@@ -47,7 +54,7 @@ content:
       - name: description
         label: Summary
         type: text
-        description: One or two sentences for lists and future SEO.
+        description: One or two sentences for lists, search results and future SEO.
       - name: section
         label: Section
         type: select
@@ -67,6 +74,46 @@ content:
         type: number
         options:
           min: 0
+      - name: difficulty
+        label: Difficulty
+        type: select
+        description: Shows a badge and drives the learning path. Leave empty for reference pages.
+        options:
+          values:
+            - name: beginner
+              label: Beginner
+            - name: intermediate
+              label: Intermediate
+            - name: advanced
+              label: Advanced
+      - name: prerequisites
+        label: Prerequisites
+        type: string
+        description: Comma-separated lesson slugs that should be read first.
+      - name: editor
+        label: Open in editor
+        type: select
+        description: Adds the "Open in editor" callout to this page.
+        options:
+          values:
+            - name: editor
+              label: 3D Shader Editor (/editor)
+            - name: sandbox
+              label: 2D Sandbox (/sandbox)
+            - name: screen-space
+              label: Screen Space Editor (/screen-space)
+      - name: example
+        label: Example id
+        type: string
+        description: Bundled example the callout loads (for example phong, gradient, gbuffer-normal).
+      - name: printable
+        label: Printable
+        type: boolean
+        description: Enables the print layout and the Print button (cheat sheets).
+      - name: generated
+        label: Generated
+        type: boolean
+        description: Set by npm run docs:abi. Do not edit this page by hand.
       - name: draft
         label: Draft
         type: boolean
@@ -86,7 +133,7 @@ content:
     filename: '{primary}.md'
     subfolders: false
     view:
-      fields: [title, section, order, draft]
+      fields: [title, section, order, difficulty, draft]
       primary: title
       sort: [order, title]
       default:
@@ -100,7 +147,7 @@ content:
       - name: description
         label: Summary
         type: text
-        description: One or two sentences for lists and future SEO.
+        description: One or two sentences for lists, search results and future SEO.
       - name: section
         label: Section
         type: select
@@ -120,6 +167,46 @@ content:
         type: number
         options:
           min: 0
+      - name: difficulty
+        label: Difficulty
+        type: select
+        description: Shows a badge and drives the learning path. Leave empty for reference pages.
+        options:
+          values:
+            - name: beginner
+              label: Beginner
+            - name: intermediate
+              label: Intermediate
+            - name: advanced
+              label: Advanced
+      - name: prerequisites
+        label: Prerequisites
+        type: string
+        description: Comma-separated lesson slugs that should be read first.
+      - name: editor
+        label: Open in editor
+        type: select
+        description: Adds the "Open in editor" callout to this page.
+        options:
+          values:
+            - name: editor
+              label: 3D Shader Editor (/editor)
+            - name: sandbox
+              label: 2D Sandbox (/sandbox)
+            - name: screen-space
+              label: Screen Space Editor (/screen-space)
+      - name: example
+        label: Example id
+        type: string
+        description: Bundled example the callout loads (for example phong, gradient, gbuffer-normal).
+      - name: printable
+        label: Printable
+        type: boolean
+        description: Enables the print layout and the Print button (cheat sheets).
+      - name: generated
+        label: Generated
+        type: boolean
+        description: Set by npm run docs:abi. Do not edit this page by hand.
       - name: draft
         label: Draft
         type: boolean
@@ -139,7 +226,7 @@ content:
     filename: '{primary}.md'
     subfolders: false
     view:
-      fields: [title, section, order, draft]
+      fields: [title, section, order, difficulty, draft]
       primary: title
       sort: [order, title]
       default:
@@ -153,7 +240,7 @@ content:
       - name: description
         label: Summary
         type: text
-        description: One or two sentences for lists and future SEO.
+        description: One or two sentences for lists, search results and future SEO.
       - name: section
         label: Section
         type: select
@@ -162,15 +249,67 @@ content:
           values:
             - name: basics
               label: Shader Basics
+            - name: math
+              label: Math & Colour
             - name: glsl
               label: GLSL
+            - name: lessons
+              label: Lessons
+            - name: lighting
+              label: Lighting
+            - name: post
+              label: Post-processing
+            - name: debugging
+              label: Debugging & Performance
             - name: webgl
               label: 'WebGL & WebGPU'
+            - name: reference
+              label: Reference
       - name: order
         label: Order in section
         type: number
         options:
           min: 0
+      - name: difficulty
+        label: Difficulty
+        type: select
+        description: Shows a badge and drives the learning path.
+        options:
+          values:
+            - name: beginner
+              label: Beginner
+            - name: intermediate
+              label: Intermediate
+            - name: advanced
+              label: Advanced
+      - name: prerequisites
+        label: Prerequisites
+        type: string
+        description: Comma-separated lesson slugs that should be read first.
+      - name: editor
+        label: Open in editor
+        type: select
+        description: Adds the "Open in editor" callout to this page.
+        options:
+          values:
+            - name: editor
+              label: 3D Shader Editor (/editor)
+            - name: sandbox
+              label: 2D Sandbox (/sandbox)
+            - name: screen-space
+              label: Screen Space Editor (/screen-space)
+      - name: example
+        label: Example id
+        type: string
+        description: Bundled example the callout loads (for example phong, gradient, gbuffer-normal).
+      - name: printable
+        label: Printable
+        type: boolean
+        description: Enables the print layout and the Print button (cheat sheets).
+      - name: generated
+        label: Generated
+        type: boolean
+        description: Set by npm run docs:abi. Do not edit this page by hand.
       - name: draft
         label: Draft
         type: boolean
@@ -190,7 +329,7 @@ content:
     filename: '{primary}.md'
     subfolders: false
     view:
-      fields: [title, section, order, draft]
+      fields: [title, section, order, difficulty, draft]
       primary: title
       sort: [order, title]
       default:
@@ -204,7 +343,7 @@ content:
       - name: description
         label: Summary
         type: text
-        description: One or two sentences for lists and future SEO.
+        description: One or two sentences for lists, search results and future SEO.
       - name: section
         label: Section
         type: select
@@ -213,15 +352,67 @@ content:
           values:
             - name: basics
               label: Shader Basics
+            - name: math
+              label: Math & Colour
             - name: glsl
               label: GLSL
+            - name: lessons
+              label: Lessons
+            - name: lighting
+              label: Lighting
+            - name: post
+              label: Post-processing
+            - name: debugging
+              label: Debugging & Performance
             - name: webgl
               label: 'WebGL & WebGPU'
+            - name: reference
+              label: Reference
       - name: order
         label: Order in section
         type: number
         options:
           min: 0
+      - name: difficulty
+        label: Difficulty
+        type: select
+        description: Shows a badge and drives the learning path.
+        options:
+          values:
+            - name: beginner
+              label: Beginner
+            - name: intermediate
+              label: Intermediate
+            - name: advanced
+              label: Advanced
+      - name: prerequisites
+        label: Prerequisites
+        type: string
+        description: Comma-separated lesson slugs that should be read first.
+      - name: editor
+        label: Open in editor
+        type: select
+        description: Adds the "Open in editor" callout to this page.
+        options:
+          values:
+            - name: editor
+              label: 3D Shader Editor (/editor)
+            - name: sandbox
+              label: 2D Sandbox (/sandbox)
+            - name: screen-space
+              label: Screen Space Editor (/screen-space)
+      - name: example
+        label: Example id
+        type: string
+        description: Bundled example the callout loads (for example phong, gradient, gbuffer-normal).
+      - name: printable
+        label: Printable
+        type: boolean
+        description: Enables the print layout and the Print button (cheat sheets).
+      - name: generated
+        label: Generated
+        type: boolean
+        description: Set by npm run docs:abi. Do not edit this page by hand.
       - name: draft
         label: Draft
         type: boolean

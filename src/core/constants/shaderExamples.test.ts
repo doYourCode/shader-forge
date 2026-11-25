@@ -158,6 +158,7 @@ describe('shaderExamples', () => {
   it('groups examples into one folder per authored section', () => {
     expect(shaderExampleGroups.map((group) => group.label)).toEqual([
       'Lighting',
+      'Surface',
       'Image-based lighting',
     ]);
 
@@ -224,6 +225,11 @@ describe('shaderExamples', () => {
         "blinn-phong",
         "oren-nayar",
         "cook-torrance",
+        "toon",
+        "rim-light",
+        "normal-map",
+        "displacement",
+        "reflections",
         "ibl-metalness-roughness",
         "ibl-specular-glossiness",
       ]

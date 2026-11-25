@@ -29,8 +29,9 @@ Use it when you want to:
 - stack post effects on top of the shaded scene.
 
 For a fullscreen shader with no geometry, use the [2D Sandbox](/docs/2d-sandbox).
-For post-processing an existing scene, open the Screen Space editor; it is this
-same screen started on the post-effect document.
+For post-processing a whole scene with a G-buffer, use the
+[Screen Space GLSL Editor](/docs/screen-space-editor). The Post effect tab here
+only sees this single mesh and the surface post-effect ABI.
 
 ## The screen
 
@@ -236,11 +237,17 @@ Sunrise** and **Mossy Forest**.
 
 ## Examples
 
-**Examples** opens seven bundled materials in two folders:
+**Examples** opens twelve bundled materials in three folders:
 
 - **Lighting**: Lambert, Phong, Blinn-Phong, Oren-Nayar, Cook-Torrance.
+- **Surface**: Toon, Rim light, Normal map, Displacement, Environment
+  reflection.
 - **Image-based lighting**: IBL Metalness / Roughness, IBL Specular /
   Glossiness.
+
+Each folder is also a lesson track in the [Learning Path](/docs/learning-path).
+The **Open in editor** callouts in those lessons deep-link to the same ids, for
+example [`/editor?example=phong`](/editor?example=phong).
 
 Loading an example **replaces** both editable stages and the entire User data
 document. It does not merge with your current work. The example's parameters are
@@ -275,8 +282,11 @@ complete list.
 
 ## Related
 
+- [Learning Path](/docs/learning-path)
 - [2D Sandbox](/docs/2d-sandbox)
+- [Screen Space GLSL Editor](/docs/screen-space-editor)
 - [User data](/docs/user-data)
 - [Post effects](/docs/post-effects)
+- [ABI Reference](/docs/abi-reference)
 - [Compiling and errors](/docs/compiling-and-errors)
 - [The rendering pipeline](/knowledge/the-rendering-pipeline)

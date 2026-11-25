@@ -2,6 +2,7 @@ import sandboxVertexShader from '@/assets/internal-shaders/sandbox.vert.glsl?raw
 import sandboxFragmentShader from '@/assets/internal-shaders/sandbox.frag.glsl?raw';
 import { GLSL_RESERVED_WORDS } from '@/core/constants/glslReservedWords';
 import { POST_EFFECT_RESERVED_NAMES } from '@/core/constants/postEffectAbi';
+import { SANDBOX_ABI_NAMES } from '@/core/constants/sandboxAbi';
 import type {
   UserUniformKind,
   UserUniformStage,
@@ -24,9 +25,7 @@ export const defaultSandboxFragmentShader = sandboxFragmentShader;
 export const SANDBOX_RESERVED_UNIFORM_NAMES: ReadonlySet<string> = new Set([
   ...GLSL_RESERVED_WORDS,
   ...POST_EFFECT_RESERVED_NAMES,
-  'uResolution',
-  'uTime',
-  'vUv',
+  ...SANDBOX_ABI_NAMES,
 ]);
 
 /**

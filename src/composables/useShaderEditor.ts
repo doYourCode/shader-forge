@@ -12,7 +12,11 @@ import type { UserDataDocument } from '@/core/models/userUniform';
 import { createEmptyUserDataDocument } from '@/core/models/userUniform';
 import { previewModels } from '@/core/constants/previewModels';
 import { previewHdris } from '@/core/constants/previewHdris';
-import { findShaderExample } from '@/core/constants/shaderExamples';
+import {
+  findShaderExample,
+  type ShaderExample,
+} from '@/core/constants/shaderExamples';
+import { findPostEffectExample } from '@/core/constants/postEffectExamples';
 import { buildPostEffectSource } from '@/core/shader/postEffectCodegen';
 import { GenerationTracker } from '@/core/async/generation';
 import { UserDataController } from '@/services/userdata/UserDataController';
@@ -33,6 +37,12 @@ export type { EditorStatus } from './useShaderCompilation';
 export interface UseShaderEditorOptions {
   /** Document to show when the editor mounts; defaults to the fragment stage. */
   readonly initialTab?: EditorTabId;
+  /** Bundled material example to load before the first compile. */
+  readonly initialExample?: string | null;
+  /** Bundled post-effect example to load into the active stack slot. */
+  readonly initialEffect?: string | null;
+  /** Inline post-effect source from a `/editor?code=…` deep link. */
+  readonly initialCode?: string | null;
 }
 
 /**
@@ -215,6 +225,16 @@ export function useShaderEditor(options: UseShaderEditorOptions = {}) {
     initialTab: options.initialTab,
   });
 
+  // Deep links are applied before the preview initialises, so the first
+  // compile already compiles the requested document instead of racing a swap.
+  if (options.initialExample) {
+    applyExample(options.initialExample);
+  } else if (options.initialEffect) {
+    applyPostEffectExample(options.initialEffect);
+  } else if (options.initialCode) {
+    applyEffectCode(options.initialCode);
+  }
+
   function currentPostStack(): PostEffectStack {
     return {
       tonemap: postEffects.tonemap.value,
@@ -255,9 +275,9 @@ export function useShaderEditor(options: UseShaderEditorOptions = {}) {
    * built-in reference or the user-data panel falls back to the vertex
    * document.
    */
-  function loadExample(exampleId: string): void {
+  function applyExample(exampleId: string): ShaderExample | null {
     const example = findShaderExample(exampleId);
-    if (!example) return;
+    if (!example) return null;
 
     navigation.replaceDocuments({
       vertex: example.vertex,
@@ -281,6 +301,13 @@ export function useShaderEditor(options: UseShaderEditorOptions = {}) {
         : 'vertex',
     );
 
+    return example;
+  }
+
+  function loadExample(exampleId: string): void {
+    const example = applyExample(exampleId);
+    if (!example) return;
+
     void compile().then(() => {
       if (status.value === 'ready') {
         compilation.setReady({
@@ -303,6 +330,33 @@ export function useShaderEditor(options: UseShaderEditorOptions = {}) {
 
   function compilePostEffects(): Promise<void> {
     return compilation.compilePostEffects();
+  }
+
+  /**
+   * Loads a bundled post-effect example into the active stack slot. This is
+   * deliberately separate from `loadExample`: a post effect is part of the
+   * stack and must not replace the surface shader documents.
+   */
+  function applyPostEffectExample(id: string): boolean {
+    const example = findPostEffectExample(id);
+    if (!example) return false;
+    return applyEffectCode(example.fragment, example.label);
+  }
+
+  /** Edits the active effect without compiling; callers own the recompile. */
+  function applyEffectCode(fragment: string, name = 'Custom effect'): boolean {
+    if (!postEffects.loadIntoActive(fragment, name)) return false;
+    navigation.applyTab('post');
+    compilation.clearErrors();
+    return true;
+  }
+
+  function loadPostEffectExample(id: string): void {
+    if (applyPostEffectExample(id)) void compilation.compilePostEffects();
+  }
+
+  function loadEffectCode(fragment: string, name = 'Custom effect'): void {
+    if (applyEffectCode(fragment, name)) void compilation.compilePostEffects();
   }
 
   function selectPostEffect(id: string): void {
@@ -397,6 +451,8 @@ export function useShaderEditor(options: UseShaderEditorOptions = {}) {
     selectHdri,
     compile,
     compilePostEffects,
+    loadPostEffectExample,
+    loadEffectCode,
     revealError: navigation.revealError,
     resize,
     setWireframe,

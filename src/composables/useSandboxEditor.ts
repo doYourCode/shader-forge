@@ -9,6 +9,8 @@ import {
   defaultSandboxFragmentShader,
   sandboxVertexSource,
 } from '@/core/constants/sandbox';
+import { findSandboxExample } from '@/core/constants/sandboxExamples';
+import { findPostEffectExample } from '@/core/constants/postEffectExamples';
 import { createEmptyUserDataDocument } from '@/core/models/userUniform';
 import { buildSandboxPostEffectSource } from '@/core/shader/postEffectCodegen';
 import {
@@ -26,6 +28,17 @@ import { useUserDataCommands } from './useUserDataCommands';
 /** The sandbox documents: base fragment, user-data panel and post effects. */
 export type SandboxTabId = 'fragment' | 'user_data' | 'post';
 
+export interface UseSandboxEditorOptions {
+  /** Document to show when the editor mounts; defaults to the fragment. */
+  readonly initialTab?: SandboxTabId;
+  /** Bundled sandbox example to load before the first compile. */
+  readonly initialExample?: string | null;
+  /** Bundled post-effect example to load into the active stack slot. */
+  readonly initialEffect?: string | null;
+  /** Inline fragment source from a `/sandbox?code=…` deep link. */
+  readonly initialCode?: string | null;
+}
+
 /**
  * State and lifecycle for the 2D sandbox harness. It owns the text editor, the
  * fullscreen preview, the user-data document and the post-effect stack.
@@ -33,7 +46,7 @@ export type SandboxTabId = 'fragment' | 'user_data' | 'post';
  * The shared compilation queue and post-effect stack are the same ones the 3D
  * editor uses; only the renderer (WebGL instead of Babylon) differs.
  */
-export function useSandboxEditor() {
+export function useSandboxEditor(options: UseSandboxEditorOptions = {}) {
   const editorManager = new EditorManager();
 
   const paused = ref(false);
@@ -45,6 +58,7 @@ export function useSandboxEditor() {
   const userDataDoc = reactive(createEmptyUserDataDocument());
   let fragmentDoc = defaultSandboxFragmentShader;
   let preview: SandboxPreview | null = null;
+  let editorMounted = false;
 
   const userData = new UserDataController<WebGLTexture>(
     {
@@ -73,6 +87,25 @@ export function useSandboxEditor() {
     onBeforeEdit: () => storeActiveDocument(),
     applyTonemap: (mode) => preview?.setTonemap(mode),
   });
+
+  // Apply the deep link before the editor mounts, so it is the document the
+  // first compile sees. `storeActiveDocument` is a no-op until mount.
+  const initialEffect = options.initialEffect
+    ? findPostEffectExample(options.initialEffect)
+    : undefined;
+
+  if (initialEffect) {
+    postEffects.loadIntoActive(initialEffect.fragment, initialEffect.label);
+  } else if (options.initialExample) {
+    const example = findSandboxExample(options.initialExample);
+    if (example) fragmentDoc = example.fragment;
+  } else if (options.initialCode) {
+    fragmentDoc = options.initialCode;
+  }
+
+  const initialTab: SandboxTabId = initialEffect
+    ? 'post'
+    : (options.initialTab ?? 'fragment');
 
   const compilation = useShaderCompilation({
     compileMaterial: (blueprint) =>
@@ -103,6 +136,10 @@ export function useSandboxEditor() {
   const errors = compilation.errors;
 
   function storeActiveDocument(): void {
+    // The editor buffer does not exist until mount; flushing it earlier would
+    // replace the seeded document with an empty string.
+    if (!editorMounted) return;
+
     if (activeTab.value === 'fragment') {
       fragmentDoc = editorManager.getValue();
       return;
@@ -275,7 +312,57 @@ export function useSandboxEditor() {
     void compilation.compile();
   }
 
+  /**
+   * Replaces the sandbox fragment with a bundled example or an inline deep
+   * link and compiles it. The previous document is discarded on purpose: an
+   * example is a new starting point, not a merge.
+   */
+  function loadCode(code: string, label = 'custom code'): void {
+    if (!code.trim()) return;
+
+    fragmentDoc = code;
+    compilation.clearErrors();
+    highlightedUserRow.value = null;
+
+    if (activeTab.value === 'fragment') {
+      editorManager.setValue(code);
+      updateInjectedBlock();
+    } else {
+      applyTab('fragment');
+    }
+
+    void compilation.compile().then(() => {
+      if (compilation.status.value === 'ready') {
+        compilation.setReady({
+          key: 'editor.status.messages.loadedExample',
+          params: { label },
+        });
+      }
+    });
+  }
+
+  function loadExample(id: string): void {
+    const example = findSandboxExample(id);
+    if (!example) return;
+    loadCode(example.fragment, example.label);
+  }
+
   function compilePostEffects(): void {
+    void compilation.compilePostEffects();
+  }
+
+  /** Loads a bundled post-effect example into the active stack slot. */
+  function loadPostEffectExample(id: string): void {
+    const example = findPostEffectExample(id);
+    if (!example) return;
+    loadEffectCode(example.fragment, example.label);
+  }
+
+  function loadEffectCode(fragment: string, name = 'Custom effect'): void {
+    if (!postEffects.loadIntoActive(fragment, name)) return;
+
+    applyTab('post');
+    compilation.clearErrors();
     void compilation.compilePostEffects();
   }
 
@@ -319,6 +406,7 @@ export function useSandboxEditor() {
   }
 
   function mountEditor(host: HTMLElement): void {
+    editorMounted = true;
     editorManager.mount(
       host,
       fragmentDoc,
@@ -329,10 +417,8 @@ export function useSandboxEditor() {
       false,
     );
 
-    activeTab.value = 'fragment';
-    compilation.setTarget('material');
+    applyTab(initialTab);
     compilation.setReady({ key: 'editor.status.messages.editorReady' });
-    updateInjectedBlock();
   }
 
   function mountCanvas(canvas: HTMLCanvasElement): void {
@@ -409,6 +495,10 @@ export function useSandboxEditor() {
     tonemap: postEffects.tonemap,
     compile,
     compilePostEffects,
+    loadCode,
+    loadExample,
+    loadPostEffectExample,
+    loadEffectCode,
     mountEditor,
     mountCanvas,
     switchTab,

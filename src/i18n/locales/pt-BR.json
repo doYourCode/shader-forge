@@ -130,7 +130,9 @@
       "close": "Fechar seletor de exemplos",
       "bundled": "Exemplos de shader",
       "rejected": "Este item não é um exemplo de shader.",
-      "unavailable": "Não foi possível carregar o seletor de exemplos."
+      "unavailable": "Não foi possível carregar o seletor de exemplos.",
+      "sandbox": "Exemplo do sandbox",
+      "loadExample": "Carregar exemplo…"
     },
     "tabs": {
       "vertex": "Vértices",
@@ -238,6 +240,8 @@
     "moveDown": "Mover {name} para baixo",
     "remove": "Remover {name}",
     "tonemap": "Transformação de saída",
+    "examples": "Exemplos",
+    "loadExample": "Carregar exemplo…",
     "tonemapModes": {
       "none": "Nenhuma (linear para sRGB)",
       "reinhard": "Reinhard",

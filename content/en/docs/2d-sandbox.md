@@ -46,14 +46,16 @@ time and whatever uniforms you declare. The output is a single RGBA image.
 | Left toolbar  | **Post effect**         | Opens the fragment of the selected effect in the stack.        |
 | Left toolbar  | **Shader Data**         | Contains only **User data**.                                   |
 | Right toolbar | **Compile**             | Compiles the active document family.                           |
+| Right toolbar | **Example** menu        | Loads a bundled sandbox fragment (`uv`, `gradient`, `pattern`, `noise`, `sdf`). |
 | Right toolbar | **Pause** / **Resume**  | Freezes or resumes rendering and `uTime`.                      |
 | Right toolbar | Language switch         | Switches the interface language.                               |
 | Preview       | ABI badge               | Shows `vUv · uResolution · uTime · user data · post effects`.  |
 | Status bar    | Cursor position, status | Shows line/column and the last compile state.                  |
 
-The sandbox deliberately has **no** Examples button, copy-source control,
-wireframe toggle, model menu or environment menu. Its stage group has no Vertex
-document, because the vertex stage is not editable.
+The sandbox has **no** copy-source control, wireframe toggle, model menu or
+environment menu. Its stage group has no Vertex document, because the vertex
+stage is not editable. It does have five bundled examples and a
+[learning path](/docs/learning-path).
 
 ## Your first fragment
 

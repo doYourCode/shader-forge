@@ -8,24 +8,26 @@ draft: false
 
 # Editors Overview
 
-ShaderForge is a browser-based GLSL workbench. It has three editing screens
-built on two renderers: the **3D Shader Editor**, the **2D Sandbox** and the
-**Screen Space** editor. They share the same code editor, compile pipeline and
-data panels, but they answer different questions.
+ShaderForge is a browser-based GLSL workbench. It has three editing screens: the
+**3D Shader Editor**, the **2D Sandbox** and the **Screen Space GLSL Editor**.
+They share the same code editor, compile pipeline and data panels, but they
+answer different questions.
 
-This page explains which screen to open and what all three have in common. The
-3D editor and the sandbox also have their own reference pages.
+This page explains which screen to open and what all three have in common. Each
+editor also has its own reference page.
 
 ## The three screens
 
-| Screen             | URL              | What you write                              | Renderer    | Pick it when                                                          |
-| ------------------ | ---------------- | ------------------------------------------- | ----------- | --------------------------------------------------------------------- |
-| 3D Shader Editor   | `/editor`        | A vertex and fragment pair for a surface    | Babylon.js  | You want a material on a model, with lighting and image-based reflections |
-| 2D Sandbox         | `/sandbox`       | One fragment shader that fills the viewport | WebGL 2     | You want to experiment with pixels, patterns or raymarching without a scene |
-| Screen Space       | `/screen-space`  | A chain of post-effect fragments            | Babylon.js  | You want to post-process a 3D scene and read its normals and depth    |
+| Screen | URL | What you write | Renderer | Pick it when |
+| --- | --- | --- | --- | --- |
+| 3D Shader Editor | `/editor` | A vertex and fragment pair for a surface | Babylon.js | You want a material on a model, with lighting and image-based reflections |
+| 2D Sandbox | `/sandbox` | One fragment shader that fills the viewport | WebGL 2 | You want to experiment with pixels, patterns or raymarching without a scene |
+| Screen Space GLSL Editor | `/screen-space` | A chain of post-effect fragments over a whole scene | Babylon.js | You want to post-process a scene and read its HDR colour and G-buffer |
 
-Screen Space is not a separate renderer. It opens the 3D Shader Editor on its
-**Post effect** document instead of the fragment stage.
+The Screen Space editor is a separate scene pipeline, not the 3D editor with a
+different tab selected. It loads a whole GLB scene, renders it with a
+first-person camera, builds an MRT G-buffer and exposes attachments the surface
+post-effect ABI does not have.
 
 ## Which screen should I use?
 
@@ -35,12 +37,13 @@ Screen Space is not a separate renderer. It opens the 3D Shader Editor on its
 - **"I want a fullscreen image with no setup."** Open the
   [2D Sandbox](/docs/2d-sandbox). One fragment document, one fullscreen
   triangle, three engine inputs.
-- **"I want bloom, grading, outlines or depth effects over a scene."** Open the
-  Screen Space editor. It starts on the post-effect document, where the scene's
-  colour, normals and depth are available.
+- **"I want depth, normal, outline or SSAO effects over a scene."** Open the
+  [Screen Space GLSL Editor](/docs/screen-space-editor). It exposes the scene
+  colour, depth, normals, albedo, material and motion vectors.
 - **"I am learning GLSL."** Start in the 2D Sandbox: there is no mesh, camera
   or lighting to manage. Move to the 3D editor when you want attributes,
-  varyings and a surface.
+  varyings and a surface, then to the Screen Space editor for G-buffer work. The
+  [Learning Path](/docs/learning-path) orders the lessons.
 
 ## What they share
 
@@ -55,31 +58,32 @@ All three screens use the same left-to-right model:
 - **A Compile button.** Editing does not compile automatically. The button
   compiles the document family of the active tab.
 - **User data.** A table of uniforms and textures that the app declares and
-  binds for you. The same panel is used in both editors, with a smaller set of
-  kinds in the sandbox.
+  binds for you. The same panel is used in all three editors, with a smaller set
+  of kinds in the sandbox and post-only definitions in the screen-space editor.
 - **Post effects.** An ordered chain of fullscreen fragment passes with an
-  output transform at the end. Both editors use the same stack and the same
-  post-effect ABI.
+  output transform at the end. The 3D editor and the sandbox share the surface
+  post-effect ABI; the screen-space editor has its own G-buffer ABI.
 - **A status bar and an error overlay.** They tell you whether the last compile
   succeeded and where it failed.
 - **No save.** Nothing is persisted between page loads.
 
 ## Where they differ
 
-| Dimension        | 3D Shader Editor                    | 2D Sandbox                        |
-| ---------------- | ----------------------------------- | --------------------------------- |
-| Editable stages  | Vertex and fragment                 | Fragment only                     |
-| Geometry         | Switchable GLB mesh                 | Fixed fullscreen triangle         |
-| Scene inputs     | Camera, light, HDR environment, IBL | None                              |
-| Extra inputs     | Attributes, matrices, IBL samplers  | `vUv`, `uResolution`, `uTime`     |
-| Examples         | Seven bundled examples              | None                              |
-| Copy source      | Yes                                 | No                                |
-| Wireframe        | Yes                                 | No                                |
-| Pause            | Stops rendering; time keeps running | Freezes rendering and time        |
-| Post geometry    | Real normals and depth              | Neutral placeholders              |
+| Dimension | 3D Shader Editor | 2D Sandbox | Screen Space |
+| --- | --- | --- | --- |
+| Editable stages | Vertex and fragment | Fragment only | Post-effect fragments only |
+| Geometry | Switchable GLB mesh | Fixed fullscreen triangle | Whole GLB scene |
+| Scene inputs | Camera, light, HDR environment, IBL | None | FPS camera, sun and HDRI intensities, full G-buffer |
+| Extra inputs | Attributes, matrices, IBL samplers | `vUv`, `uResolution`, `uTime` | HDR scene colour, depth, normal, albedo, material, velocity |
+| Examples | Twelve bundled material examples | Five sandbox examples | Seven G-buffer and effect examples |
+| Copy source | Yes | No | Yes |
+| Wireframe | Yes | No | No |
+| Pause | Stops rendering; time keeps running | Freezes rendering and time | Freezes rendering, `time`, frame index and delta time |
+| Post geometry | Real normals and depth | Neutral placeholders | Real view-space normals and world-unit depth |
 
-The Screen Space editor behaves like the 3D editor in every row except that it
-opens on the post-effect document.
+The screen-space depth attachment is in world units; the surface post-effect
+depth is normalised to `[0, 1]`. That difference is the reason the two ABIs are
+separate.
 
 ## How an edit becomes an image
 
@@ -98,33 +102,21 @@ the preview does not go blank.
 
 ## Requirements
 
-- A browser with **WebGL 2** enabled. There is no WebGL 1 fallback.
+- A browser with **WebGL 2** enabled: current Chrome/Edge, current Firefox, or
+  Safari 15+. There is no WebGL 1 fallback.
 - Hardware acceleration enabled in the browser. A software renderer works but is
   slow.
 - No installation, account or project file. Everything runs in the page.
 
-## Words used in these pages
-
-| Term          | Meaning                                                                 |
-| ------------- | ----------------------------------------------------------------------- |
-| Stage         | One shader program part: vertex or fragment.                            |
-| Vertex shader | Runs once per vertex; positions geometry and passes data onward.        |
-| Fragment shader | Runs once per pixel (or sample); computes the output colour.          |
-| Attribute     | Per-vertex input supplied by the mesh, such as position or UV.          |
-| Varying       | A value passed from the vertex stage to the fragment stage.             |
-| Uniform       | A value that is constant for a draw call, such as time or a matrix.     |
-| Sampler       | A uniform that reads a texture.                                         |
-| ABI           | The set of names and types the engine guarantees to bind.               |
-| Pass          | One fullscreen draw in the post-effect chain.                           |
-| Tonemap       | The curve that maps linear colour to displayable colour.                |
-| IBL           | Image-based lighting: using an environment map for diffuse and specular light. |
-
 ## Next steps
 
+- [Learning Path](/docs/learning-path)
 - [3D Shader Editor](/docs/3d-editor)
 - [2D Sandbox](/docs/2d-sandbox)
+- [Screen Space GLSL Editor](/docs/screen-space-editor)
 - [User data](/docs/user-data)
 - [Post effects](/docs/post-effects)
+- [ABI Reference](/docs/abi-reference)
 - [Compiling and errors](/docs/compiling-and-errors)
 - [Limits and troubleshooting](/docs/limits-and-troubleshooting)
 - [The rendering pipeline](/knowledge/the-rendering-pipeline)

@@ -1,6 +1,20 @@
 export type EditorTabId =
   'vertex' | 'fragment' | 'post' | 'user_data' | 'uniforms' | 'io';
 
+const EDITOR_TAB_IDS: readonly EditorTabId[] = [
+  'vertex',
+  'fragment',
+  'post',
+  'user_data',
+  'uniforms',
+  'io',
+];
+
+/** Narrows a query-string tab before it reaches the editor navigation. */
+export function isEditorTabId(value: string): value is EditorTabId {
+  return (EDITOR_TAB_IDS as readonly string[]).includes(value);
+}
+
 export interface EditorTab {
   id: EditorTabId;
   /** UI-message key; core stays framework- and locale-free. */

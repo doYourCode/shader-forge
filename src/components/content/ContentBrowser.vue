@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onUnmounted, shallowRef, watch } from 'vue';
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
 import SplitViewLayout from '@/components/layout/SplitViewLayout.vue';
 import TreeView from './TreeView.vue';
 import ContentPane from './ContentPane.vue';
+import EditorCallout from './EditorCallout.vue';
 import FallbackNotice from './FallbackNotice.vue';
 import NotFoundView from '@/views/NotFoundView.vue';
 
@@ -19,7 +20,7 @@ import {
 } from '@/core/content/ContentResolver';
 import { resolveLocale, type Locale } from '@/core/content/locales';
 import { useContentLookup } from '@/services/content/contentProvider';
-import { findFirstLeaf } from '@/core/utils/treeUtils';
+import { findFirstLeaf, flattenLeaves } from '@/core/utils/treeUtils';
 import type { ITreeNode } from '@/core/models/treeNode';
 
 const props = defineProps<{ kind: ContentKind }>();
@@ -57,6 +58,30 @@ watch(
   },
   { immediate: true },
 );
+
+/* --------------------------------- search --------------------------------- */
+
+const query = ref('');
+const trimmedQuery = computed(() => query.value.trim());
+
+/**
+ * Search runs over the resolved tree, so it respects the same fallback policy
+ * as navigation: an untranslated page is searchable under its English title.
+ */
+const searchResults = computed<ITreeNode[]>(() => {
+  const needle = trimmedQuery.value.toLowerCase();
+  if (needle.length < 2) return [];
+
+  return flattenLeaves(tree.value)
+    .filter((node) => {
+      const haystack = [node.label, node.description, node.content]
+        .filter((value): value is string => Boolean(value))
+        .join('\n')
+        .toLowerCase();
+      return haystack.includes(needle);
+    })
+    .slice(0, 40);
+});
 
 /* ------------------------------ resolved doc ------------------------------ */
 
@@ -107,8 +132,35 @@ const notFound = computed(
 
 const fallbackVisible = computed(() => showsFallbackNotice(result.value));
 
+/* ------------------------------ prev / next ------------------------------- */
+
+const leaves = computed(() => flattenLeaves(tree.value));
+
+const currentIndex = computed(() =>
+  leaves.value.findIndex((node) => node.id === slug.value),
+);
+
+const previous = computed<{ id: string; label: string } | null>(() => {
+  const index = currentIndex.value;
+  if (index <= 0) return null;
+  const node = leaves.value[index - 1];
+  return node ? { id: node.id, label: node.label } : null;
+});
+
+const next = computed<{ id: string; label: string } | null>(() => {
+  const index = currentIndex.value;
+  if (index < 0) return null;
+  const node = leaves.value[index + 1];
+  return node ? { id: node.id, label: node.label } : null;
+});
+
 function select(node: ITreeNode): void {
-  void router.push(contentPath(props.kind, node.id));
+  navigate(node.id);
+}
+
+function navigate(id: string): void {
+  query.value = '';
+  void router.push(contentPath(props.kind, id));
 }
 
 /* ------------------------------ <html lang> ------------------------------- */
@@ -129,9 +181,57 @@ onUnmounted(() => {
 <template>
   <NotFoundView v-if="notFound" />
 
-  <SplitViewLayout v-else left-label="Tree view" right-label="Content">
+  <SplitViewLayout v-else left-label="Contents" right-label="Content">
     <template #left>
-      <TreeView :nodes="tree" :selected-id="slug" @select="select" />
+      <div class="content-browser__nav">
+        <label class="content-browser__search">
+          <span class="content-browser__search-label">Search</span>
+          <input
+            v-model="query"
+            type="search"
+            class="content-browser__search-input"
+            placeholder="Search the reference…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </label>
+
+        <p
+          v-if="trimmedQuery.length > 0 && trimmedQuery.length < 2"
+          class="content-browser__status"
+        >
+          Type at least two characters.
+        </p>
+
+        <ul
+          v-else-if="trimmedQuery.length > 0"
+          class="content-browser__results"
+          aria-label="Search results"
+        >
+          <li v-for="node in searchResults" :key="node.id">
+            <button
+              type="button"
+              class="content-browser__result"
+              @click="select(node)"
+            >
+              <span class="content-browser__result-title">{{ node.label }}</span>
+              <span v-if="node.description" class="content-browser__result-description">
+                {{ node.description }}
+              </span>
+            </button>
+          </li>
+          <li v-if="searchResults.length === 0" class="content-browser__status">
+            No pages match “{{ trimmedQuery }}”.
+          </li>
+        </ul>
+
+        <TreeView
+          v-else
+          :nodes="tree"
+          :selected-id="slug"
+          @select="select"
+        />
+      </div>
     </template>
 
     <template #right>
@@ -143,7 +243,21 @@ onUnmounted(() => {
             :key="`${slug ?? ''}:${contentLocale}`"
             :visible="fallbackVisible"
           />
-          <ContentPane :content="result.content.body" />
+          <EditorCallout
+            v-if="result.content.editor"
+            :editor="result.content.editor"
+            :example="result.content.example"
+          />
+          <ContentPane
+            :content="result.content.body"
+            :difficulty="result.content.difficulty"
+            :description="result.content.description"
+            :printable="result.content.printable"
+            :generated="result.content.generated"
+            :previous="previous"
+            :next="next"
+            @navigate="navigate"
+          />
         </template>
 
         <p v-else class="content-browser__status">
@@ -165,5 +279,84 @@ onUnmounted(() => {
   font-family: var(--font-mono);
   font-size: 0.85rem;
   font-style: italic;
+}
+
+.content-browser__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.content-browser__search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.content-browser__search-label {
+  color: var(--fg-subtle);
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.content-browser__search-input {
+  width: 100%;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-input);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+}
+
+.content-browser__search-input:focus {
+  outline: none;
+  border-color: var(--accent-ui);
+}
+
+.content-browser__results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.content-browser__result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+}
+
+.content-browser__result:hover,
+.content-browser__result:focus-visible {
+  border-color: var(--border);
+  background: var(--bg-raised);
+}
+
+.content-browser__result-title {
+  color: var(--fg-strong);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.content-browser__result-description {
+  color: var(--fg-muted);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 </style>

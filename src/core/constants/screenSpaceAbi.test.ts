@@ -8,12 +8,30 @@ import {
   SCREEN_SPACE_DISPLAY_UNIFORMS,
   SCREEN_SPACE_RESERVED_NAMES,
   SCREEN_SPACE_SAMPLER_NAMES,
+  SCREEN_SPACE_SAMPLER_SPECS,
   SCREEN_SPACE_SAMPLERS,
   SCREEN_SPACE_UNIFORM_NAMES,
+  SCREEN_SPACE_UNIFORM_SPECS,
   SCREEN_SPACE_UNIFORMS,
 } from './screenSpaceAbi';
 
 describe('screen-space ABI', () => {
+  it('keeps the type/hint specs in sync with the bound names', () => {
+    expect(Object.keys(SCREEN_SPACE_UNIFORM_SPECS).sort()).toEqual(
+      [...SCREEN_SPACE_UNIFORMS].sort(),
+    );
+    expect(Object.keys(SCREEN_SPACE_SAMPLER_SPECS).sort()).toEqual(
+      [...SCREEN_SPACE_SAMPLERS].sort(),
+    );
+
+    for (const spec of [
+      ...Object.values(SCREEN_SPACE_UNIFORM_SPECS),
+      ...Object.values(SCREEN_SPACE_SAMPLER_SPECS),
+    ]) {
+      expect(spec.glslType.length).toBeGreaterThan(0);
+      expect(spec.hint.length).toBeGreaterThan(10);
+    }
+  });
   it('exposes the whole scene G-buffer', () => {
     expect(Object.values(SCREEN_SPACE_SAMPLER_NAMES)).toEqual([
       'textureSampler',

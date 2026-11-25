@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ShaderForge — sandbox thumbnail baker</title>
+    <style>
+      body {
+        background: #21252b;
+        color: #d7dae0;
+        font:
+          13px/1.5 ui-monospace,
+          SFMono-Regular,
+          Consolas,
+          monospace;
+        padding: 24px;
+        max-width: 900px;
+      }
+      h1 {
+        font-size: 16px;
+        letter-spacing: 0.02em;
+        margin: 0 0 4px;
+      }
+      p {
+        color: #9aa1ad;
+        margin: 0 0 16px;
+      }
+      #results {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      #results img {
+        border: 1px solid #3e4452;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sandbox thumbnail baker</h1>
+    <p>
+      Dev-only tool. Renders every sandbox example through the real sandbox
+      preview and returns 640&times;400 WebP images. Not part of the production
+      build.
+    </p>
+    <div id="out" aria-live="polite"></div>
+    <button id="bake" type="button">Bake all sandbox examples</button>
+    <div id="results"></div>
+    <script type="module" src="/src/tools/bakeSandboxThumbs.ts"></script>
+  </body>
+</html>

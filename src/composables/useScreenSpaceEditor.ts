@@ -10,6 +10,7 @@ import {
   DEFAULT_SUN_INTENSITY,
 } from '@/core/constants/screenSpaceRender';
 import { createScreenSpaceEffect } from '@/core/constants/screenSpaceEffects';
+import { findScreenSpaceExample } from '@/core/constants/screenSpaceExamples';
 import type { GbufferDebugMode } from '@/core/constants/screenSpaceDebug';
 import type { PostEffectStack, TonemapMode } from '@/core/models/postEffect';
 import type { PreviewHdri } from '@/core/models/previewHdri';
@@ -35,6 +36,10 @@ import { useUserDataCommands } from './useUserDataCommands';
 
 export interface UseScreenSpaceEditorOptions {
   readonly initialTab?: ScreenSpaceTab;
+  /** Bundled screen-space example to load before the first compile. */
+  readonly initialExample?: string | null;
+  /** Inline effect source from a `/screen-space?code=…` deep link. */
+  readonly initialCode?: string | null;
 }
 
 const EMPTY_BLUEPRINT: MaterialBlueprint = {
@@ -84,6 +89,15 @@ export function useScreenSpaceEditor(
 
   // The scene is authored in HDR; ACES is the sane default for a scene view.
   postEffects.setTonemap('aces');
+
+  // Deep links replace the starter effect before the scene initialises, so the
+  // first stack compile already contains the requested source.
+  if (options.initialExample) {
+    const example = findScreenSpaceExample(options.initialExample);
+    if (example) postEffects.loadIntoActive(example.fragment, example.label);
+  } else if (options.initialCode) {
+    postEffects.loadIntoActive(options.initialCode, 'Custom effect');
+  }
 
   const userDataDoc = reactive(createEmptyUserDataDocument());
 
@@ -180,6 +194,24 @@ export function useScreenSpaceEditor(
     if (compilation.status.value === 'ready') {
       userData.commitTextureReleases();
     }
+  }
+
+  /**
+   * Replaces the active screen-space effect with a bundled example or an inline
+   * deep link and compiles the stack.
+   */
+  function loadExample(id: string): void {
+    const example = findScreenSpaceExample(id);
+    if (!example) return;
+    loadCode(example.fragment, example.label);
+  }
+
+  function loadCode(fragment: string, name = 'Custom effect'): void {
+    if (!postEffects.loadIntoActive(fragment, name)) return;
+
+    navigation?.applyTab('post');
+    compilation.clearErrors();
+    void compile();
   }
 
   async function selectScene(id: string): Promise<void> {
@@ -317,6 +349,8 @@ export function useScreenSpaceEditor(
     mountCanvas,
     switchTab: navigation.switchTab,
     compile,
+    loadExample,
+    loadCode,
     selectScene,
     selectHdri,
     resize,

@@ -77,6 +77,9 @@ export function useEditorNavigation(deps: EditorNavigationDeps) {
   const cursorLine = ref(1);
   const cursorCol = ref(1);
   const highlightedUserRow = ref<number | null>(null);
+  /** The CodeMirror buffer only exists after mount; flushing before that would
+   *  overwrite the seeded documents with an empty string. */
+  let editorMounted = false;
 
   const tabDocs: Record<TextTabId, string> = {
     vertex: defaultVertexShader,
@@ -94,6 +97,8 @@ export function useEditorNavigation(deps: EditorNavigationDeps) {
   }
 
   function storeActiveDocument(): void {
+    if (!editorMounted) return;
+
     if (activeTab.value === 'post') {
       const effect = postEffects.active.value;
       if (effect) effect.fragment = editorManager.getValue();
@@ -230,6 +235,7 @@ export function useEditorNavigation(deps: EditorNavigationDeps) {
   watch(() => userDataDoc.revision, updateInjectedBlock);
 
   function mountEditor(host: HTMLElement): void {
+    editorMounted = true;
     const initialTab = activeTab.value;
     const documentTab = isEditableTab(initialTab) ? initialTab : 'vertex';
 

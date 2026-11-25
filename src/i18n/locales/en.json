@@ -130,7 +130,9 @@
       "close": "Close example picker",
       "bundled": "Shader examples",
       "rejected": "That item is not a shader example.",
-      "unavailable": "The example picker could not be loaded."
+      "unavailable": "The example picker could not be loaded.",
+      "sandbox": "Sandbox example",
+      "loadExample": "Load example…"
     },
     "tabs": {
       "vertex": "Vertex",
@@ -238,6 +240,8 @@
     "moveDown": "Move {name} down",
     "remove": "Remove {name}",
     "tonemap": "Output transform",
+    "examples": "Examples",
+    "loadExample": "Load example…",
     "tonemapModes": {
       "none": "None (linear to sRGB)",
       "reinhard": "Reinhard",

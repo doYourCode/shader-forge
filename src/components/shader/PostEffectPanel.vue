@@ -15,10 +15,13 @@ const props = withDefaults(
     /** Screen-space effects get their own copy; defaults keep the 3D editor. */
     titleKey?: string;
     descriptionKey?: string;
+    /** Bundled effects offered by the "Load example" menu. */
+    examples?: readonly { readonly id: string; readonly label: string }[];
   }>(),
   {
     titleKey: 'postEffects.title',
     descriptionKey: 'postEffects.description',
+    examples: () => [],
   },
 );
 
@@ -29,6 +32,7 @@ const emit = defineEmits<{
   (e: 'move', id: string, offset: number): void;
   (e: 'toggle', id: string, enabled: boolean): void;
   (e: 'tonemap', mode: TonemapMode): void;
+  (e: 'load-example', id: string): void;
 }>();
 
 const { t } = useI18n();
@@ -46,6 +50,13 @@ function onTonemap(event: Event): void {
   const mode = TONEMAP_MODES.find((candidate) => candidate === select.value);
   if (mode) emit('tonemap', mode);
 }
+
+function onExampleChange(event: Event): void {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement)) return;
+  if (select.value) emit('load-example', select.value);
+  select.value = '';
+}
 </script>
 
 <template>
@@ -62,6 +73,20 @@ function onTonemap(event: Event): void {
         {{ t('postEffects.add') }}
       </button>
     </header>
+
+    <label v-if="props.examples.length > 0" class="post-effects__examples">
+      <span>{{ t('postEffects.examples') }}</span>
+      <select value="" @change="onExampleChange">
+        <option value="">{{ t('postEffects.loadExample') }}</option>
+        <option
+          v-for="example in props.examples"
+          :key="example.id"
+          :value="example.id"
+        >
+          {{ example.label }}
+        </option>
+      </select>
+    </label>
 
     <ul class="post-effects__list">
       <li
@@ -183,6 +208,27 @@ function onTonemap(event: Event): void {
 .post-effects__add:hover {
   background: #4b5263;
   border-color: var(--accent-ui);
+}
+
+.post-effects__examples {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+}
+
+.post-effects__examples select {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  background: var(--bg-input);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 11px;
 }
 
 .post-effects__list {

@@ -19,12 +19,12 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
       labels: { [DEFAULT_LOCALE]: 'Editors', [PT_BR_LOCALE]: 'Editores' },
     },
     {
-      id: 'reference',
-      labels: { [DEFAULT_LOCALE]: 'Reference', [PT_BR_LOCALE]: 'Referência' },
-    },
-    {
       id: 'guides',
       labels: { [DEFAULT_LOCALE]: 'Guides', [PT_BR_LOCALE]: 'Guias' },
+    },
+    {
+      id: 'reference',
+      labels: { [DEFAULT_LOCALE]: 'Reference', [PT_BR_LOCALE]: 'Referência' },
     },
     {
       id: 'api',
@@ -43,14 +43,56 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
       },
     },
     {
+      id: 'math',
+      labels: {
+        [DEFAULT_LOCALE]: 'Math & Colour',
+        [PT_BR_LOCALE]: 'Matemática e Cor',
+      },
+    },
+    {
       id: 'glsl',
       labels: { [DEFAULT_LOCALE]: 'GLSL', [PT_BR_LOCALE]: 'GLSL' },
+    },
+    {
+      id: 'lessons',
+      labels: {
+        [DEFAULT_LOCALE]: 'Lessons',
+        [PT_BR_LOCALE]: 'Lições',
+      },
+    },
+    {
+      id: 'lighting',
+      labels: {
+        [DEFAULT_LOCALE]: 'Lighting',
+        [PT_BR_LOCALE]: 'Iluminação',
+      },
+    },
+    {
+      id: 'post',
+      labels: {
+        [DEFAULT_LOCALE]: 'Post-processing',
+        [PT_BR_LOCALE]: 'Pós-processamento',
+      },
+    },
+    {
+      id: 'debugging',
+      labels: {
+        [DEFAULT_LOCALE]: 'Debugging & Performance',
+        [PT_BR_LOCALE]: 'Depuração e Desempenho',
+      },
     },
     {
       id: 'webgl',
       labels: {
         [DEFAULT_LOCALE]: 'WebGL & WebGPU',
         [PT_BR_LOCALE]: 'WebGL e WebGPU',
+      },
+    },
+    {
+      id: 'reference',
+      labels: {
+        [DEFAULT_LOCALE]: 'Reference',
+        [PT_BR_LOCALE]: 'Referência',
       },
     },
   ],
@@ -60,6 +102,11 @@ const SECTIONS: Record<ContentKind, SectionMeta[]> = {
 export function slugFromRelativePath(relativePath: string): string {
   const file = relativePath.split('/').pop() ?? relativePath;
   return file.replace(/\.md$/i, '');
+}
+
+/** Section ids declared for a content kind, in navigation order. */
+export function contentSectionIds(kind: ContentKind): readonly string[] {
+  return SECTIONS[kind].map((section) => section.id);
 }
 
 /**
@@ -93,6 +140,15 @@ export async function buildContentTree(
       id: slug,
       label: doc.title || slug,
       content: doc.body,
+      description: doc.description,
+      difficulty: doc.difficulty,
+      section,
+      order: doc.order,
+      prerequisites: doc.prerequisites,
+      editor: doc.editor,
+      example: doc.example,
+      printable: doc.printable,
+      generated: doc.generated,
     };
 
     const entry = {

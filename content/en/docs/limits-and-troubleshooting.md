@@ -14,12 +14,17 @@ page says what it cannot do.
 
 ## Browser and hardware requirements
 
-- **WebGL 2 is required.** Both editors create a WebGL 2 context. There is no
-  WebGL 1 or 2D-canvas fallback.
+- **WebGL 2 is required.** All three editors create a WebGL 2 context. There is
+  no WebGL 1 or 2D-canvas fallback.
+- **Supported desktop browsers:** current Chrome and Edge, current Firefox, and
+  Safari 15 or newer. WebGL 2 is the baseline those versions ship; a browser
+  without it cannot run the editors.
 - **Hardware acceleration should be enabled.** A software renderer can run the
   editors, but compilation and animation will be slow.
-- The 3D editor also uses Babylon.js; the 2D Sandbox uses a small dedicated
-  WebGL 2 renderer. Both still require WebGL 2.
+- The 3D editor and the Screen Space editor also use Babylon.js; the 2D Sandbox
+  uses a small dedicated WebGL 2 renderer. Both still require WebGL 2.
+- Mobile browsers are not a supported target. The editors are laid out for a
+  desktop viewport and the screen-space scene is expensive.
 - If the browser cannot create a WebGL 2 context, the preview reports an error
   instead of rendering. Try a current desktop browser with acceleration on.
 
@@ -40,12 +45,14 @@ export control, so keep important fragments outside the page.
 ## Language and content
 
 The interface is available in English and Brazilian Portuguese. Documentation
-and knowledge pages are translated separately. When a page has no translation
-yet, the app serves the English original and shows a fallback notice; the page
-content is English even if the interface is Portuguese.
+and knowledge pages are authored in English for now. When a page has no
+translation yet, the app serves the English original and shows a fallback
+notice; the page content is English even if the interface is Portuguese.
 
-The new editor pages are currently English-only, so a Portuguese reader will see
-the fallback notice on them until translations are published.
+The content trees are managed in Pages CMS (`.pages.yml`). The lesson
+frontmatter contract, the section ids and the code-fence modifiers are
+documented in [Authoring lessons](/docs/authoring-lessons). Generated pages such
+as the [ABI Reference](/docs/abi-reference) are rebuilt by `npm run docs:abi`.
 
 A few preview labels are hardcoded in English: **Model**, **Environment**,
 **Cfg** and **Toggle Wireframe**.
@@ -87,6 +94,25 @@ A few preview labels are hardcoded in English: **Model**, **Environment**,
 - The sandbox's neutral geometry makes geometry-dependent effects no-ops; they
   still compile.
 
+## Screen Space editor limits
+
+- One scene is available (Bistro) and the HDRI catalogue is fixed. There is no
+  upload path for either.
+- Effects are fragment-only; the fullscreen vertex stage is internal.
+- The G-buffer attachments are requested only when the compiled effects or the
+  active debug view read them. Adding a sampler to a disabled effect does not
+  add a pass.
+- The screen-space ABI is separate from the surface post-effect ABI. A shader
+  written for `gbufferTexture`/`depthTexture` will not see the same data there.
+- `materialTexture` stores F0 and glossiness, not metallic/roughness. Decode it
+  with the documented helpers before using it.
+- The transparent overlay target is disabled by default; its debug view is
+  hidden while that is true.
+- The preview lowers its internal resolution when it misses the 60 fps budget
+  (down to 50%). The stats overlay shows the current scale.
+- There is no save, export or share beyond **Copy source**, and nothing persists
+  across reloads.
+
 ## Performance
 
 - The sandbox caps the device pixel ratio at 2. A very large pane still costs
@@ -112,6 +138,12 @@ A few preview labels are hardcoded in English: **Model**, **Environment**,
 | A uniform does nothing                               | Wrong stage, typo, or the shader never reads it                     | Check the stage column; in 3D use **Post** for post effects and **All** for vertex+fragment. |
 | A post effect looks like a no-op in the sandbox      | It reads `gbufferTexture`, `depthTexture` or camera matrices        | Use `textureSampler`, `resolution`, `texelSize`, `time` or your own uniforms.                |
 | A texture is black                                   | No source, still loading, or a sampler-kind mismatch                | Choose a valid source; use **Texture 2D** for a 2D image; wait for the load.                 |
+| A screen-space effect reads black G-buffer data       | The attachment was not requested, or the view is the background     | Sample the mask (`normalTexture.a`) and check the G-Buffer debug view.                      |
+| The screen-space image looks soft after a while       | Adaptive resolution lowered the render scale                        | Read the `%` in the stats overlay; reduce passes or shader cost to recover it.              |
+| A screen-space uniform does nothing                   | It targets the wrong stage, or the effect is disabled               | User data is post-only here; enable the effect and compile the stack.                        |
+| The 3D editor example loads but the sandbox link does not | A material example id was used in a sandbox deep link            | Sandbox examples are the ids listed in the sandbox menu (`uv`, `gradient`, `pattern`, `noise`, `sdf`). |
+| A docs page is in English                             | No translation is published yet                                     | The interface language and the content language are separate; a fallback notice confirms it. |
+| An "Open in editor" link does nothing                 | The example id is stale or the page is generated from an older ABI | Run `npm test`; the link test fails on an unknown example id.                                |
 | The page content is in English                       | No translation is published yet                                     | The interface language and the content language are separate; a fallback notice confirms it. |
 | Reloading lost the shader                            | Nothing is persisted                                                | Use **Copy source** in the 3D editor before reloading; keep sandbox code outside the page.   |
 | A model or environment switch failed                 | The asset failed to load                                            | The previous selection is restored; try another asset and check the console.                 |
@@ -127,4 +159,6 @@ identify the cause without a reproduction.
 - [Editors Overview](/docs/editors-overview)
 - [3D Shader Editor](/docs/3d-editor)
 - [2D Sandbox](/docs/2d-sandbox)
+- [Screen Space GLSL Editor](/docs/screen-space-editor)
 - [Compiling and errors](/docs/compiling-and-errors)
+- [ABI Reference](/docs/abi-reference)

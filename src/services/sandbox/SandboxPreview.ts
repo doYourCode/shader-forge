@@ -257,6 +257,18 @@ export class SandboxPreview {
     this.render();
   }
 
+  /**
+   * Draws the current frame and returns it as a WebP data URL. Dev tooling
+   * uses this to bake lesson images through the real preview pipeline; the
+   * runtime never calls it.
+   */
+  capture(): string | null {
+    if (this.disposed || !this.gl || !this.program) return null;
+
+    this.render();
+    return this.canvas.toDataURL('image/webp', 0.92);
+  }
+
   setPaused(paused: boolean): void {
     if (this.paused === paused) return;
 

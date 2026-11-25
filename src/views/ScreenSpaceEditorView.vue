@@ -7,6 +7,8 @@ import { toAssetPickerLanguage } from '@/services/assetpicker/assetPickerConfig'
 import { TEXTURE_PICKER } from '@/components/shader/texturePickerContext';
 import { useScreenSpaceEditor } from '@/composables/useScreenSpaceEditor';
 import type { ShaderError } from '@/core/models/shaderError';
+import { screenSpaceExamples } from '@/core/constants/screenSpaceExamples';
+import { useEditorDeepLink } from '@/composables/useEditorDeepLink';
 import ScreenSpaceToolbar from '@/components/screenspace/ScreenSpaceToolbar.vue';
 import GbufferPanel from '@/components/screenspace/GbufferPanel.vue';
 import GbufferOverlay from '@/components/screenspace/GbufferOverlay.vue';
@@ -17,6 +19,8 @@ import CopyShaderButton from '@/components/shader/CopyShaderButton.vue';
 import StatusBar from '@/components/shader/StatusBar.vue';
 
 const { t, locale } = useI18n();
+
+const deepLink = useEditorDeepLink();
 
 const editorHostRef = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -60,6 +64,7 @@ const {
   mountCanvas,
   switchTab,
   compile,
+  loadExample,
   selectScene,
   selectHdri,
   resize,
@@ -76,7 +81,11 @@ const {
   revealError,
   userDataCommands,
   clipboardSource,
-} = useScreenSpaceEditor({ initialTab: 'post' });
+} = useScreenSpaceEditor({
+  initialTab: 'post',
+  initialExample: deepLink.example,
+  initialCode: deepLink.code,
+});
 
 const statusText = computed(() => {
   const message = statusMessage.value;
@@ -158,12 +167,14 @@ onBeforeUnmount(() => {
         :tonemap="tonemap"
         title-key="screenSpace.effects.title"
         description-key="screenSpace.effects.description"
+        :examples="screenSpaceExamples"
         @select="selectPostEffect"
         @add="addPostEffect"
         @remove="removePostEffect"
         @move="movePostEffect"
         @toggle="setPostEffectEnabled"
         @tonemap="setTonemap"
+        @load-example="loadExample"
       />
 
       <div

@@ -22,11 +22,16 @@ import {
   SANDBOX_USER_DATA_KINDS,
   SANDBOX_USER_DATA_STAGES,
 } from '@/core/constants/sandbox';
+import { sandboxExamples } from '@/core/constants/sandboxExamples';
+import { postEffectExamples } from '@/core/constants/postEffectExamples';
+import { useEditorDeepLink } from '@/composables/useEditorDeepLink';
 import type { ShaderError } from '@/core/models/shaderError';
 import { AssetPickerTexturePicker } from '@/services/assetpicker/AssetPickerTexturePicker';
 import { toAssetPickerLanguage } from '@/services/assetpicker/assetPickerConfig';
 
 const { t, locale } = useI18n();
+
+const deepLink = useEditorDeepLink();
 
 const editorHostRef = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -69,6 +74,8 @@ const {
   mountEditor,
   mountCanvas,
   switchTab,
+  loadExample,
+  loadPostEffectExample,
   revealError,
   togglePaused,
   selectPostEffect,
@@ -77,7 +84,11 @@ const {
   movePostEffect,
   setPostEffectEnabled,
   setTonemap,
-} = useSandboxEditor();
+} = useSandboxEditor({
+  initialExample: deepLink.example,
+  initialEffect: deepLink.effect,
+  initialCode: deepLink.code,
+});
 
 const statusText = computed(() => {
   const message = statusMessage.value;
@@ -112,6 +123,13 @@ function isRevealable(error: ShaderError): boolean {
   );
 }
 
+function onSandboxExampleChange(event: Event): void {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement)) return;
+  if (select.value) loadExample(select.value);
+  select.value = '';
+}
+
 onMounted(() => {
   if (editorHostRef.value) mountEditor(editorHostRef.value);
   if (canvasRef.value) mountCanvas(canvasRef.value);
@@ -143,12 +161,14 @@ onBeforeUnmount(() => {
         :effects="postEffects"
         :active-id="activePostEffectId"
         :tonemap="tonemap"
+        :examples="postEffectExamples"
         @select="selectPostEffect"
         @add="addPostEffect"
         @remove="removePostEffect"
         @move="movePostEffect"
         @toggle="setPostEffectEnabled"
         @tonemap="setTonemap"
+        @load-example="loadPostEffectExample"
       />
 
       <div
@@ -178,6 +198,20 @@ onBeforeUnmount(() => {
 
     <div class="sandbox-editor__right">
       <div class="sandbox-editor__viewer-toolbar">
+        <label class="sandbox-editor__example-select">
+          <span>{{ t('editor.examples.sandbox') }}</span>
+          <select value="" @change="onSandboxExampleChange">
+            <option value="">{{ t('editor.examples.loadExample') }}</option>
+            <option
+              v-for="example in sandboxExamples"
+              :key="example.id"
+              :value="example.id"
+            >
+              {{ example.label }}
+            </option>
+          </select>
+        </label>
+
         <CompileButton @compile="compile" />
 
         <button
@@ -350,6 +384,27 @@ onBeforeUnmount(() => {
   border-color: var(--accent-ui);
   background: #404754;
   color: var(--fg-strong);
+}
+
+.sandbox-editor__example-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  color: var(--fg-muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+}
+
+.sandbox-editor__example-select select {
+  max-width: 170px;
+  padding: 4px 6px;
+  background: var(--bg-input);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 11px;
 }
 
 .sandbox-editor__canvas-wrap {

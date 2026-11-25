@@ -99,6 +99,21 @@ export function usePostEffects(deps: PostEffectStackDeps) {
     return true;
   }
 
+  /**
+   * Replaces the active effect with a bundled example (or an inline deep link).
+   * The caller owns the recompile: this function only edits the document.
+   */
+  function loadIntoActive(fragment: string, name: string): boolean {
+    const effect = active.value;
+    if (!effect || fragment.trim().length === 0) return false;
+
+    deps.onBeforeEdit();
+    effect.fragment = fragment;
+    effect.name = name;
+    effect.enabled = true;
+    return true;
+  }
+
   function setTonemap(mode: TonemapMode): void {
     tonemap.value = mode;
     deps.applyTonemap(mode);
@@ -115,6 +130,7 @@ export function usePostEffects(deps: PostEffectStackDeps) {
     remove,
     move,
     setEnabled,
+    loadIntoActive,
     setTonemap,
   };
 }

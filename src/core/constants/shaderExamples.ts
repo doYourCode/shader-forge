@@ -9,11 +9,18 @@ import type {
 
 import iblCommonVertex from '@/assets/examples/ibl-common.vert?raw';
 import basiclmCommonVertex from '@/assets/examples/basiclm-common.vert?raw';
+import tangentCommonVertex from '@/assets/examples/tangent-common.vert?raw';
+import displacementVertex from '@/assets/examples/displacement.vert?raw';
 import lambertFragment from '@/assets/examples/lambert.frag?raw';
 import phongFragment from '@/assets/examples/phong.frag?raw';
 import blinnPhongFragment from '@/assets/examples/blinn-phong.frag?raw';
 import orenNayarFragment from '@/assets/examples/oren-nayar.frag?raw';
 import cookTorranceFragment from '@/assets/examples/cook-torrance.frag?raw';
+import toonFragment from '@/assets/examples/toon.frag?raw';
+import rimLightFragment from '@/assets/examples/rim-light.frag?raw';
+import normalMapFragment from '@/assets/examples/normal-map.frag?raw';
+import displacementFragment from '@/assets/examples/displacement.frag?raw';
+import reflectionsFragment from '@/assets/examples/reflections.frag?raw';
 import iblMetalnessRoughnessFragment from '@/assets/examples/ibl-metalness-roughness.frag?raw';
 import iblSpecularGlossinessFragment from '@/assets/examples/ibl-specular-glossiness.frag?raw';
 
@@ -84,6 +91,9 @@ export interface ShaderExampleCatalog {
 /** Material parameters are read by the fragment stage only. */
 const MATERIAL_STAGE: UserUniformStage = 'fragment';
 
+/** The displacement example owns a vertex-stage parameter. */
+const VERTEX_STAGE: UserUniformStage = 'vertex';
+
 /** Colour parameters are `vec3` in the generated declaration. */
 function colorUniform(
   name: string,
@@ -94,6 +104,10 @@ function colorUniform(
 
 function floatUniform(name: string, value: number): ShaderExampleUniform {
   return { name, kind: 'float', stages: MATERIAL_STAGE, value };
+}
+
+function vertexFloatUniform(name: string, value: number): ShaderExampleUniform {
+  return { name, kind: 'float', stages: VERTEX_STAGE, value };
 }
 
 /**
@@ -176,6 +190,76 @@ const examples: readonly ShaderExample[] = [
       colorUniform('baseColor', { r: 0.72, g: 0.31, b: 0.22 }),
       floatUniform('roughness', 0.35),
       floatUniform('metallic', 0),
+    ],
+  },
+  {
+    id: 'toon',
+    label: 'Toon',
+    description: 'Quantised N dot L bands',
+    group: 'Surface',
+    thumbnailUrl: resolveExampleThumbnailUrl('examples/thumbs/toon.webp'),
+    vertex: basiclmCommonVertex,
+    fragment: toonFragment,
+    uniforms: [
+      colorUniform('albedo', { r: 0.34, g: 0.58, b: 0.86 }),
+      floatUniform('bands', 3),
+    ],
+  },
+  {
+    id: 'rim-light',
+    label: 'Rim light',
+    description: 'Fresnel edge glow',
+    group: 'Surface',
+    thumbnailUrl: resolveExampleThumbnailUrl('examples/thumbs/rim-light.webp'),
+    vertex: basiclmCommonVertex,
+    fragment: rimLightFragment,
+    uniforms: [
+      colorUniform('albedo', { r: 0.16, g: 0.18, b: 0.24 }),
+      colorUniform('rimColor', { r: 0.4, g: 0.8, b: 1.0 }),
+      floatUniform('rimPower', 2.5),
+    ],
+  },
+  {
+    id: 'normal-map',
+    label: 'Normal map',
+    description: 'Procedural TBN perturbation',
+    group: 'Surface',
+    thumbnailUrl: resolveExampleThumbnailUrl('examples/thumbs/normal-map.webp'),
+    vertex: tangentCommonVertex,
+    fragment: normalMapFragment,
+    uniforms: [
+      colorUniform('albedo', { r: 0.62, g: 0.44, b: 0.3 }),
+      floatUniform('normalStrength', 1.4),
+    ],
+  },
+  {
+    id: 'displacement',
+    label: 'Displacement',
+    description: 'Vertex wave along the normal',
+    group: 'Surface',
+    thumbnailUrl: resolveExampleThumbnailUrl(
+      'examples/thumbs/displacement.webp',
+    ),
+    vertex: displacementVertex,
+    fragment: displacementFragment,
+    uniforms: [
+      vertexFloatUniform('amplitude', 0.09),
+      colorUniform('albedo', { r: 0.3, g: 0.62, b: 0.44 }),
+    ],
+  },
+  {
+    id: 'reflections',
+    label: 'Environment reflection',
+    description: 'Cubemap reflection with Fresnel-free mix',
+    group: 'Surface',
+    thumbnailUrl: resolveExampleThumbnailUrl(
+      'examples/thumbs/reflections.webp',
+    ),
+    vertex: basiclmCommonVertex,
+    fragment: reflectionsFragment,
+    uniforms: [
+      colorUniform('albedo', { r: 0.14, g: 0.16, b: 0.2 }),
+      floatUniform('reflectivity', 0.65),
     ],
   },
   {

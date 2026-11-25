@@ -192,3 +192,81 @@ a:hover {
   color-scheme: dark;
   background: var(--ap-surface);
 }
+
+/* Printable cheat sheets and lessons. Printing drops the application chrome,
+   the navigation tree, the TOC and the pager, and switches to ink-friendly
+   colours. The content pane is the only element that needs to stay visible. */
+@media print {
+  html,
+  body,
+  #app,
+  .app-shell,
+  .app-body,
+  .split-view,
+  .split-view__pane--right,
+  .split-view__pane-body,
+  .content-browser,
+  .content-pane,
+  .content-pane__layout,
+  .content-pane__body {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .app-header,
+  .app-footer,
+  .split-view__pane--left,
+  .content-pane__header,
+  .content-pane__toc,
+  .content-pane__pager,
+  .content-browser__search,
+  .editor-callout,
+  .fallback-notice,
+  .content-pane__print {
+    display: none !important;
+  }
+
+  .content-pane {
+    padding: 0 !important;
+    font-size: 11pt;
+  }
+
+  .content-pane__body h1,
+  .content-pane__body h2,
+  .content-pane__body h3 {
+    color: #111 !important;
+    break-after: avoid;
+  }
+
+  .content-pane__body a {
+    color: #111 !important;
+    text-decoration: underline;
+  }
+
+  .content-pane__body pre,
+  .content-pane__body table,
+  .content-pane__body details,
+  .content-pane__body .callout {
+    border-color: #bbb !important;
+    background: #fff !important;
+    color: #111 !important;
+    break-inside: avoid;
+  }
+
+  .content-pane__body pre {
+    white-space: pre-wrap;
+  }
+
+  .content-pane__body code {
+    background: transparent !important;
+    color: #111 !important;
+  }
+
+  .content-pane__body .code-block__toolbar {
+    display: none !important;
+  }
+}

@@ -10,12 +10,15 @@ import { EXAMPLE_PICKER } from '@/components/shader/examplePickerContext';
 import { useShaderEditor } from '@/composables/useShaderEditor';
 import {
   dataTabGroup,
+  isEditorTabId,
   postTab,
   stageTabGroup,
   type EditorTab,
   type EditorTabGroup,
   type EditorTabId,
 } from '@/core/models/editorTab';
+import { postEffectExamples } from '@/core/constants/postEffectExamples';
+import { useEditorDeepLink } from '@/composables/useEditorDeepLink';
 import type { ShaderError } from '@/core/models/shaderError';
 import CompileButton from '@/components/shader/CompileButton.vue';
 import EditorToolbar from '@/components/shader/EditorToolbar.vue';
@@ -39,6 +42,10 @@ const props = withDefaults(
 );
 
 const { t, locale } = useI18n();
+
+const deepLink = useEditorDeepLink();
+const initialTab: EditorTabId =
+  deepLink.tab && isEditorTabId(deepLink.tab) ? deepLink.tab : props.initialTab;
 
 const editorHostRef = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -102,6 +109,7 @@ const {
   mountCanvas,
   switchTab,
   loadExample,
+  loadPostEffectExample,
   selectModel,
   selectHdri,
   compile,
@@ -117,7 +125,12 @@ const {
   setTonemap,
   userDataCommands,
   clipboardSource,
-} = useShaderEditor({ initialTab: props.initialTab });
+} = useShaderEditor({
+  initialTab,
+  initialExample: deepLink.example,
+  initialEffect: deepLink.effect,
+  initialCode: deepLink.code,
+});
 
 const statusText = computed(() => {
   const message = statusMessage.value;
@@ -216,12 +229,14 @@ function togglePause() {
         :effects="postEffects"
         :active-id="activePostEffectId"
         :tonemap="tonemap"
+        :examples="postEffectExamples"
         @select="selectPostEffect"
         @add="addPostEffect"
         @remove="removePostEffect"
         @move="movePostEffect"
         @toggle="setPostEffectEnabled"
         @tonemap="setTonemap"
+        @load-example="loadPostEffectExample"
       />
       <div
         v-show="activeTab !== 'user_data'"

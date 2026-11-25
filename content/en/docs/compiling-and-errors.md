@@ -151,8 +151,10 @@ link time, or the driver did not report a position.
 
 ## Related
 
+- [Debugging shaders](/knowledge/debugging-shaders) — colour-as-printf and the full error catalogue.
 - [3D Shader Editor](/docs/3d-editor)
 - [2D Sandbox](/docs/2d-sandbox)
+- [Screen Space GLSL Editor](/docs/screen-space-editor)
 - [User data](/docs/user-data)
 - [Post effects](/docs/post-effects)
 - [Limits and troubleshooting](/docs/limits-and-troubleshooting)

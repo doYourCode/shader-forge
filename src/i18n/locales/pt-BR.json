@@ -53,7 +53,8 @@
       },
       "screenSpace": {
         "title": "Editor GLSL de Tela",
-        "description": "Edite efeitos de pós-processamento sobre cenas 3D completas, com um G-Buffer rico em dados para experimentação."
+        "description": "Edite efeitos de pós-processamento sobre cenas 3D completas, com um G-Buffer rico em dados para experimentação.",
+        "warning": "Módulo experimental. Podem ocorrer problemas de estabilidade, principalmente quando um efeito lê os dados do G-Buffer."
       },
       "docs": {
         "title": "Documentação e Tutoriais",

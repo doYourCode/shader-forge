@@ -53,7 +53,8 @@
       },
       "screenSpace": {
         "title": "Screen Space GLSL Editor",
-        "description": "Edit post effects over entire 3D scenes, with a data-rich G-Buffer available for experimentation."
+        "description": "Edit post effects over entire 3D scenes, with a data-rich G-Buffer available for experimentation.",
+        "warning": "Experimental module. Stability issues may occur, especially when an effect reads the G-Buffer data."
       },
       "docs": {
         "title": "Docs & Tutorials",

@@ -25,6 +25,7 @@ export const landingCards: ILandingCard[] = [
     id: 'screen-space-editor',
     title: 'landing.cards.screenSpace.title',
     description: 'landing.cards.screenSpace.description',
+    warning: 'landing.cards.screenSpace.warning',
     enabled: true,
     to: '/screen-space',
     icon: 'screen',

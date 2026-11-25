@@ -2,7 +2,13 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Box, FileCode2, MonitorUp, Scan } from 'lucide-vue-next';
+import {
+  Box,
+  FileCode2,
+  MonitorUp,
+  Scan,
+  TriangleAlert,
+} from 'lucide-vue-next';
 import type { ILandingCard, LandingIconName } from '@/core/models/landingCard';
 import LandingCardMedia from './LandingCardMedia.vue';
 
@@ -53,12 +59,19 @@ const noteText = computed(() => {
 
   return props.card.note ? t(props.card.note) : null;
 });
+
+/** Hover/focus notice for cards that ship unfinished behaviour. */
+const warningText = computed(() =>
+  props.card.warning ? t(props.card.warning) : null,
+);
+const warningId = computed(() => `feature-card-warning-${props.card.id}`);
 </script>
 
 <template>
   <component
     :is="isLink ? RouterLink : 'div'"
     :to="isLink ? card.to : undefined"
+    :aria-describedby="warningText ? warningId : undefined"
     class="feature-card"
     :class="[
       `feature-card--accent-${card.accent}`,
@@ -75,6 +88,14 @@ const noteText = computed(() => {
       <span class="feature-card__icon" aria-hidden="true">
         <component :is="iconComponent" :size="16" :stroke-width="1.7" />
       </span>
+
+      <span
+        v-if="warningText"
+        class="feature-card__warning-mark"
+        aria-hidden="true"
+      >
+        <TriangleAlert :size="15" :stroke-width="1.8" />
+      </span>
     </div>
 
     <LandingCardMedia :kind="card.media" class="feature-card__media" />
@@ -84,6 +105,16 @@ const noteText = computed(() => {
       <p class="feature-card__description">{{ t(card.description) }}</p>
       <p v-if="noteText" class="feature-card__note">{{ noteText }}</p>
     </div>
+
+    <span
+      v-if="warningText"
+      :id="warningId"
+      class="feature-card__warning"
+      role="tooltip"
+    >
+      <TriangleAlert :size="12" :stroke-width="1.8" aria-hidden="true" />
+      <span>{{ warningText }}</span>
+    </span>
   </component>
 </template>
 
@@ -253,6 +284,56 @@ const noteText = computed(() => {
   line-height: 1.45;
 }
 
+.feature-card__warning-mark {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 184, 108, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 184, 108, 0.07);
+  color: #ffc27a;
+}
+
+/* Revealed on hover and on keyboard focus; `aria-describedby` on the card keeps
+   the same text available to assistive technology while it is invisible. */
+.feature-card__warning {
+  position: absolute;
+  z-index: 2;
+  top: 2.9rem;
+  right: 0.6rem;
+  left: 0.6rem;
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(255, 184, 108, 0.42);
+  border-radius: 7px;
+  background: rgba(30, 23, 16, 0.96);
+  color: #ffd7a8;
+  font-size: 0.71rem;
+  line-height: 1.4;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  pointer-events: none;
+}
+
+.feature-card__warning svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.feature-card:not(.feature-card--static):hover .feature-card__warning,
+.feature-card:focus-visible .feature-card__warning {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .feature-card:not(.feature-card--static):not(.feature-card--disabled):hover {
   transform: translateY(-4px);
   box-shadow:
@@ -286,6 +367,11 @@ const noteText = computed(() => {
 @media (prefers-reduced-motion: reduce) {
   .feature-card,
   .feature-card__media {
+    transition: none;
+  }
+
+  .feature-card__warning {
+    transform: none;
     transition: none;
   }
 

@@ -19,6 +19,11 @@ export interface ILandingCard {
   to?: string;
   /** Optional highlighted description (e.g., disabled reason) */
   note?: string;
+  /**
+   * Optional hover/focus notice (i18n key). Cards that carry one show a warning
+   * marker and reveal the text on hover or keyboard focus.
+   */
+  warning?: string;
   /** If true, card is disabled when WebGPU is unavailable */
   requiresWebGpu?: boolean;
   /** Icon shown in the card's top-left badge. */
